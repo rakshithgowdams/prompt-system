@@ -258,231 +258,273 @@ function DetailModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[100] bg-white flex flex-col"
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center"
+      onClick={onClose}
     >
-      {/* ── Top: Image carousel (dark bg) ── */}
-      <div className="relative flex-shrink-0 bg-neutral-900" style={{ maxHeight: '50vh' }}>
-        {/* Top bar: counter + actions */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 pt-3 pb-2">
-          <div className="flex items-center gap-2">
-            {images.length > 1 && (
-              <span className="bg-black/60 backdrop-blur-sm text-white text-[12px] font-semibold px-3 py-1.5 rounded-full tabular-nums">
+      {/* Modal container — mobile: full screen / tablet+: centered card with max dimensions */}
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-white w-full h-full md:h-[92vh] md:max-h-[900px] md:w-[95vw] md:max-w-[1200px] md:rounded-2xl md:shadow-2xl overflow-hidden flex flex-col md:flex-row"
+      >
+        {/* ─── Close button (always visible) ─── */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/50 md:bg-ink-100 backdrop-blur-sm text-white md:text-ink-600 flex items-center justify-center hover:bg-black/70 md:hover:bg-ink-200 transition-colors active:scale-90"
+        >
+          <X size={16} />
+        </button>
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            LEFT PANEL — Image / Media (fixed, no scroll)
+            Mobile: top section with fixed height
+            Tablet+: left half, full height
+        ═══════════════════════════════════════════════════════════════════════ */}
+        <div className="relative flex-shrink-0 bg-neutral-900 w-full md:w-[55%] lg:w-[50%] h-[38vh] md:h-full flex items-center justify-center overflow-hidden">
+          {/* Image counter pill */}
+          {images.length > 1 && (
+            <div className="absolute top-3 left-3 z-20">
+              <span className="bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full tabular-nums">
                 {activeImage + 1} / {images.length}
               </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {images.length > 0 && urls[images[activeImage]?.id] && (
-              <button
-                onClick={handleDownload}
-                className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/70 transition-colors active:scale-90"
+            </div>
+          )}
+
+          {/* Download button */}
+          {images.length > 0 && urls[images[activeImage]?.id] && (
+            <button
+              onClick={handleDownload}
+              className="absolute top-3 right-14 z-20 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/70 transition-colors active:scale-90"
+            >
+              <Download size={15} />
+            </button>
+          )}
+
+          {/* Image carousel */}
+          {images.length > 0 ? (
+            <>
+              <div
+                ref={imageScrollRef}
+                className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                onScroll={() => {
+                  const el = imageScrollRef.current;
+                  if (!el) return;
+                  const idx = Math.round(el.scrollLeft / el.clientWidth);
+                  setActiveImage(Math.min(idx, images.length - 1));
+                }}
               >
-                <Download size={16} />
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/70 transition-colors active:scale-90"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Image area */}
-        {images.length > 0 ? (
-          <div className="relative">
-            <div
-              ref={imageScrollRef}
-              className="flex overflow-x-auto snap-x snap-mandatory"
-              style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
-              onScroll={() => {
-                const el = imageScrollRef.current;
-                if (!el) return;
-                const idx = Math.round(el.scrollLeft / el.clientWidth);
-                setActiveImage(Math.min(idx, images.length - 1));
-              }}
-            >
-              {images.map((img) => (
-                <div key={img.id} className="flex-shrink-0 w-full snap-center flex items-center justify-center" style={{ minHeight: '30vh', maxHeight: '50vh' }}>
-                  {urlsLoading ? (
-                    <div className="w-full h-full min-h-[30vh] animate-pulse bg-neutral-800" />
-                  ) : urls[img.id] ? (
-                    <img
-                      src={urls[img.id]}
-                      alt={img.file_name}
-                      className="max-w-full max-h-[50vh] object-contain mx-auto"
-                      draggable={false}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center w-full min-h-[30vh]">
+                {images.map((img) => (
+                  <div key={img.id} className="flex-shrink-0 w-full h-full snap-center flex items-center justify-center p-4">
+                    {urlsLoading ? (
+                      <div className="w-full h-full animate-pulse bg-neutral-800 rounded-lg" />
+                    ) : urls[img.id] ? (
+                      <img
+                        src={urls[img.id]}
+                        alt={img.file_name}
+                        className="max-w-full max-h-full object-contain"
+                        draggable={false}
+                      />
+                    ) : (
                       <ImageIcon size={40} className="text-neutral-600" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Left / Right arrows */}
-            {images.length > 1 && (
-              <>
-                <button
-                  onClick={() => scrollToImage(Math.max(0, activeImage - 1))}
-                  className={cn(
-                    'absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-ink-800 hover:bg-white transition-all active:scale-90',
-                    activeImage === 0 && 'opacity-0 pointer-events-none',
-                  )}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={() => scrollToImage(Math.min(images.length - 1, activeImage + 1))}
-                  className={cn(
-                    'absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-ink-800 hover:bg-white transition-all active:scale-90',
-                    activeImage === images.length - 1 && 'opacity-0 pointer-events-none',
-                  )}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </>
-            )}
-          </div>
-        ) : videos.length > 0 ? (
-          <div className="flex items-center justify-center" style={{ minHeight: '30vh', maxHeight: '50vh' }}>
-            {urls[videos[0]?.id] && (
-              <video src={urls[videos[0].id]} controls preload="metadata" className="max-w-full max-h-[50vh]" />
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center bg-neutral-800" style={{ minHeight: '25vh', maxHeight: '50vh' }}>
-            <ImageIcon size={48} className="text-neutral-600" />
-          </div>
-        )}
-      </div>
-
-      {/* ── Scrollable content below image ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-neutral-50" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-        {/* User info row */}
-        <div className="bg-white px-4 sm:px-6 pt-5 pb-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-full bg-ink-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <User size={18} className="text-ink-500" />
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="min-w-0">
-                <p className="text-[15px] font-bold text-ink-900 truncate">{prompt.title}</p>
-                <p className="text-[12px] text-ink-500 truncate">@{prompt.project_name || 'user'}</p>
-              </div>
-            </div>
-            <span className={cn('text-[11px] font-bold px-3 py-1.5 rounded-full border whitespace-nowrap', platformMeta.pill)}>
-              {platformMeta.icon} {prompt.platform}
-            </span>
-          </div>
 
-          {/* Stats row */}
-          <div className="flex items-center gap-5 mt-4">
-            <button
-              onClick={handleLike}
-              disabled={toggleLike.isPending}
-              className={cn(
-                'flex items-center gap-1.5 text-[13px] font-semibold transition-all active:scale-90',
-                stats?.user_has_liked ? 'text-red-500' : 'text-ink-500 hover:text-red-500',
+              {/* Navigation arrows (desktop only) */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() => scrollToImage(Math.max(0, activeImage - 1))}
+                    className={cn(
+                      'hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg items-center justify-center text-ink-800 hover:bg-white transition-all active:scale-90',
+                      activeImage === 0 && 'opacity-0 pointer-events-none',
+                    )}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => scrollToImage(Math.min(images.length - 1, activeImage + 1))}
+                    className={cn(
+                      'hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 shadow-lg items-center justify-center text-ink-800 hover:bg-white transition-all active:scale-90',
+                      activeImage === images.length - 1 && 'opacity-0 pointer-events-none',
+                    )}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </>
               )}
-            >
-              <Heart size={17} className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')} />
-              <span>{statsLoading ? '–' : formatCount(stats?.like_count ?? 0)}</span>
-            </button>
-            <div className="flex items-center gap-1.5 text-[13px] text-ink-500">
-              <BarChart2 size={16} />
-              <span>{statsLoading ? '–' : formatCount(stats?.view_count ?? 0)}</span>
+
+              {/* Dot indicators */}
+              {images.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => scrollToImage(i)}
+                      className={cn(
+                        'w-2 h-2 rounded-full transition-all duration-200',
+                        i === activeImage ? 'bg-white w-5' : 'bg-white/50 hover:bg-white/80',
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : videos.length > 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              {urls[videos[0]?.id] && (
+                <video src={urls[videos[0].id]} controls preload="metadata" className="max-w-full max-h-full rounded-lg" />
+              )}
             </div>
-            <span className="text-[12px] text-ink-400">{timeAgo(prompt.created_at)}</span>
-          </div>
+          ) : (
+            <ImageIcon size={48} className="text-neutral-600" />
+          )}
         </div>
 
-        {/* ── Prompt content cards ── */}
-        <div className="px-4 sm:px-6 py-4 space-y-4">
-          {/* Main prompt card */}
-          <div className="bg-white border border-ink-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 pt-3 pb-2">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-500 uppercase tracking-wider">
-                <ImageIcon size={12} />
-                IMAGE · {images.length > 0 ? images.length : 1}
-              </span>
+        {/* ═══════════════════════════════════════════════════════════════════════
+            RIGHT PANEL — Scrollable text content
+            Mobile: below image, flex-1, scrolls Y
+            Tablet+: right side, full height, scrolls Y independently
+        ═══════════════════════════════════════════════════════════════════════ */}
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col md:w-[45%] lg:w-[50%]">
+          {/* Scrollable area */}
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {/* Header: user info + platform badge */}
+            <div className="sticky top-0 z-10 bg-white border-b border-ink-100 px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-ink-100 flex items-center justify-center flex-shrink-0">
+                    <User size={16} className="text-ink-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold text-ink-900 truncate">{prompt.title}</p>
+                    <p className="text-[12px] text-ink-400 truncate">@{prompt.project_name || 'user'}</p>
+                  </div>
+                </div>
+                <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap', platformMeta.pill)}>
+                  {platformMeta.icon} {prompt.platform}
+                </span>
+              </div>
             </div>
-            <div className="px-4 pb-4">
-              <p className="text-[14px] text-ink-800 leading-[1.7] whitespace-pre-wrap break-words">
+
+            {/* Stats bar */}
+            <div className="flex items-center gap-5 px-5 py-3 border-b border-ink-50 bg-white">
+              <button
+                onClick={handleLike}
+                disabled={toggleLike.isPending}
+                className={cn(
+                  'flex items-center gap-1.5 text-[13px] font-semibold transition-all active:scale-90',
+                  stats?.user_has_liked ? 'text-red-500' : 'text-ink-500 hover:text-red-500',
+                )}
+              >
+                <Heart size={16} className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')} />
+                <span>{statsLoading ? '–' : formatCount(stats?.like_count ?? 0)}</span>
+              </button>
+              <div className="flex items-center gap-1.5 text-[13px] text-ink-400">
+                <Eye size={15} />
+                <span>{statsLoading ? '–' : formatCount(stats?.view_count ?? 0)}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[13px] text-ink-400">
+                <MessageCircle size={15} />
+                <span>{statsLoading ? '–' : formatCount(stats?.comment_count ?? 0)}</span>
+              </div>
+              <span className="ml-auto text-[11px] text-ink-300">{timeAgo(prompt.created_at)}</span>
+            </div>
+
+            {/* ── Prompt text ── */}
+            <div className="px-5 py-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-ink-400 uppercase tracking-widest">
+                  <ImageIcon size={11} />
+                  IMAGE · {images.length > 0 ? images.length : 1}
+                </span>
+              </div>
+              <div className="text-[13.5px] text-ink-800 leading-[1.75] whitespace-pre-wrap break-words">
                 {prompt.prompt_text}
-              </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-3 border-t border-ink-100 bg-ink-50/50">
+
+            {/* Copy button for prompt */}
+            <div className="px-5 pb-4">
               <button
                 onClick={() => handleCopySection(prompt.prompt_text, -1)}
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-ink-600 hover:text-ink-900 transition-colors"
+                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink-500 hover:text-ink-900 transition-colors border border-ink-200 rounded-lg px-3 py-1.5 hover:border-ink-300"
               >
-                {copiedIdx === -1 ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+                {copiedIdx === -1 ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                 {copiedIdx === -1 ? 'Copied' : 'Copy'}
               </button>
             </div>
-          </div>
 
-          {/* Notes card */}
-          {prompt.notes && (
-            <div className="bg-white border border-ink-200 rounded-2xl overflow-hidden">
-              <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
-                <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wider">Notes</span>
-              </div>
-              <div className="px-4 pb-4">
+            {/* Notes */}
+            {prompt.notes && (
+              <div className="mx-5 mb-4 p-4 bg-ink-50 rounded-xl border border-ink-100">
+                <p className="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-2">Notes</p>
                 <p className="text-[13px] text-ink-600 leading-[1.7] italic">{prompt.notes}</p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Tags */}
-          {prompt.tags.length > 0 && (
-            <div className="overflow-x-auto px-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-              <div className="flex gap-2 w-max">
-                {prompt.tags.map((tag) => (
-                  <span key={tag} className="text-[11px] px-3 py-1.5 rounded-full bg-white text-ink-600 border border-ink-200 font-medium whitespace-nowrap">
-                    #{tag}
-                  </span>
-                ))}
+            {/* Tags */}
+            {prompt.tags.length > 0 && (
+              <div className="px-5 pb-4">
+                <div className="flex flex-wrap gap-1.5">
+                  {prompt.tags.map((tag) => (
+                    <span key={tag} className="text-[11px] px-2.5 py-1 rounded-md bg-ink-900 text-white font-medium">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            <div className="h-px bg-ink-100 mx-5" />
+
+            {/* ── Comments ── */}
+            <div className="px-5 pt-4 pb-2">
+              <p className="text-[10px] font-bold text-ink-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
+                <MessageCircle size={12} />
+                Comments {(stats?.comment_count ?? 0) > 0 && `(${stats!.comment_count})`}
+              </p>
+              <div className="space-y-4">
+                {commentsLoading ? (
+                  Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="flex gap-3 animate-pulse">
+                      <div className="w-7 h-7 rounded-full bg-ink-100 flex-shrink-0" />
+                      <div className="flex-1 space-y-1.5 pt-1">
+                        <div className="h-2.5 bg-ink-100 rounded w-20" />
+                        <div className="h-2.5 bg-ink-100 rounded w-full" />
+                      </div>
+                    </div>
+                  ))
+                ) : comments.length === 0 ? (
+                  <p className="text-[12px] text-ink-400 py-6 text-center">No comments yet. Be the first!</p>
+                ) : (
+                  <>
+                    {comments.map((c) => (
+                      <CommentBubble key={c.id} comment={c} currentUserId={user?.id} onDelete={handleDeleteComment} />
+                    ))}
+                    <div ref={commentsEndRef} />
+                  </>
+                )}
               </div>
             </div>
-          )}
 
-          {/* ── Comments section ── */}
-          <div className="bg-white border border-ink-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
-              <MessageCircle size={13} className="text-ink-400" />
-              <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wider">
-                Comments {(stats?.comment_count ?? 0) > 0 && `(${stats!.comment_count})`}
-              </span>
-            </div>
-            <div className="px-4 pb-4 space-y-3">
-              {commentsLoading ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="flex gap-3 animate-pulse">
-                    <div className="w-7 h-7 rounded-full bg-ink-100 flex-shrink-0" />
-                    <div className="flex-1 space-y-1.5 pt-1">
-                      <div className="h-2.5 bg-ink-100 rounded w-20" />
-                      <div className="h-2.5 bg-ink-100 rounded w-full" />
-                    </div>
-                  </div>
-                ))
-              ) : comments.length === 0 ? (
-                <p className="text-[12px] text-ink-400 py-4 text-center">No comments yet. Be the first!</p>
-              ) : (
-                <>
-                  {comments.map((c) => (
-                    <CommentBubble key={c.id} comment={c} currentUserId={user?.id} onDelete={handleDeleteComment} />
-                  ))}
-                  <div ref={commentsEndRef} />
-                </>
-              )}
-            </div>
-            {/* Comment input inside card */}
-            <form onSubmit={handleComment} className="flex items-center gap-2 px-4 py-3 border-t border-ink-100 bg-ink-50/50">
+            {/* Spacer at bottom */}
+            <div className="h-4" />
+          </div>
+
+          {/* ── Fixed bottom: comment input + copy all ── */}
+          <div className="flex-shrink-0 border-t border-ink-100 bg-white" style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}>
+            {/* Comment input */}
+            <form onSubmit={handleComment} className="flex items-center gap-2 px-4 py-2.5">
               <input
                 ref={commentInputRef as unknown as React.RefObject<HTMLInputElement>}
                 type="text"
@@ -490,7 +532,7 @@ function DetailModal({
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={user ? 'Add a comment...' : 'Sign in to comment'}
                 disabled={!user || addComment.isPending}
-                className="flex-1 text-[13px] bg-white border border-ink-200 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ink-900/10 focus:border-ink-300 placeholder:text-ink-400 text-ink-900 disabled:opacity-40"
+                className="flex-1 text-[13px] bg-ink-50 border border-ink-100 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-ink-900/10 focus:border-ink-200 placeholder:text-ink-400 text-ink-900 disabled:opacity-40"
               />
               <button
                 type="submit"
@@ -502,29 +544,7 @@ function DetailModal({
             </form>
           </div>
         </div>
-
-        {/* Bottom safe padding */}
-        <div style={{ height: 'max(80px, calc(env(safe-area-inset-bottom) + 80px))' }} />
-      </div>
-
-      {/* ── Fixed bottom bar: Copy Prompt ── */}
-      <div
-        className="flex-shrink-0 bg-white border-t border-ink-100 px-4 sm:px-6 py-3"
-        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
-      >
-        <button
-          onClick={handleCopyAll}
-          className={cn(
-            'w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-200 active:scale-[0.98]',
-            copiedAll
-              ? 'bg-green-500 text-white shadow-lg shadow-green-200/60'
-              : 'bg-ink-900 text-white hover:bg-ink-800 shadow-lg shadow-ink-900/15',
-          )}
-        >
-          {copiedAll ? <Check size={16} /> : <Copy size={16} />}
-          {copiedAll ? 'Copied!' : 'Copy Prompt'}
-        </button>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
