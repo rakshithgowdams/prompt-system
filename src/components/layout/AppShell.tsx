@@ -258,6 +258,7 @@ const mainNav: NavItem[] = [
 
 const bottomNav = [
   { href: '/dashboard', icon: 'dashboard', label: 'Home' },
+  { href: '/courses', icon: 'school', label: 'Courses' },
   { href: '/explore', icon: 'explore', label: 'Explore' },
   { href: '/todos', icon: 'checklist', label: 'Todos' },
   { href: '/settings', icon: 'settings', label: 'Settings' },
@@ -481,40 +482,66 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
-        {/* Mobile bottom nav */}
+        {/* Mobile bottom nav — liquid drop indicator */}
         <nav
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-ink-300 flex"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-ink-300"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          {bottomNav.map((item) => {
-            const active = location.pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  'flex-1 flex flex-col items-center justify-center pt-2.5 pb-2 gap-1 text-[11px] font-medium transition-colors min-h-[52px]',
-                  active ? 'text-brand-400' : 'text-ink-500 hover:text-ink-900',
-                )}
-              >
-                <motion.div
-                  animate={active ? { scale: 1.1 } : { scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+          <div className="flex relative">
+            {bottomNav.map((item) => {
+              const active = location.pathname === item.href ||
+                (item.href !== '/dashboard' && location.pathname.startsWith(item.href + '/')) ||
+                (item.href === '/dashboard' && location.pathname === '/dashboard');
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className="flex-1 flex flex-col items-center justify-center pt-3 pb-2 gap-1 min-h-[56px] relative z-10"
                 >
-                  <Icon name={item.icon} size={22} fill={active} className={active ? 'text-brand-400' : 'text-ink-500'} />
-                </motion.div>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-          <button
-            onClick={handleSignOut}
-            className="flex-1 flex flex-col items-center justify-center pt-2.5 pb-2 gap-1 text-[11px] font-medium text-danger transition-colors min-h-[52px]"
-            aria-label="Sign out"
-          >
-            <Icon name="logout" size={22} className="text-danger" />
-            <span>Sign out</span>
-          </button>
+                  {/* Liquid drop pill — shared layoutId slides between tabs */}
+                  {active && (
+                    <motion.div
+                      layoutId="bottom-nav-pill"
+                      className="absolute inset-x-1.5 top-1 bottom-1 rounded-2xl bg-brand-50 border border-brand-100"
+                      style={{ zIndex: -1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 380,
+                        damping: 30,
+                        mass: 1,
+                      }}
+                    />
+                  )}
+
+                  <motion.div
+                    animate={active ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+                  >
+                    <Icon
+                      name={item.icon}
+                      size={21}
+                      fill={active}
+                      className={cn(
+                        'transition-colors duration-200',
+                        active ? 'text-brand-500' : 'text-ink-500',
+                      )}
+                    />
+                  </motion.div>
+
+                  <motion.span
+                    animate={{ opacity: active ? 1 : 0.6 }}
+                    transition={{ duration: 0.18 }}
+                    className={cn(
+                      'text-[10px] font-bold leading-none',
+                      active ? 'text-brand-500' : 'text-ink-500',
+                    )}
+                  >
+                    {item.label}
+                  </motion.span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       </div>
     </div>
