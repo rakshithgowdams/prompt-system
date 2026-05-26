@@ -269,10 +269,19 @@ function DetailModal({ prompt, onClose }: { prompt: PublishedPrompt; onClose: ()
             {/* Prompt text */}
             <div>
               <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider mb-2">Prompt</p>
-              <div className="bg-ink-50 border border-ink-200 rounded-xl p-3.5">
-                <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words">
-                  {prompt.prompt_text}
-                </p>
+              <div className="bg-ink-50 border border-ink-200 rounded-xl overflow-hidden">
+                <div
+                  className="overflow-y-auto p-3.5"
+                  style={{
+                    maxHeight: '220px',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#D1D7DC transparent',
+                  }}
+                >
+                  <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words">
+                    {prompt.prompt_text}
+                  </p>
+                </div>
               </div>
             </div>
 
