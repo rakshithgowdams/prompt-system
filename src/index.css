@@ -28,13 +28,12 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #030712;
-    color: #f9fafb;
+    background-color: #FFFFFF;
+    color: #1C1D1F;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -43,15 +42,25 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #374151;
+    background: #D1D7DC;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #4b5563;
+    background: #6A6F73;
   }
 }
 
 @layer utilities {
+  .text-display {
+    @apply text-4xl md:text-5xl font-extrabold tracking-tight text-ink-900;
+  }
+
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -67,7 +76,7 @@
 }
 
 @keyframes ripple {
-  from { transform: scale(0); opacity: 0.5; }
+  from { transform: scale(0); opacity: 0.4; }
   to   { transform: scale(1); opacity: 0; }
 }
 
@@ -91,6 +100,6 @@
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }

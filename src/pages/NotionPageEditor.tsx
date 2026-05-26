@@ -93,17 +93,17 @@ function BlockRow({
   inputRef: (el: HTMLElement | null) => void;
 }) {
   const baseInput =
-    'w-full bg-transparent outline-none resize-none text-gray-100 leading-relaxed placeholder:text-gray-600 transition-colors';
+    'w-full bg-transparent outline-none resize-none text-ink-900 leading-relaxed placeholder:text-ink-400 transition-colors';
 
   const setRef = (el: HTMLElement | null) => inputRef(el);
 
   if (block.type === 'divider') {
     return (
       <div className="group relative flex items-center gap-3 py-1">
-        <hr className="flex-1 border-gray-700" />
+        <hr className="flex-1 border-ink-200" />
         <button
           onClick={() => onDelete(block.id)}
-          className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition-all"
+          className="opacity-0 group-hover:opacity-100 text-ink-400 hover:text-red-400 transition-all"
         >
           <Icon name="close" size={14} />
         </button>
@@ -156,7 +156,7 @@ function BlockRow({
           ref={setRef}
           contentEditable
           suppressContentEditableWarning
-          className={cn(baseInput, 'text-xl font-semibold text-gray-200')}
+          className={cn(baseInput, 'text-xl font-semibold text-ink-700')}
           onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
           data-placeholder={BLOCK_PLACEHOLDERS.heading3}
           {...sharedProps}
@@ -168,7 +168,7 @@ function BlockRow({
     case 'bullet':
       content = (
         <div className="flex gap-3 items-start">
-          <span className="mt-2 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+          <span className="mt-2 w-1.5 h-1.5 rounded-full bg-ink-400 flex-shrink-0" />
           <div
             ref={setRef}
             contentEditable
@@ -186,7 +186,7 @@ function BlockRow({
     case 'numbered':
       content = (
         <div className="flex gap-3 items-start">
-          <span className="mt-[3px] text-sm text-gray-400 font-medium flex-shrink-0 min-w-[1.2rem] text-right">
+          <span className="mt-[3px] text-sm text-ink-500 font-medium flex-shrink-0 min-w-[1.2rem] text-right">
             {index + 1}.
           </span>
           <div
@@ -214,14 +214,14 @@ function BlockRow({
             <Icon
               name={block.checked ? 'check_box' : 'check_box_outline_blank'}
               size={18}
-              className={block.checked ? 'text-blue-400' : 'text-gray-500'}
+              className={block.checked ? 'text-brand-400' : 'text-ink-400'}
             />
           </button>
           <div
             ref={setRef}
             contentEditable
             suppressContentEditableWarning
-            className={cn(baseInput, 'flex-1', block.checked && 'line-through text-gray-500')}
+            className={cn(baseInput, 'flex-1', block.checked && 'line-through text-ink-400')}
             onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.todo}
             {...sharedProps}
@@ -233,12 +233,12 @@ function BlockRow({
       break;
     case 'quote':
       content = (
-        <div className="flex gap-3 items-start border-l-4 border-gray-500 pl-4">
+        <div className="flex gap-3 items-start border-l-4 border-ink-400 pl-4">
           <div
             ref={setRef}
             contentEditable
             suppressContentEditableWarning
-            className={cn(baseInput, 'italic text-gray-300')}
+            className={cn(baseInput, 'italic text-ink-700')}
             onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.quote}
             {...sharedProps}
@@ -250,16 +250,16 @@ function BlockRow({
       break;
     case 'code':
       content = (
-        <div className="rounded-xl bg-gray-800/80 border border-gray-700 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800">
-            <Icon name="code" size={13} className="text-gray-500" />
-            <span className="text-xs text-gray-500 font-mono">{block.language ?? 'code'}</span>
+        <div className="rounded-md bg-ink-100 border border-ink-300 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-ink-300 bg-ink-100">
+            <Icon name="code" size={13} className="text-ink-400" />
+            <span className="text-xs text-ink-400 font-mono">{block.language ?? 'code'}</span>
           </div>
           <div
             ref={setRef}
             contentEditable
             suppressContentEditableWarning
-            className="px-4 py-3 font-mono text-sm text-emerald-300 outline-none min-h-[60px] whitespace-pre-wrap"
+            className="px-4 py-3 font-mono text-sm text-emerald-600 outline-none min-h-[60px] whitespace-pre-wrap"
             onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             spellCheck={false}
             {...sharedProps}
@@ -271,13 +271,13 @@ function BlockRow({
       break;
     case 'callout':
       content = (
-        <div className="flex gap-3 items-start rounded-xl bg-blue-500/10 border border-blue-500/20 px-4 py-3">
+        <div className="flex gap-3 items-start rounded-md bg-brand-50 border border-brand-100 px-4 py-3">
           <span className="text-xl flex-shrink-0">{block.calloutIcon ?? '💡'}</span>
           <div
             ref={setRef}
             contentEditable
             suppressContentEditableWarning
-            className={cn(baseInput, 'flex-1 text-blue-200')}
+            className={cn(baseInput, 'flex-1 text-brand-700')}
             onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.callout}
             {...sharedProps}
@@ -319,7 +319,7 @@ function BlockRow({
         <button
           type="button"
           onClick={() => onAddAfter(block.id)}
-          className="p-1 rounded-lg text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+          className="p-1 rounded-lg text-ink-400 hover:text-ink-700 hover:bg-ink-100 transition-colors"
           title="Add block"
         >
           <Icon name="add" size={15} />
@@ -327,7 +327,7 @@ function BlockRow({
         <button
           type="button"
           onClick={() => onDelete(block.id)}
-          className="p-1 rounded-lg text-gray-600 hover:text-red-400 hover:bg-gray-800 transition-colors"
+          className="p-1 rounded-lg text-ink-400 hover:text-red-400 hover:bg-ink-100 transition-colors"
           title="Delete block"
         >
           <Icon name="drag_indicator" size={15} />
@@ -361,11 +361,11 @@ function SlashMenu({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -4 }}
       transition={{ duration: 0.12 }}
-      className="fixed z-50 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden w-72"
+      className="fixed z-50 bg-white border border-ink-300 rounded-lg shadow-xl overflow-hidden w-72"
       style={{ top: position.top + 24, left: position.left }}
     >
       <div className="px-3 pt-3 pb-1">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Blocks</p>
+        <p className="text-xs font-semibold text-ink-500 uppercase tracking-wider">Blocks</p>
       </div>
       <div className="p-2 max-h-72 overflow-y-auto">
         {filtered.map((cmd) => (
@@ -373,14 +373,14 @@ function SlashMenu({
             key={cmd.type}
             type="button"
             onClick={() => onSelect(cmd.type)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-800 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-ink-100 transition-colors text-left"
           >
-            <div className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center flex-shrink-0">
-              <Icon name={cmd.icon} size={16} className="text-gray-400" />
+            <div className="w-8 h-8 rounded-lg bg-ink-100 border border-ink-300 flex items-center justify-center flex-shrink-0">
+              <Icon name={cmd.icon} size={16} className="text-ink-500" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-200">{cmd.label}</p>
-              <p className="text-xs text-gray-500 truncate">{cmd.desc}</p>
+              <p className="text-sm font-medium text-ink-900">{cmd.label}</p>
+              <p className="text-xs text-ink-500 truncate">{cmd.desc}</p>
             </div>
           </button>
         ))}
@@ -544,24 +544,24 @@ export function NotionPageEditor() {
   }
 
   if (!page) {
-    return <div className="p-8 text-center text-gray-400">Page not found.</div>;
+    return <div className="p-8 text-center text-ink-500">Page not found.</div>;
   }
 
   return (
     <div className="min-h-full">
       {/* Top bar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-8 h-14 bg-gray-950/90 backdrop-blur-md border-b border-gray-800/60">
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-8 h-14 bg-white/95 backdrop-blur-md border-b border-ink-300">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate(`/projects/${slug}`)}
-            className="p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors flex-shrink-0"
+            className="p-2 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
           >
             <Icon name="arrow_back" size={20} />
           </button>
-          <div className="flex items-center gap-2 text-sm text-gray-400 min-w-0">
+          <div className="flex items-center gap-2 text-sm text-ink-500 min-w-0">
             <span className="truncate hidden xs:block">{project?.name}</span>
-            <span className="text-gray-600 hidden xs:block">/</span>
-            <span className="text-gray-200 truncate max-w-[180px]">{title || 'Untitled'}</span>
+            <span className="text-ink-400 hidden xs:block">/</span>
+            <span className="text-ink-700 truncate max-w-[180px]">{title || 'Untitled'}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -571,7 +571,7 @@ export function NotionPageEditor() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-xs text-gray-500 hidden sm:block"
+                className="text-xs text-ink-400 hidden sm:block"
               >
                 Saving…
               </motion.span>
@@ -581,7 +581,7 @@ export function NotionPageEditor() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-xs text-emerald-500 hidden sm:block"
+                className="text-xs text-success hidden sm:block"
               >
                 Saved
               </motion.span>
@@ -589,7 +589,7 @@ export function NotionPageEditor() {
           </AnimatePresence>
           <button
             onClick={() => setDeleteOpen(true)}
-            className="p-2 rounded-xl hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors"
+            className="p-2 rounded-md hover:bg-red-50 text-ink-500 hover:text-danger transition-colors"
             title="Delete page"
           >
             <Icon name="delete" size={18} />
@@ -613,8 +613,8 @@ export function NotionPageEditor() {
           onInput={(e) => setTitleAndSave(e.currentTarget.textContent ?? '')}
           data-placeholder="Untitled"
           className={cn(
-            'text-3xl sm:text-4xl lg:text-5xl font-bold text-white outline-none leading-tight mb-8',
-            'empty:before:content-[attr(data-placeholder)] empty:before:text-gray-700',
+            'text-3xl sm:text-4xl lg:text-5xl font-bold text-ink-900 outline-none leading-tight mb-8',
+            'empty:before:content-[attr(data-placeholder)] empty:before:text-ink-300',
           )}
         >
           {title}
@@ -656,7 +656,7 @@ export function NotionPageEditor() {
               const last = blocks[blocks.length - 1];
               if (last) addBlockAfter(last.id);
             }}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-400 transition-colors text-sm py-2 w-full text-left"
+            className="flex items-center gap-2 text-ink-400 hover:text-ink-700 transition-colors text-sm py-2 w-full text-left"
           >
             <Icon name="add" size={16} />
             Add a block
@@ -688,7 +688,7 @@ export function NotionPageEditor() {
       <style>{`
         [contenteditable][data-placeholder]:empty:before {
           content: attr(data-placeholder);
-          color: #4b5563;
+          color: #D1D7DC;
           pointer-events: none;
         }
       `}</style>

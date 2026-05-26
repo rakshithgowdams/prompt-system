@@ -28,8 +28,8 @@ export function TagInput({ tags, onChange }: TagInputProps) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-gray-300">Tags</label>
-      <div className="min-h-[2.75rem] px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 hover:border-gray-600 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 transition-colors flex flex-wrap gap-1.5 items-center">
+      <label className="text-sm font-medium text-ink-700">Tags</label>
+      <div className="min-h-[2.75rem] px-3 py-2 rounded-md bg-white border border-ink-300 hover:border-ink-500 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 transition-colors flex flex-wrap gap-1.5 items-center">
         {tags.map((tag) => (
           <TagChip key={tag} tag={tag} onRemove={() => onChange(tags.filter((t) => t !== tag))} />
         ))}
@@ -39,10 +39,10 @@ export function TagInput({ tags, onChange }: TagInputProps) {
           onKeyDown={handleKey}
           onBlur={() => input && addTag(input)}
           placeholder={tags.length === 0 ? 'Add tags (press Enter)' : ''}
-          className="flex-1 min-w-24 bg-transparent text-gray-100 text-sm placeholder-gray-500 focus:outline-none"
+          className="flex-1 min-w-24 bg-transparent text-ink-900 text-sm placeholder-ink-400 focus:outline-none"
         />
       </div>
-      <p className="text-xs text-gray-500">Press Enter or comma to add a tag</p>
+      <p className="text-xs text-ink-500">Press Enter or comma to add a tag</p>
     </div>
   );
 }

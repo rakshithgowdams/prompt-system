@@ -48,10 +48,10 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
       {/* Controls */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-        <button onClick={handleDownload} className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-white transition-colors">
+        <button onClick={handleDownload} className="p-2.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors">
           <Icon name="download" size={20} />
         </button>
-        <button onClick={onClose} className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-white transition-colors">
+        <button onClick={onClose} className="p-2.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors">
           <Icon name="close" size={20} />
         </button>
       </div>
@@ -75,7 +75,7 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
       {index > 0 && (
         <button
           onClick={() => setIndex(index - 1)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-white transition-colors"
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
         >
           <Icon name="chevron_left" size={22} />
         </button>
@@ -83,7 +83,7 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
       {index < images.length - 1 && (
         <button
           onClick={() => setIndex(index + 1)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-white transition-colors"
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
         >
           <Icon name="chevron_right" size={22} />
         </button>
@@ -96,7 +96,7 @@ export function Lightbox({ images, initialIndex, onClose }: LightboxProps) {
             <button
               key={i}
               onClick={() => setIndex(i)}
-              className={`w-2 h-2 rounded-full transition-all ${i === index ? 'bg-white scale-125' : 'bg-gray-600'}`}
+              className={`w-2 h-2 rounded-full transition-all ${i === index ? 'bg-white scale-125' : 'bg-white/40'}`}
             />
           ))}
         </div>

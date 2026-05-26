@@ -23,7 +23,6 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
   const isFilesActive = location.pathname.startsWith(filesBase);
   const isAnyActive = isProjectActive || isFilesActive;
 
-  // Read active folder from URL query params so sidebar stays in sync
   const activeFolderInUrl = isFilesActive
     ? new URLSearchParams(location.search).get('folder')
     : null;
@@ -36,12 +35,10 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
   const { data: folders = [] } = useFolders(project.id);
   const { data: allFiles = [] } = useAllProjectFiles(project.id);
 
-  // Auto-expand project tree when navigating into it
   useEffect(() => {
     if (isAnyActive) setExpanded(true);
   }, [isAnyActive]);
 
-  // Auto-expand the folder that's active in the URL
   useEffect(() => {
     if (activeFolderInUrl) {
       setExpandedFolders((prev) => new Set([...prev, activeFolderInUrl]));
@@ -65,16 +62,15 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
 
   return (
     <div>
-      {/* Project row */}
       <div className="flex items-center gap-1 group">
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-600 hover:text-gray-300 rounded transition-colors"
+          className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-ink-500 hover:text-ink-900 rounded transition-colors"
           aria-label={expanded ? 'Collapse' : 'Expand'}
         >
           <motion.span
             animate={{ rotate: expanded ? 90 : 0 }}
-            transition={{ duration: 0.18, ease: 'easeInOut' }}
+            transition={{ duration: 0.15 }}
             className="inline-flex"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
@@ -86,10 +82,10 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
         <Link
           to={projectBase}
           className={cn(
-            'flex-1 flex items-center gap-2 px-2 py-2 rounded-xl text-sm font-medium transition-all duration-150 min-w-0',
+            'flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-150 min-w-0',
             isProjectActive
-              ? 'bg-blue-600/20 text-blue-300 border border-blue-500/20'
-              : 'text-gray-400 hover:text-white hover:bg-gray-800',
+              ? 'bg-brand-50 text-brand-600 border border-brand-100'
+              : 'text-ink-700 hover:text-ink-900 hover:bg-ink-100',
           )}
         >
           <ProjectThumb project={project} />
@@ -97,28 +93,25 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
         </Link>
       </div>
 
-      {/* Expandable tree */}
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="ml-5 mt-0.5 border-l border-gray-800 pl-2 space-y-0.5 pb-1">
-
-              {/* Root files (no folder) — click takes to files page at root */}
+            <div className="ml-5 mt-0.5 border-l border-ink-300 pl-2 space-y-0.5 pb-1">
               {rootFiles.map((file) => (
                 <button
                   key={file.id}
                   onClick={() => navigate(filesBase)}
                   className={cn(
-                    'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left',
+                    'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left',
                     isFilesActive && !activeFolderInUrl
-                      ? 'text-blue-300 bg-blue-600/10'
-                      : 'text-gray-500 hover:text-gray-200 hover:bg-gray-800/60',
+                      ? 'text-brand-600 bg-brand-50'
+                      : 'text-ink-500 hover:text-ink-900 hover:bg-ink-100',
                   )}
                   title={file.file_name}
                 >
@@ -127,7 +120,6 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                 </button>
               ))}
 
-              {/* Folders */}
               {folders.map((folder) => {
                 const folderFiles = allFiles.filter((f) => f.folder_id === folder.id);
                 const isFolderExpanded = expandedFolders.has(folder.id);
@@ -135,15 +127,14 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
 
                 return (
                   <div key={folder.id}>
-                    {/* Folder row */}
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => toggleFolder(folder.id)}
-                        className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-gray-600 hover:text-gray-300 rounded transition-colors"
+                        className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-ink-500 hover:text-ink-900 rounded transition-colors"
                       >
                         <motion.span
                           animate={{ rotate: isFolderExpanded ? 90 : 0 }}
-                          transition={{ duration: 0.15 }}
+                          transition={{ duration: 0.13 }}
                           className="inline-flex"
                         >
                           <svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor">
@@ -155,45 +146,44 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                       <button
                         onClick={() => navigateToFolder(folder.id)}
                         className={cn(
-                          'flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors text-left min-w-0',
+                          'flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors text-left min-w-0',
                           isFolderActive
-                            ? 'text-amber-300 bg-amber-500/10 border border-amber-500/20'
-                            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60',
+                            ? 'text-brand-600 bg-brand-50 border border-brand-100'
+                            : 'text-ink-500 hover:text-ink-900 hover:bg-ink-100',
                         )}
                         title={folder.name}
                       >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className={cn('flex-shrink-0 transition-colors', isFolderActive || isFolderExpanded ? 'text-amber-400' : 'text-amber-500/70')}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className={cn('flex-shrink-0', isFolderActive || isFolderExpanded ? 'text-amber-500' : 'text-ink-500')}>
                           {isFolderActive || isFolderExpanded ? (
                             <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" fill="currentColor" fillOpacity=".3" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
                           ) : (
-                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" fill="currentColor" fillOpacity=".15" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" fill="currentColor" fillOpacity=".1" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
                           )}
                         </svg>
                         <span className="truncate flex-1">{folder.name}</span>
                         {folderFiles.length > 0 && (
-                          <span className="flex-shrink-0 text-[10px] text-gray-600 bg-gray-800 rounded px-1">{folderFiles.length}</span>
+                          <span className="flex-shrink-0 text-[10px] text-ink-500 bg-ink-100 rounded px-1">{folderFiles.length}</span>
                         )}
                       </button>
                     </div>
 
-                    {/* Folder contents */}
                     <AnimatePresence initial={false}>
                       {isFolderExpanded && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.15 }}
-                          className="overflow-hidden ml-3 border-l border-gray-800/60 pl-2 mt-0.5 space-y-0.5"
+                          transition={{ duration: 0.13 }}
+                          className="overflow-hidden ml-3 border-l border-ink-300 pl-2 mt-0.5 space-y-0.5"
                         >
                           {folderFiles.length === 0 ? (
-                            <p className="text-[11px] text-gray-600 px-2 py-1 italic">Empty folder</p>
+                            <p className="text-[11px] text-ink-500 px-2 py-1 italic">Empty folder</p>
                           ) : (
                             folderFiles.map((file) => (
                               <button
                                 key={file.id}
                                 onClick={() => navigate(`${filesBase}?folder=${folder.id}`)}
-                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-200 hover:bg-gray-800/60 transition-colors text-left"
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors text-left"
                                 title={file.file_name}
                               >
                                 <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={12} />
@@ -208,18 +198,17 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                 );
               })}
 
-              {/* All Files link */}
               <Link
                 to={filesBase}
                 className={cn(
-                  'flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-150',
+                  'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-150',
                   isFilesActive && !activeFolderInUrl
-                    ? 'text-blue-300 bg-blue-600/15 border border-blue-500/20'
-                    : 'text-gray-600 hover:text-gray-300 hover:bg-gray-800/60',
+                    ? 'text-brand-600 bg-brand-50 border border-brand-100'
+                    : 'text-ink-500 hover:text-ink-900 hover:bg-ink-100',
                 )}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-current">
-                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="currentColor" fillOpacity=".1"/>
+                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="currentColor" fillOpacity=".08"/>
                 </svg>
                 All Files
               </Link>
@@ -242,11 +231,11 @@ function ProjectThumb({ project }: { project: Project }) {
   }, [project.cover_image]);
 
   if (url) {
-    return <img src={url} alt="" className="w-5 h-5 object-cover rounded-md flex-shrink-0" />;
+    return <img src={url} alt="" className="w-5 h-5 object-cover rounded-sm flex-shrink-0" />;
   }
   return (
     <div className={cn(
-      'w-5 h-5 rounded-md bg-gradient-to-br flex items-center justify-center flex-shrink-0',
+      'w-5 h-5 rounded-sm bg-gradient-to-br flex items-center justify-center flex-shrink-0',
       PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray,
     )}>
       <Icon name="photo" size={10} className="text-white/60" />
@@ -273,6 +262,129 @@ const bottomNav = [
   { href: '/settings', icon: 'settings', label: 'Settings' },
 ];
 
+// ── Sidebar nav content ───────────────────────────────────────────────────────
+
+function SidebarNav({
+  isActive,
+  projects,
+  user,
+  userMenuOpen,
+  setUserMenuOpen,
+  handleSignOut,
+  onClose,
+}: {
+  isActive: (href: string) => boolean;
+  projects: Project[] | undefined;
+  user: { email?: string } | null;
+  userMenuOpen: boolean;
+  setUserMenuOpen: (v: boolean) => void;
+  handleSignOut: () => void;
+  onClose?: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-ink-300 flex-shrink-0">
+        <Link to="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
+          <div className="w-7 h-7 bg-brand-400 rounded-md flex items-center justify-center flex-shrink-0">
+            <Icon name="bolt" size={15} className="text-white" fill />
+          </div>
+          <span className="font-extrabold text-ink-900 text-base tracking-tight">aiwithrakshith.tech</span>
+        </Link>
+      </div>
+
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto overscroll-contain">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-ink-500 px-3 pt-2 pb-1.5">Menu</p>
+        {mainNav.map((item) => (
+          <Link
+            key={item.href}
+            to={item.href}
+            onClick={onClose}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150',
+              isActive(item.href)
+                ? 'bg-brand-50 text-brand-600 border border-brand-100'
+                : 'text-ink-700 hover:text-ink-900 hover:bg-ink-100',
+            )}
+          >
+            <Icon name={item.icon} size={18} className={isActive(item.href) ? 'text-brand-600' : 'text-ink-500'} fill={isActive(item.href)} />
+            {item.label}
+          </Link>
+        ))}
+
+        {projects && projects.length > 0 && (
+          <>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-ink-500 px-3 pt-4 pb-1.5">Projects</p>
+            <div className="space-y-1">
+              {projects.map((project) => (
+                <SidebarProjectTree
+                  key={project.id}
+                  project={project}
+                  isActive={isActive}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </nav>
+
+      <div className="p-3 border-t border-ink-300 flex-shrink-0">
+        <div className="relative">
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-ink-100 transition-colors text-left"
+          >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+              {user?.email?.[0]?.toUpperCase() ?? 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-900 truncate">{user?.email}</p>
+            </div>
+            <Icon
+              name="expand_less"
+              size={16}
+              className={cn('text-ink-500 transition-transform duration-200 flex-shrink-0', !userMenuOpen && 'rotate-180')}
+            />
+          </button>
+
+          <AnimatePresence>
+            {userMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                transition={{ duration: 0.13 }}
+                className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-ink-300 rounded-lg shadow-card-hover overflow-hidden z-50"
+              >
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-sm text-danger hover:bg-red-50 transition-colors font-medium"
+                >
+                  <Icon name="logout" size={16} className="text-danger" />
+                  Sign out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="px-4 py-2.5 border-t border-ink-300/60 flex-shrink-0">
+        <p className="text-[10px] text-ink-500 text-center leading-relaxed">
+          Developed by{' '}
+          <a
+            href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-500 hover:text-brand-600 font-semibold transition-colors"
+          >
+            @aiwithrakshith
+          </a>
+        </p>
+      </div>
+    </>
+  );
+}
+
 // ── AppShell ──────────────────────────────────────────────────────────────────
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -293,114 +405,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) =>
     location.pathname === href || location.pathname.startsWith(href + '/');
 
-  const NavContent = () => (
-    <>
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-800 flex-shrink-0">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Icon name="lock" size={16} className="text-white" weight={400} fill />
-        </div>
-        <span className="font-bold text-white text-lg">aiwithrakshith.tech</span>
-      </div>
-
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto overscroll-contain">
-        {mainNav.map((item) => (
-          <Link
-            key={item.href}
-            to={item.href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-              isActive(item.href)
-                ? 'bg-blue-600/20 text-blue-300 border border-blue-500/20'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800',
-            )}
-          >
-            <Icon name={item.icon} size={20} fill={isActive(item.href)} />
-            {item.label}
-          </Link>
-        ))}
-
-        {projects && projects.length > 0 && (
-          <>
-            <div className="pt-5 pb-1.5 px-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Projects</p>
-            </div>
-            <div className="space-y-1">
-              {projects.map((project) => (
-                <SidebarProjectTree
-                  key={project.id}
-                  project={project}
-                  isActive={isActive}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </nav>
-
-      <div className="p-3 border-t border-gray-800 flex-shrink-0">
-        <div className="relative">
-          <button
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-800 transition-colors text-left"
-          >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-              {user?.email?.[0]?.toUpperCase() ?? 'U'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.email}</p>
-            </div>
-            <Icon
-              name="expand_less"
-              size={16}
-              className={cn('text-gray-400 transition-transform duration-200 flex-shrink-0', !userMenuOpen && 'rotate-180')}
-            />
-          </button>
-
-          <AnimatePresence>
-            {userMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full left-0 right-0 mb-1 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden z-50"
-              >
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-gray-700/60 transition-colors"
-                >
-                  <Icon name="logout" size={16} />
-                  Sign out
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Developer credit */}
-      <div className="px-4 py-2.5 border-t border-gray-800/60 flex-shrink-0">
-        <p className="text-[10px] text-gray-600 text-center leading-relaxed">
-          Developed by{' '}
-          <a
-            href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-pink-400/80 hover:text-pink-300 font-semibold transition-colors"
-          >
-            @aiwithrakshith
-          </a>
-        </p>
-      </div>
-    </>
-  );
+  const sidebarProps = {
+    isActive,
+    projects,
+    user,
+    userMenuOpen,
+    setUserMenuOpen,
+    handleSignOut,
+  };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
+    <div className="min-h-screen bg-white flex overflow-x-hidden">
       <FollowPopup />
+
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-gray-900 border-r border-gray-800 fixed inset-y-0 left-0 z-30">
-        <NavContent />
+      <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-ink-300 fixed inset-y-0 left-0 z-30">
+        <SidebarNav {...sidebarProps} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -411,23 +431,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
               initial={{ x: -288 }}
               animate={{ x: 0 }}
               exit={{ x: -288 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed inset-y-0 left-0 w-72 bg-gray-900 border-r border-gray-800 z-50 flex flex-col lg:hidden"
+              transition={{ type: 'spring', damping: 32, stiffness: 260 }}
+              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-50 flex flex-col lg:hidden shadow-2xl"
             >
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+                className="absolute top-4 right-4 p-2 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
+                aria-label="Close menu"
               >
                 <Icon name="close" size={18} />
               </button>
-              <NavContent />
+              <SidebarNav {...sidebarProps} onClose={() => setSidebarOpen(false)} />
             </motion.aside>
           </>
         )}
@@ -435,20 +456,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className="flex-1 lg:ml-64 min-w-0 w-full">
-        <header className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 h-14 bg-gray-900/95 backdrop-blur-md border-b border-gray-800">
+        {/* Mobile top bar */}
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 h-14 bg-white border-b border-ink-300">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 -ml-1 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+            className="p-2 -ml-1 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
             aria-label="Open menu"
           >
             <Icon name="menu" size={22} />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-              <Icon name="lock" size={13} className="text-white" weight={400} fill />
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-brand-400 rounded-md flex items-center justify-center">
+              <Icon name="bolt" size={13} className="text-white" fill />
             </div>
-            <span className="font-bold text-white">aiwithrakshith.tech</span>
-          </div>
+            <span className="font-extrabold text-ink-900 text-sm">aiwithrakshith.tech</span>
+          </Link>
           <div className="w-9" />
         </header>
 
@@ -456,8 +478,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
+        {/* Mobile bottom nav */}
         <nav
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 flex"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-ink-300 flex"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           {bottomNav.map((item) => {
@@ -468,14 +491,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 to={item.href}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center pt-2.5 pb-2 gap-1 text-[11px] font-medium transition-colors min-h-[52px]',
-                  active ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300',
+                  active ? 'text-brand-400' : 'text-ink-500 hover:text-ink-900',
                 )}
               >
                 <motion.div
-                  animate={active ? { scale: 1.15 } : { scale: 1 }}
+                  animate={active ? { scale: 1.1 } : { scale: 1 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 >
-                  <Icon name={item.icon} size={22} fill={active} />
+                  <Icon name={item.icon} size={22} fill={active} className={active ? 'text-brand-400' : 'text-ink-500'} />
                 </motion.div>
                 <span>{item.label}</span>
               </Link>

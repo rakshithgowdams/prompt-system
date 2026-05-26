@@ -23,9 +23,9 @@ const VIMEO_EMBED = (url: string) => {
 };
 
 const LEVEL_COLORS: Record<string, string> = {
-  beginner: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
-  intermediate: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
-  advanced: 'bg-red-500/15 text-red-300 border-red-500/25',
+  beginner: 'bg-green-50 text-green-700 border-green-200',
+  intermediate: 'bg-amber-50 text-amber-700 border-amber-200',
+  advanced: 'bg-red-50 text-danger border-red-200',
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -94,20 +94,20 @@ function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; share
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ink-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="bg-white border border-ink-300 rounded-lg overflow-hidden shadow-2xl">
           <div className="h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
           <div className="p-7 text-center">
-            <div className="w-14 h-14 bg-amber-500/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 bg-amber-50 rounded-md flex items-center justify-center mx-auto mb-4">
               <Icon name="lock" size={26} className="text-amber-400" />
             </div>
-            <h1 className="text-xl font-bold text-white mb-1">{shareName || 'Protected Course'}</h1>
-            <p className="text-gray-400 text-sm mb-6">This course is password protected. Enter the password to access it.</p>
+            <h1 className="text-xl font-bold text-ink-900 mb-1">{shareName || 'Protected Course'}</h1>
+            <p className="text-ink-500 text-sm mb-6">This course is password protected. Enter the password to access it.</p>
 
             <form onSubmit={handleSubmit} className="space-y-3 text-left">
               <div className="relative">
@@ -118,14 +118,14 @@ function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; share
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="Enter password"
                   className={cn(
-                    'w-full h-10 pl-3 pr-9 rounded-xl bg-gray-800 border text-white text-sm focus:outline-none focus:ring-2 transition-colors placeholder-gray-500',
-                    error ? 'border-red-500/50 focus:ring-red-500/30' : 'border-gray-700 focus:ring-amber-500/40',
+                    'w-full h-10 pl-3 pr-9 rounded-xl bg-ink-100 border text-ink-900 text-sm focus:outline-none focus:ring-2 transition-colors placeholder-ink-400',
+                    error ? 'border-red-500/50 focus:ring-red-500/30' : 'border-ink-300 focus:ring-amber-300',
                   )}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-900 transition-colors"
                 >
                   <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={14} />
                 </button>
@@ -138,9 +138,9 @@ function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; share
             </form>
           </div>
         </div>
-        <p className="text-center text-xs text-gray-600 mt-4">
+        <p className="text-center text-xs text-ink-400 mt-4">
           Shared via{' '}
-          <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors font-medium">aiwithrakshith.tech</a>
+          <a href="/" className="text-ink-500 hover:text-ink-700 transition-colors font-medium">aiwithrakshith.tech</a>
         </p>
       </motion.div>
     </div>
@@ -171,7 +171,7 @@ function LessonPreview({ lesson }: { lesson: SharedLesson }) {
         </div>
       )}
       {lesson.content && (
-        <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+        <div className="prose prose-sm max-w-none text-ink-700 whitespace-pre-wrap text-sm leading-relaxed">
           {lesson.content}
         </div>
       )}
@@ -267,13 +267,13 @@ export function CourseSharePage() {
   // ── Loading ──
   if (state.status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-ink-50 flex items-center justify-center">
         <div className="text-center space-y-3">
-          <svg className="h-8 w-8 animate-spin text-blue-400 mx-auto" fill="none" viewBox="0 0 24 24">
+          <svg className="h-8 w-8 animate-spin text-brand-400 mx-auto" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <p className="text-gray-500 text-sm">Loading course...</p>
+          <p className="text-ink-500 text-sm">Loading course...</p>
         </div>
       </div>
     );
@@ -287,14 +287,14 @@ export function CourseSharePage() {
   // ── Error ──
   if (state.status === 'error') {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-ink-50 flex items-center justify-center p-4">
         <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Icon name="link_off" size={28} className="text-gray-500" />
+          <div className="w-16 h-16 bg-ink-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Icon name="link_off" size={28} className="text-ink-500" />
           </div>
-          <h1 className="text-xl font-bold text-white mb-2">Link Unavailable</h1>
-          <p className="text-gray-400 text-sm mb-6">{state.message}</p>
-          <button onClick={() => navigate('/')} className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium transition-colors">
+          <h1 className="text-xl font-bold text-ink-900 mb-2">Link Unavailable</h1>
+          <p className="text-ink-500 text-sm mb-6">{state.message}</p>
+          <button onClick={() => navigate('/')} className="px-5 py-2.5 rounded-md bg-ink-100 hover:bg-ink-200 text-ink-900 text-sm font-medium transition-colors">
             Go to aiwithrakshith.tech
           </button>
         </div>
@@ -308,28 +308,28 @@ export function CourseSharePage() {
   const totalLessons = lessons.length;
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-ink-50 flex flex-col">
 
       {/* Top bar */}
-      <div className="sticky top-0 z-20 bg-gray-900/95 backdrop-blur-md border-b border-gray-800">
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-ink-300">
         <div className="flex items-center justify-between px-4 lg:px-8 py-3 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 bg-brand-400 rounded-md flex items-center justify-center flex-shrink-0">
               <Icon name="school" size={16} className="text-white" fill />
             </div>
             <div className="min-w-0">
-              <span className="text-xs text-gray-500">Shared course</span>
-              <p className="text-sm font-semibold text-white truncate max-w-[200px] lg:max-w-xs">{course.title}</p>
+              <span className="text-xs text-ink-500">Shared course</span>
+              <p className="text-sm font-semibold text-ink-900 truncate max-w-[200px] lg:max-w-xs">{course.title}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="hidden sm:flex items-center gap-1.5 text-xs text-ink-400">
               <Icon name="visibility" size={12} />
               {share.view_count} views
             </span>
             <button
               onClick={() => navigate('/')}
-              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors"
+              className="px-3 py-1.5 rounded-md bg-brand-400 hover:bg-brand-500 text-white text-xs font-semibold transition-colors"
             >
               Sign up free
             </button>
@@ -341,7 +341,7 @@ export function CourseSharePage() {
 
         {/* ── Left: Course info + curriculum ── */}
         <div className={cn(
-          'flex flex-col overflow-y-auto border-r border-gray-800',
+          'flex flex-col overflow-y-auto border-r border-ink-300',
           activeLesson ? 'hidden lg:flex lg:w-80 xl:w-96 flex-shrink-0' : 'flex-1',
         )}>
 
@@ -350,11 +350,11 @@ export function CourseSharePage() {
             {course.cover_url ? (
               <div className="aspect-video overflow-hidden">
                 <img src={course.cover_url} alt={course.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/40 to-transparent" />
               </div>
             ) : (
-              <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                <Icon name="school" size={48} className="text-gray-600" />
+              <div className="aspect-video bg-gradient-to-br from-ink-100 to-ink-200 flex items-center justify-center">
+                <Icon name="school" size={48} className="text-ink-400" />
               </div>
             )}
           </div>
@@ -365,18 +365,18 @@ export function CourseSharePage() {
               <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full border', LEVEL_COLORS[course.level] ?? LEVEL_COLORS.beginner)}>
                 {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/25">FREE</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 border border-gray-600">{course.category}</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-400 border border-brand-100">FREE</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-ink-100 text-ink-700 border border-ink-300">{course.category}</span>
             </div>
 
             {/* Title & description */}
             <div>
-              <h1 className="text-xl font-bold text-white leading-snug mb-2">{course.title}</h1>
-              <p className="text-gray-400 text-sm leading-relaxed">{course.short_description || course.description}</p>
+              <h1 className="text-xl font-bold text-ink-900 leading-snug mb-2">{course.title}</h1>
+              <p className="text-ink-500 text-sm leading-relaxed">{course.short_description || course.description}</p>
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+            <div className="flex flex-wrap gap-4 text-xs text-ink-500">
               <span className="flex items-center gap-1.5"><Icon name="menu_book" size={13} />{totalLessons} lessons</span>
               {course.total_duration_minutes > 0 && (
                 <span className="flex items-center gap-1.5"><Icon name="schedule" size={13} />{course.total_duration_minutes}m total</span>
@@ -385,12 +385,12 @@ export function CourseSharePage() {
             </div>
 
             {/* CTA */}
-            <div className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-4 text-center">
-              <p className="text-sm font-semibold text-white mb-1">Want full access?</p>
-              <p className="text-xs text-gray-400 mb-3">Sign up free to enroll and track your progress.</p>
+            <div className="bg-brand-50 border border-brand-100 rounded-md p-4 text-center">
+              <p className="text-sm font-semibold text-ink-900 mb-1">Want full access?</p>
+              <p className="text-xs text-ink-500 mb-3">Sign up free to enroll and track your progress.</p>
               <button
                 onClick={() => navigate('/signup')}
-                className="w-full h-9 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
+                className="w-full h-9 rounded-md bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
               >
                 Enroll for Free
               </button>
@@ -399,10 +399,10 @@ export function CourseSharePage() {
             {/* What you'll learn */}
             {course.what_you_learn.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-300 uppercase tracking-wide mb-2">What you'll learn</p>
+                <p className="text-xs font-semibold text-ink-700 uppercase tracking-wide mb-2">What you'll learn</p>
                 <ul className="space-y-1.5">
                   {course.what_you_learn.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                    <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
                       <Icon name="check_circle" size={14} className="text-emerald-400 flex-shrink-0 mt-0.5" fill />
                       {item}
                     </li>
@@ -414,11 +414,11 @@ export function CourseSharePage() {
             {/* Requirements */}
             {course.requirements.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-300 uppercase tracking-wide mb-2">Requirements</p>
+                <p className="text-xs font-semibold text-ink-700 uppercase tracking-wide mb-2">Requirements</p>
                 <ul className="space-y-1.5">
                   {course.requirements.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
-                      <Icon name="arrow_right" size={14} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                    <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
+                      <Icon name="arrow_right" size={14} className="text-ink-400 flex-shrink-0 mt-0.5" />
                       {item}
                     </li>
                   ))}
@@ -428,7 +428,7 @@ export function CourseSharePage() {
 
             {/* Curriculum */}
             <div>
-              <p className="text-xs font-semibold text-gray-300 uppercase tracking-wide mb-2">
+              <p className="text-xs font-semibold text-ink-700 uppercase tracking-wide mb-2">
                 Curriculum · {previewLessons.length} free preview{previewLessons.length !== 1 ? 's' : ''}
               </p>
               <div className="space-y-1.5">
@@ -439,20 +439,20 @@ export function CourseSharePage() {
                   const isExpanded = expandedSections.has(section.id);
 
                   return (
-                    <div key={section.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                    <div key={section.id} className="bg-white border border-ink-300 rounded-md overflow-hidden">
                       <button
                         onClick={() => setExpandedSections((prev) => {
                           const next = new Set(prev);
                           if (next.has(section.id)) next.delete(section.id); else next.add(section.id);
                           return next;
                         })}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-800/50 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-ink-100 transition-colors"
                       >
-                        <motion.span animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.15 }} className="inline-flex text-gray-500">
+                        <motion.span animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.15 }} className="inline-flex text-ink-400">
                           <Icon name="chevron_right" size={15} />
                         </motion.span>
-                        <span className="text-sm font-medium text-gray-200 flex-1">{section.title}</span>
-                        <span className="text-[10px] text-gray-500">{sectionLessons.length}</span>
+                        <span className="text-sm font-medium text-ink-900 flex-1">{section.title}</span>
+                        <span className="text-[10px] text-ink-400">{sectionLessons.length}</span>
                       </button>
 
                       <AnimatePresence initial={false}>
@@ -461,7 +461,7 @@ export function CourseSharePage() {
                             initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
                             transition={{ duration: 0.2 }} className="overflow-hidden"
                           >
-                            <div className="border-t border-gray-800 divide-y divide-gray-800/50">
+                            <div className="border-t border-ink-200 divide-y divide-ink-100">
                               {sectionLessons.map((lesson) => {
                                 const isActive = activeLesson?.id === lesson.id;
                                 return (
@@ -470,18 +470,18 @@ export function CourseSharePage() {
                                     onClick={() => lesson.is_preview ? setActiveLesson(lesson) : null}
                                     className={cn(
                                       'w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
-                                      lesson.is_preview ? 'hover:bg-gray-800/50 cursor-pointer' : 'cursor-default opacity-60',
-                                      isActive && 'bg-blue-600/10 border-l-2 border-l-blue-500',
+                                      lesson.is_preview ? 'hover:bg-ink-100 cursor-pointer' : 'cursor-default opacity-60',
+                                      isActive && 'bg-brand-50 border-l-2 border-l-brand-400',
                                     )}
                                   >
                                     <div className={cn(
                                       'w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0',
                                       lesson.is_preview
-                                        ? lesson.lesson_type === 'video' ? 'bg-blue-500/15 text-blue-400'
-                                          : lesson.lesson_type === 'image' ? 'bg-emerald-500/15 text-emerald-400'
-                                          : lesson.lesson_type === 'text' ? 'bg-amber-500/15 text-amber-400'
-                                          : 'bg-gray-700 text-gray-400'
-                                        : 'bg-gray-800 text-gray-600',
+                                        ? lesson.lesson_type === 'video' ? 'bg-brand-50 text-brand-400'
+                                          : lesson.lesson_type === 'image' ? 'bg-green-50 text-success'
+                                          : lesson.lesson_type === 'text' ? 'bg-amber-50 text-amber-600'
+                                          : 'bg-ink-200 text-ink-400'
+                                        : 'bg-ink-100 text-ink-400',
                                     )}>
                                       <Icon
                                         name={
@@ -494,12 +494,12 @@ export function CourseSharePage() {
                                         fill
                                       />
                                     </div>
-                                    <span className="text-xs text-gray-300 truncate flex-1">{lesson.title}</span>
+                                    <span className="text-xs text-ink-700 truncate flex-1">{lesson.title}</span>
                                     {lesson.is_preview && (
-                                      <span className="text-[9px] text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded flex-shrink-0">PREVIEW</span>
+                                      <span className="text-[9px] text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded flex-shrink-0">PREVIEW</span>
                                     )}
                                     {lesson.video_duration_minutes > 0 && (
-                                      <span className="text-[10px] text-gray-600 flex-shrink-0">{lesson.video_duration_minutes}m</span>
+                                      <span className="text-[10px] text-ink-400 flex-shrink-0">{lesson.video_duration_minutes}m</span>
                                     )}
                                   </button>
                                 );
@@ -516,10 +516,10 @@ export function CourseSharePage() {
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 border-t border-gray-800 mt-auto">
-            <p className="text-[11px] text-gray-600 text-center">
+          <div className="px-5 py-4 border-t border-ink-200 mt-auto">
+            <p className="text-[11px] text-ink-400 text-center">
               Shared via{' '}
-              <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors font-medium">aiwithrakshith.tech</a>
+              <a href="/" className="text-ink-500 hover:text-ink-700 transition-colors font-medium">aiwithrakshith.tech</a>
               {' '}· Developed by{' '}
               <a
                 href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
@@ -537,10 +537,10 @@ export function CourseSharePage() {
         {activeLesson ? (
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Mobile back button */}
-            <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-gray-800 flex-shrink-0">
+            <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-ink-200 flex-shrink-0">
               <button
                 onClick={() => setActiveLesson(null)}
-                className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 transition-colors"
               >
                 <Icon name="arrow_back" size={16} />
                 Back to course
@@ -552,11 +552,11 @@ export function CourseSharePage() {
                 {/* Lesson header */}
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded font-medium">Free Preview</span>
+                    <span className="text-xs text-teal-600 bg-teal-50 px-2 py-0.5 rounded font-medium">Free Preview</span>
                   </div>
-                  <h2 className="text-xl font-bold text-white">{activeLesson.title}</h2>
+                  <h2 className="text-xl font-bold text-ink-900">{activeLesson.title}</h2>
                   {activeLesson.description && (
-                    <p className="text-gray-400 text-sm mt-1">{activeLesson.description}</p>
+                    <p className="text-ink-500 text-sm mt-1">{activeLesson.description}</p>
                   )}
                 </div>
 
@@ -564,24 +564,24 @@ export function CourseSharePage() {
                 <LessonPreview lesson={activeLesson} />
 
                 {/* Gate banner */}
-                <div className="bg-gradient-to-r from-blue-600/10 to-teal-600/10 border border-blue-500/20 rounded-2xl p-5">
+                <div className="bg-brand-50 border border-brand-100 rounded-lg p-5">
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Icon name="school" size={20} className="text-blue-400" fill />
+                    <div className="w-10 h-10 bg-brand-100 rounded-md flex items-center justify-center flex-shrink-0">
+                      <Icon name="school" size={20} className="text-brand-400" fill />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-white mb-1">Enjoying this preview?</p>
-                      <p className="text-sm text-gray-400 mb-3">Sign up free to unlock all lessons, track your progress, and earn a certificate.</p>
+                      <p className="font-semibold text-ink-900 mb-1">Enjoying this preview?</p>
+                      <p className="text-sm text-ink-500 mb-3">Sign up free to unlock all lessons, track your progress, and earn a certificate.</p>
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => navigate('/signup')}
-                          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
+                          className="px-4 py-2 rounded-md bg-brand-400 hover:bg-brand-500 text-white text-sm font-semibold transition-colors"
                         >
                           Enroll for Free
                         </button>
                         <button
                           onClick={() => navigate('/login')}
-                          className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium transition-colors"
+                          className="px-4 py-2 rounded-md bg-ink-100 hover:bg-ink-200 text-ink-900 text-sm font-medium transition-colors"
                         >
                           Sign in
                         </button>
@@ -593,20 +593,20 @@ export function CourseSharePage() {
                 {/* Other preview lessons */}
                 {previewLessons.length > 1 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">More free previews</p>
+                    <p className="text-xs font-semibold text-ink-600 uppercase tracking-wide mb-2">More free previews</p>
                     <div className="space-y-1.5">
                       {previewLessons.filter((l) => l.id !== activeLesson.id).map((lesson) => (
                         <button
                           key={lesson.id}
                           onClick={() => setActiveLesson(lesson)}
-                          className="w-full flex items-center gap-3 px-4 py-3 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 rounded-xl transition-colors text-left"
+                          className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-ink-50 border border-ink-300 hover:border-ink-500 rounded-md transition-colors text-left"
                         >
-                          <div className="w-7 h-7 bg-blue-500/15 text-blue-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="w-7 h-7 bg-brand-50 text-brand-400 rounded-md flex items-center justify-center flex-shrink-0">
                             <Icon name="play_circle" size={14} fill />
                           </div>
-                          <span className="text-sm text-gray-300">{lesson.title}</span>
+                          <span className="text-sm text-ink-700">{lesson.title}</span>
                           {lesson.video_duration_minutes > 0 && (
-                            <span className="ml-auto text-xs text-gray-500">{lesson.video_duration_minutes}m</span>
+                            <span className="ml-auto text-xs text-ink-400">{lesson.video_duration_minutes}m</span>
                           )}
                         </button>
                       ))}

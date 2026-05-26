@@ -21,25 +21,20 @@ function FileTypeIcon({ mimeType, size = 18 }: { mimeType: string | null; size?:
   if (t.startsWith('image/')) return <Icon name="image" size={size} />;
   if (t.startsWith('video/')) return <Icon name="videocam" size={size} />;
   if (t.startsWith('audio/')) return <Icon name="music_note" size={size} />;
-  if (
-    t === 'application/pdf' ||
-    t.includes('word') ||
-    t.includes('excel') ||
-    t.includes('presentation') ||
-    t.startsWith('text/')
-  ) return <Icon name="description" size={size} />;
+  if (t === 'application/pdf' || t.includes('word') || t.includes('excel') || t.includes('presentation') || t.startsWith('text/'))
+    return <Icon name="description" size={size} />;
   return <Icon name="attach_file" size={size} />;
 }
 
 function fileTypeColor(mimeType: string | null): string {
   const t = mimeType ?? '';
-  if (t.startsWith('image/')) return 'text-emerald-400 bg-emerald-400/10';
-  if (t.startsWith('video/')) return 'text-blue-400 bg-blue-400/10';
-  if (t.startsWith('audio/')) return 'text-pink-400 bg-pink-400/10';
-  if (t === 'application/pdf') return 'text-red-400 bg-red-400/10';
-  if (t.includes('word') || t.includes('document')) return 'text-sky-400 bg-sky-400/10';
-  if (t.includes('excel') || t.includes('spreadsheet')) return 'text-green-400 bg-green-400/10';
-  return 'text-gray-400 bg-gray-700';
+  if (t.startsWith('image/')) return 'text-success bg-green-50';
+  if (t.startsWith('video/')) return 'text-brand-400 bg-brand-50';
+  if (t.startsWith('audio/')) return 'text-pink-500 bg-pink-50';
+  if (t === 'application/pdf') return 'text-danger bg-red-50';
+  if (t.includes('word') || t.includes('document')) return 'text-blue-500 bg-blue-50';
+  if (t.includes('excel') || t.includes('spreadsheet')) return 'text-green-500 bg-green-50';
+  return 'text-ink-500 bg-ink-100';
 }
 
 export function PromptDetailPage() {
@@ -126,22 +121,22 @@ export function PromptDetailPage() {
   }
 
   if (!prompt) {
-    return <div className="p-8 text-center text-gray-400">Prompt not found.</div>;
+    return <div className="p-8 text-center text-ink-500">Prompt not found.</div>;
   }
 
   return (
     <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3">
+      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }} className="flex items-start gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="mt-1 p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors flex-shrink-0"
+          className="mt-1 p-2 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
         >
           <Icon name="arrow_back" size={20} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl lg:text-2xl font-bold text-white">{prompt.title}</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <h1 className="text-xl lg:text-2xl font-extrabold text-ink-900">{prompt.title}</h1>
+          <p className="text-sm text-ink-500 mt-1">
             Created {formatDate(prompt.created_at)} · Updated {formatDate(prompt.updated_at)}
           </p>
         </div>
@@ -167,46 +162,46 @@ export function PromptDetailPage() {
       </div>
 
       {/* Prompt text */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-800/50">
-          <span className="text-sm font-medium text-gray-300">Prompt</span>
+      <div className="bg-white border border-ink-300 rounded-lg overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-ink-300 bg-ink-100">
+          <span className="text-sm font-medium text-ink-700">Prompt</span>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-gray-700"
+            className="flex items-center gap-1.5 text-xs text-ink-500 hover:text-ink-900 transition-colors px-2 py-1 rounded-md hover:bg-white"
           >
-            <Icon name={copied ? 'check' : 'content_copy'} size={13} className={copied ? 'text-green-400' : ''} />
+            <Icon name={copied ? 'check' : 'content_copy'} size={13} className={copied ? 'text-success' : ''} />
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
-        <pre className="p-4 text-sm text-gray-200 whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto">
+        <pre className="p-4 text-sm text-ink-900 whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto bg-ink-50">
           {prompt.prompt_text}
         </pre>
       </div>
 
       {/* Notes */}
       {prompt.notes && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+        <div className="bg-white border border-ink-300 rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-ink-700 mb-2 flex items-center gap-2">
             <Icon name="sticky_note_2" size={15} />
             Notes
           </h3>
-          <p className="text-sm text-gray-400 whitespace-pre-wrap leading-relaxed">{prompt.notes}</p>
+          <p className="text-sm text-ink-500 whitespace-pre-wrap leading-relaxed">{prompt.notes}</p>
         </div>
       )}
 
       {/* Image gallery */}
       {images.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-ink-700 flex items-center gap-2 mb-3">
             <Icon name="photo_library" size={15} />
             Images
-            <span className="text-xs font-normal text-gray-500 ml-1">({images.length})</span>
+            <span className="text-xs font-normal text-ink-500 ml-1">({images.length})</span>
           </h3>
           <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3">
             {images.map((img, i) => (
               <div
                 key={img.id}
-                className="group relative aspect-square rounded-xl overflow-hidden bg-gray-800 cursor-pointer"
+                className="group relative aspect-square rounded-md overflow-hidden bg-ink-100 border border-ink-300 cursor-pointer"
                 onClick={() => setLightboxIndex(i)}
               >
                 <img
@@ -219,7 +214,7 @@ export function PromptDetailPage() {
                   <p className="text-xs text-white/90 truncate max-w-[70%]">{img.file_name}</p>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDownloadFile(img); }}
-                    className="bg-black/60 p-1.5 rounded-lg text-white hover:bg-black/80 transition-colors"
+                    className="bg-black/60 p-1.5 rounded-md text-white hover:bg-black/80 transition-colors"
                     title="Download"
                   >
                     <Icon name="download" size={13} />
@@ -234,29 +229,22 @@ export function PromptDetailPage() {
       {/* Videos */}
       {videos.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-ink-700 flex items-center gap-2">
             <Icon name="smart_display" size={15} />
             Videos
-            <span className="text-xs font-normal text-gray-500 ml-1">({videos.length})</span>
+            <span className="text-xs font-normal text-ink-500 ml-1">({videos.length})</span>
           </h3>
           {videos.map((video) => (
-            <div key={video.id} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-              <video
-                src={video.signedUrl}
-                controls
-                preload="metadata"
-                className="w-full max-h-72 sm:max-h-96"
-              />
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800">
+            <div key={video.id} className="bg-white border border-ink-300 rounded-lg overflow-hidden">
+              <video src={video.signedUrl} controls preload="metadata" className="w-full max-h-72 sm:max-h-96" />
+              <div className="flex items-center justify-between px-4 py-3 border-t border-ink-300">
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-200 truncate">{video.file_name}</p>
-                  {video.file_size && (
-                    <p className="text-xs text-gray-500">{formatFileSize(video.file_size)}</p>
-                  )}
+                  <p className="text-sm text-ink-900 truncate">{video.file_name}</p>
+                  {video.file_size && <p className="text-xs text-ink-500">{formatFileSize(video.file_size)}</p>}
                 </div>
                 <button
                   onClick={() => handleDownloadFile(video)}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 flex-shrink-0 ml-3"
+                  className="flex items-center gap-1.5 text-xs text-ink-500 hover:text-ink-900 transition-colors px-3 py-1.5 rounded-md hover:bg-ink-100 flex-shrink-0 ml-3"
                 >
                   <Icon name="download" size={13} />
                   Download
@@ -270,33 +258,30 @@ export function PromptDetailPage() {
       {/* Documents, Audio, Other files */}
       {others.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-ink-700 flex items-center gap-2">
             <Icon name="folder_open" size={15} />
             Files
-            <span className="text-xs font-normal text-gray-500 ml-1">({others.length})</span>
+            <span className="text-xs font-normal text-ink-500 ml-1">({others.length})</span>
           </h3>
           <div className="space-y-2">
             {others.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl hover:border-gray-700 transition-colors"
+                className="flex items-center gap-3 p-3 bg-white border border-ink-300 rounded-md hover:border-ink-500 transition-colors"
               >
-                <div className={cn(
-                  'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                  fileTypeColor(file.mime_type),
-                )}>
+                <div className={cn('w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0', fileTypeColor(file.mime_type))}>
                   <FileTypeIcon mimeType={file.mime_type} size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-200 truncate">{file.file_name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-ink-900 truncate">{file.file_name}</p>
+                  <p className="text-xs text-ink-500">
                     {file.mime_type ?? file.file_type}
                     {file.file_size ? ` · ${formatFileSize(file.file_size)}` : ''}
                   </p>
                 </div>
                 <button
                   onClick={() => handleDownloadFile(file)}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800 flex-shrink-0"
+                  className="flex items-center gap-1.5 text-xs text-ink-500 hover:text-ink-900 transition-colors px-3 py-1.5 rounded-md hover:bg-ink-100 flex-shrink-0"
                 >
                   <Icon name="download" size={13} />
                   Download
@@ -309,10 +294,10 @@ export function PromptDetailPage() {
 
       {/* Download all ZIP */}
       {mediaFiles.length > 0 && (
-        <div className="border border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="border border-ink-300 rounded-lg p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-white">Download All</p>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-sm font-medium text-ink-900">Download All</p>
+            <p className="text-xs text-ink-500 mt-0.5">
               Prompt text + {mediaFiles.length} attachment{mediaFiles.length !== 1 ? 's' : ''} as ZIP
             </p>
           </div>
@@ -328,7 +313,6 @@ export function PromptDetailPage() {
         <Lightbox images={images} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
       )}
 
-      {/* Delete confirm */}
       <ConfirmModal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}

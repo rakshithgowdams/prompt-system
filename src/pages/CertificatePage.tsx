@@ -29,14 +29,14 @@ export function CertificatePage() {
 
   if (!course || !certificate) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-white flex items-center justify-center p-8">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-gray-800/60 rounded-2xl flex items-center justify-center mx-auto">
-            <Icon name="workspace_premium" size={28} className="text-gray-600" />
+          <div className="w-16 h-16 bg-ink-100 rounded-lg flex items-center justify-center mx-auto">
+            <Icon name="workspace_premium" size={28} className="text-ink-300" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white mb-1">No Certificate Yet</h2>
-            <p className="text-gray-400 text-sm">Complete all lessons to earn your certificate.</p>
+            <h2 className="text-lg font-semibold text-ink-900 mb-1">No Certificate Yet</h2>
+            <p className="text-ink-500 text-sm">Complete all lessons to earn your certificate.</p>
           </div>
           <Button onClick={() => navigate(`/courses/${courseId}/learn`)}>
             <Icon name="play_circle" size={15} />
@@ -48,17 +48,17 @@ export function CertificatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 print:bg-white">
+    <div className="min-h-screen bg-white print:bg-white">
       {/* Top bar — hidden on print */}
-      <div className="print:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-gray-900/95 backdrop-blur-md border-b border-gray-800">
+      <div className="print:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white/95 backdrop-blur-md border-b border-ink-300">
         <button onClick={() => navigate(`/courses/${courseId}/learn`)}
-          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors">
+          className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors">
           <Icon name="arrow_back" size={18} />
         </button>
-        <span className="text-sm font-semibold text-white">Certificate of Completion</span>
+        <span className="text-sm font-semibold text-ink-900">Certificate of Completion</span>
         <div className="flex items-center gap-2">
           <button onClick={handlePrint} disabled={printing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-ink-100 hover:bg-ink-100 text-ink-700 hover:text-ink-900 text-xs font-medium border border-ink-300 transition-colors">
             <Icon name="print" size={14} />
             Print
           </button>
@@ -76,12 +76,12 @@ export function CertificatePage() {
           style={{ aspectRatio: '1.414/1' }}
         >
           {/* Certificate card */}
-          <div className="relative w-full h-full bg-white rounded-3xl print:rounded-none overflow-hidden shadow-2xl shadow-black/40 print:shadow-none flex flex-col items-center justify-between p-8 lg:p-12 print:p-16"
+          <div className="relative w-full h-full bg-white rounded-lg print:rounded-none overflow-hidden shadow-2xl shadow-black/40 print:shadow-none flex flex-col items-center justify-between p-8 lg:p-12 print:p-16"
             style={{ minHeight: '420px' }}>
 
             {/* Decorative border */}
-            <div className="absolute inset-3 print:inset-5 border-2 border-amber-400/40 rounded-2xl print:rounded-none pointer-events-none" />
-            <div className="absolute inset-5 print:inset-8 border border-amber-300/20 rounded-xl print:rounded-none pointer-events-none" />
+            <div className="absolute inset-3 print:inset-5 border-2 border-amber-400/40 rounded-lg print:rounded-none pointer-events-none" />
+            <div className="absolute inset-5 print:inset-8 border border-amber-300/20 rounded-md print:rounded-none pointer-events-none" />
 
             {/* Corner ornaments */}
             {['top-3 left-3', 'top-3 right-3 rotate-90', 'bottom-3 right-3 rotate-180', 'bottom-3 left-3 -rotate-90'].map((pos, i) => (
@@ -111,52 +111,52 @@ export function CertificatePage() {
               </div>
 
               {/* This is to certify */}
-              <p className="text-sm text-gray-400 font-medium tracking-wide mb-3">This is to certify that</p>
+              <p className="text-sm text-ink-500 font-medium tracking-wide mb-3">This is to certify that</p>
 
               {/* Student name */}
               <div className="mb-3">
-                <h1 className="text-3xl lg:text-5xl font-bold text-gray-800 mb-1"
+                <h1 className="text-3xl lg:text-5xl font-bold text-ink-900 mb-1"
                   style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.01em' }}>
                   {studentDisplay}
                 </h1>
                 <div className="h-0.5 w-48 mx-auto bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
               </div>
 
-              <p className="text-sm text-gray-500 mb-4">has successfully completed the course</p>
+              <p className="text-sm text-ink-500 mb-4">has successfully completed the course</p>
 
               {/* Course name */}
-              <h2 className="text-xl lg:text-3xl font-bold text-gray-800 mb-6 lg:mb-8 leading-tight max-w-lg mx-auto"
+              <h2 className="text-xl lg:text-3xl font-bold text-ink-900 mb-6 lg:mb-8 leading-tight max-w-lg mx-auto"
                 style={{ fontFamily: 'Georgia, serif' }}>
                 {course.title}
               </h2>
 
               {/* Meta row */}
-              <div className="flex items-center justify-center gap-6 lg:gap-10 text-xs text-gray-500 mb-6 lg:mb-8 flex-wrap">
+              <div className="flex items-center justify-center gap-6 lg:gap-10 text-xs text-ink-500 mb-6 lg:mb-8 flex-wrap">
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Level</div>
-                  <div className="font-semibold text-gray-600 capitalize">{course.level}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-ink-500 mb-0.5">Level</div>
+                  <div className="font-semibold text-ink-700 capitalize">{course.level}</div>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-8 bg-ink-300" />
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Category</div>
-                  <div className="font-semibold text-gray-600">{course.category}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-ink-500 mb-0.5">Category</div>
+                  <div className="font-semibold text-ink-700">{course.category}</div>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-8 bg-ink-300" />
                 <div className="text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Issued</div>
-                  <div className="font-semibold text-gray-600">{formatDate(certificate.issued_at)}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-ink-500 mb-0.5">Issued</div>
+                  <div className="font-semibold text-ink-700">{formatDate(certificate.issued_at)}</div>
                 </div>
               </div>
 
               {/* Signature line */}
               <div className="flex items-end justify-center gap-12 lg:gap-20">
                 <div className="text-center">
-                  <div className="h-px w-32 bg-gray-300 mb-1" />
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Instructor</p>
+                  <div className="h-px w-32 bg-ink-300 mb-1" />
+                  <p className="text-[10px] text-ink-500 uppercase tracking-wider">Instructor</p>
                 </div>
                 <div className="text-center">
-                  <div className="h-px w-32 bg-gray-300 mb-1" />
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Date</p>
+                  <div className="h-px w-32 bg-ink-300 mb-1" />
+                  <p className="text-[10px] text-ink-500 uppercase tracking-wider">Date</p>
                 </div>
               </div>
             </div>
@@ -164,10 +164,10 @@ export function CertificatePage() {
             {/* Footer: certificate number */}
             <div className="relative z-10 w-full flex items-center justify-between mt-4">
               <div className="flex items-center gap-1.5">
-                <Icon name="verified" size={13} className="text-blue-400" fill />
-                <span className="text-[10px] text-gray-400 font-mono">#{certificate.certificate_number}</span>
+                <Icon name="verified" size={13} className="text-brand-400" fill />
+                <span className="text-[10px] text-ink-500 font-mono">#{certificate.certificate_number}</span>
               </div>
-              <span className="text-[10px] text-gray-300 font-semibold tracking-wider">aiwithrakshith.tech Learning</span>
+              <span className="text-[10px] text-ink-700 font-semibold tracking-wider">aiwithrakshith.tech Learning</span>
             </div>
           </div>
         </motion.div>
@@ -176,7 +176,7 @@ export function CertificatePage() {
       {/* Share / nav actions — hidden on print */}
       <div className="print:hidden px-4 pb-8 flex justify-center gap-3 flex-wrap">
         <button onClick={() => navigate('/courses')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-600 text-sm transition-colors">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-md border border-ink-300 text-ink-500 hover:text-ink-900 hover:border-ink-300 text-sm transition-colors">
           <Icon name="school" size={15} />
           Browse More Courses
         </button>

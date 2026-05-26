@@ -37,10 +37,10 @@ function MediaFileIcon({ f }: { f: MediaFile }) {
 
 function mediaFileColor(f: MediaFile): string {
   switch (f.file_type) {
-    case 'video': return 'text-blue-400';
-    case 'audio': return 'text-pink-400';
-    case 'document': return 'text-amber-400';
-    default: return 'text-gray-400';
+    case 'video': return 'text-brand-400 bg-brand-50';
+    case 'audio': return 'text-pink-500 bg-pink-50';
+    case 'document': return 'text-amber-600 bg-amber-50';
+    default: return 'text-ink-500 bg-ink-100';
   }
 }
 
@@ -116,7 +116,7 @@ export function EditPromptPage() {
     );
   }
 
-  if (!prompt) return <div className="p-8 text-center text-gray-400">Prompt not found.</div>;
+  if (!prompt) return <div className="p-8 text-center text-ink-500">Prompt not found.</div>;
 
   const imageFiles = mediaFiles.filter((f) => f.file_type === 'image');
   const nonImageFiles = mediaFiles.filter((f) => f.file_type !== 'image');
@@ -126,11 +126,11 @@ export function EditPromptPage() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate(`/prompts/${id}`)}
-          className="p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+          className="p-2 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
         >
           <Icon name="arrow_back" size={20} />
         </button>
-        <h1 className="text-xl font-bold text-white">Edit Prompt</h1>
+        <h1 className="text-xl font-extrabold text-ink-900">Edit Prompt</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -175,27 +175,27 @@ export function EditPromptPage() {
         {/* Existing files */}
         {mediaFiles.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-gray-200">
+            <p className="text-sm font-semibold text-ink-900">
               Current Attachments
-              <span className="ml-2 text-xs font-normal text-gray-500">({mediaFiles.length})</span>
+              <span className="ml-2 text-xs font-normal text-ink-500">({mediaFiles.length})</span>
             </p>
 
             {/* Image grid */}
             {imageFiles.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {imageFiles.map((f) => (
-                  <div key={f.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-800">
+                  <div key={f.id} className="relative group aspect-square rounded-md overflow-hidden bg-ink-100 border border-ink-300">
                     {thumbnails[f.id] ? (
                       <img src={thumbnails[f.id]} alt={f.file_name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      <div className="w-full h-full flex items-center justify-center text-ink-400">
                         <Icon name="image" size={24} />
                       </div>
                     )}
                     <button
                       type="button"
                       onClick={() => handleDeleteMedia(f.id, f.file_path)}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                      className="absolute top-1 right-1 w-6 h-6 bg-danger rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                     >
                       <Icon name="close" size={12} />
                     </button>
@@ -213,21 +213,21 @@ export function EditPromptPage() {
                 {nonImageFiles.map((f) => (
                   <div
                     key={f.id}
-                    className="flex items-center gap-3 p-3 bg-gray-800/60 border border-gray-700 rounded-xl"
+                    className="flex items-center gap-3 p-3 bg-white border border-ink-300 rounded-md"
                   >
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-700', mediaFileColor(f))}>
+                    <div className={cn('w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0', mediaFileColor(f))}>
                       <MediaFileIcon f={f} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-200 truncate">{f.file_name}</p>
+                      <p className="text-sm text-ink-900 truncate">{f.file_name}</p>
                       {f.file_size && (
-                        <p className="text-xs text-gray-500">{formatFileSize(f.file_size)}</p>
+                        <p className="text-xs text-ink-500">{formatFileSize(f.file_size)}</p>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => handleDeleteMedia(f.id, f.file_path)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0"
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-ink-500 hover:text-danger hover:bg-red-50 transition-colors flex-shrink-0"
                     >
                       <Icon name="close" size={14} />
                     </button>

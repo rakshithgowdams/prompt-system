@@ -20,24 +20,24 @@ const ACTIONS = [
     icon: 'auto_awesome',
     label: 'Create a Prompt',
     desc: 'Build an AI prompt with media attachments',
-    color: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 hover:border-blue-400/60',
-    iconColor: 'text-blue-400 bg-blue-500/10',
+    color: 'from-brand-50 to-white border-brand-100 hover:border-brand-300',
+    iconColor: 'text-brand-400 bg-brand-50',
   },
   {
     id: 'page',
     icon: 'article',
     label: 'Create a Page',
     desc: 'Write notes, docs, and content like Notion',
-    color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 hover:border-emerald-400/60',
-    iconColor: 'text-emerald-400 bg-emerald-500/10',
+    color: 'from-green-50 to-white border-green-200 hover:border-green-400',
+    iconColor: 'text-success bg-green-50',
   },
   {
     id: 'folder',
     icon: 'create_new_folder',
     label: 'Upload Files',
     desc: 'Add files, images, videos into your drive',
-    color: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 hover:border-amber-400/60',
-    iconColor: 'text-amber-400 bg-amber-500/10',
+    color: 'from-amber-50 to-white border-amber-200 hover:border-amber-400',
+    iconColor: 'text-amber-600 bg-amber-50',
   },
 ] as const;
 
@@ -81,7 +81,7 @@ export function ProjectActionModal({ open, onClose, project }: Props) {
             onClick={() => handleAction(action.id)}
             disabled={loading !== null}
             className={cn(
-              'relative w-full flex items-center gap-4 p-4 rounded-2xl border bg-gradient-to-br text-left transition-all duration-200',
+              'relative w-full flex items-center gap-4 p-4 rounded-lg border bg-gradient-to-br text-left transition-all duration-200',
               'hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none',
               action.color,
             )}
@@ -97,17 +97,17 @@ export function ProjectActionModal({ open, onClose, project }: Props) {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-white text-sm">{action.label}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{action.desc}</p>
+              <p className="font-semibold text-ink-900 text-sm">{action.label}</p>
+              <p className="text-xs text-ink-500 mt-0.5">{action.desc}</p>
             </div>
-            <Icon name="chevron_right" size={18} className="text-gray-500 flex-shrink-0" />
+            <Icon name="chevron_right" size={18} className="text-ink-400 flex-shrink-0" />
           </motion.button>
         ))}
       </div>
 
       <button
         onClick={onClose}
-        className="w-full mt-3 text-sm text-gray-500 hover:text-gray-300 transition-colors py-2"
+        className="w-full mt-3 text-sm text-ink-400 hover:text-ink-700 transition-colors py-2"
       >
         Maybe later
       </button>

@@ -31,15 +31,18 @@ function ProjectCard({ project, promptCount, onClick, onFilesClick, onShare }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-      className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-xl shadow-black/30 hover:shadow-2xl hover:shadow-black/50 transition-shadow duration-300"
+      whileHover={{ y: -2 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 32 }}
+      className={cn(
+        'group relative rounded-lg overflow-hidden cursor-pointer border',
+        'hover:shadow-card-hover transition-shadow duration-150',
+        PROJECT_BORDER_COLORS[project.color] ?? PROJECT_BORDER_COLORS.gray,
+      )}
       onClick={onClick}
     >
-      {/* Background */}
-      <div className="relative w-full h-52">
+      <div className="relative w-full h-48">
         {hasCover ? (
           <>
             <img
@@ -47,71 +50,43 @@ function ProjectCard({ project, promptCount, onClick, onFilesClick, onShare }: {
               alt={project.name}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            {/* Gradient scrim for text legibility */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           </>
         ) : (
-          <div className={cn(
-            'absolute inset-0 bg-gradient-to-br',
-            PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray,
-          )}>
-            {/* Subtle pattern for no-image state */}
-            <div className="absolute inset-0 opacity-10" style={{
-              backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div className={cn('absolute inset-0 bg-gradient-to-br', PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray)}>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
           </div>
         )}
 
-        {/* Glassmorphism info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-3.5 shadow-lg">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-base font-bold text-white leading-tight truncate">
-                  @{project.name}
-                </h3>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className="flex items-center gap-1 text-xs text-white/70">
-                    <Icon name="auto_awesome" size={12} className="text-white/60" />
-                    {promptCount} prompt{promptCount !== 1 ? 's' : ''}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-white/70">
-                    <Icon name="schedule" size={12} className="text-white/60" />
-                    {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-white leading-tight truncate">@{project.name}</h3>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="flex items-center gap-1 text-[11px] text-white/70">
+                  <Icon name="auto_awesome" size={11} />
+                  {promptCount} prompt{promptCount !== 1 ? 's' : ''}
+                </span>
               </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button
-                  onClick={onFilesClick}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg backdrop-blur-sm bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-medium transition-all active:scale-95"
-                >
-                  <Icon name="folder_open" size={13} />
-                  Files
-                </button>
-                <button
-                  onClick={onShare}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg backdrop-blur-sm bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-medium transition-all active:scale-95"
-                  title="Share project files"
-                >
-                  <Icon name="share" size={13} />
-                  Share
-                </button>
-              </div>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={onFilesClick}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/15 hover:bg-white/25 border border-white/20 text-white text-[11px] font-medium transition-all"
+              >
+                <Icon name="folder_open" size={12} />
+                Files
+              </button>
+              <button
+                onClick={onShare}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/15 hover:bg-white/25 border border-white/20 text-white text-[11px] font-medium transition-all"
+              >
+                <Icon name="share" size={12} />
+                Share
+              </button>
             </div>
           </div>
         </div>
-
-        {/* Top-right badge when no cover */}
-        {!hasCover && (
-          <div className="absolute top-3 right-3 w-9 h-9 rounded-xl backdrop-blur-sm bg-white/10 border border-white/20 flex items-center justify-center">
-            <Icon name="photo" size={18} className="text-white/60" />
-          </div>
-        )}
       </div>
     </motion.div>
   );
@@ -127,7 +102,6 @@ export function DashboardPage() {
   const [shareProject, setShareProject] = useState<Project | null>(null);
   const [promptPage, setPromptPage] = useState(0);
 
-  // Reset to first page when prompts reload
   useEffect(() => { setPromptPage(0); }, [recentPrompts?.length]);
 
   const greeting = () => {
@@ -141,178 +115,168 @@ export function DashboardPage() {
 
   return (
     <>
-    <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl lg:text-3xl font-bold text-white">
-          {greeting()}, <span className="text-blue-400">{userName}</span>
-        </h1>
-        <p className="text-gray-400 mt-1">Manage your AI prompts across your channels</p>
-      </motion.div>
+      <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-ink-900">
+            {greeting()}, <span className="text-brand-400">{userName}</span>
+          </h1>
+          <p className="text-ink-500 mt-1 text-sm">Manage your AI prompts across your channels</p>
+        </motion.div>
 
-      {/* Projects */}
-      <section>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-white">Projects</h2>
-          <button
-            onClick={() => navigate('/settings')}
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
-          >
-            <Icon name="settings" size={14} />
-            Manage
-          </button>
-        </div>
-
-        {projectsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <ProjectCardSkeleton />
-            <ProjectCardSkeleton />
+        {/* Projects */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-ink-900">Projects</h2>
+            <button
+              onClick={() => navigate('/settings')}
+              className="text-sm text-brand-400 hover:text-brand-500 transition-colors flex items-center gap-1.5 font-medium"
+            >
+              <Icon name="settings" size={14} />
+              Manage
+            </button>
           </div>
-        ) : projects && projects.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {projects.map((project, i) => {
-              const count = recentPrompts?.filter((p) => p.project_id === project.id).length ?? 0;
-              return (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
-                >
-                  <ProjectCard
-                    project={project}
-                    promptCount={count}
-                    onClick={() => navigate(`/projects/${project.slug}`)}
-                    onFilesClick={(e) => { e.stopPropagation(); navigate(`/projects/${project.slug}/files`); }}
-                    onShare={(e) => { e.stopPropagation(); setShareProject(project); }}
-                  />
-                </motion.div>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState
-            icon={<Icon name="photo_library" size={24} className="text-gray-500" />}
-            title="No projects yet"
-            description="Projects are created automatically when you sign up."
-          />
-        )}
-      </section>
 
-      {/* Recent Prompts */}
-      <section>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-white">Recent Prompts</h2>
-            {recentPrompts && recentPrompts.length > 0 && (
-              <span className="text-xs text-gray-500 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">
-                {recentPrompts.length}
+          {projectsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ProjectCardSkeleton />
+              <ProjectCardSkeleton />
+            </div>
+          ) : projects && projects.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project, i) => {
+                const count = recentPrompts?.filter((p) => p.project_id === project.id).length ?? 0;
+                return (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                  >
+                    <ProjectCard
+                      project={project}
+                      promptCount={count}
+                      onClick={() => navigate(`/projects/${project.slug}`)}
+                      onFilesClick={(e) => { e.stopPropagation(); navigate(`/projects/${project.slug}/files`); }}
+                      onShare={(e) => { e.stopPropagation(); setShareProject(project); }}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Icon name="photo_library" size={24} />}
+              title="No projects yet"
+              description="Projects are created automatically when you sign up."
+            />
+          )}
+        </section>
+
+        {/* Recent Prompts */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-ink-900">Recent Prompts</h2>
+              {recentPrompts && recentPrompts.length > 0 && (
+                <span className="text-xs text-ink-500 bg-ink-100 border border-ink-300 px-2 py-0.5 rounded-full">
+                  {recentPrompts.length}
+                </span>
+              )}
+            </div>
+            {recentPrompts && recentPrompts.length > PAGE_SIZE && (
+              <span className="text-xs text-ink-500">
+                Page {promptPage + 1} of {Math.ceil(recentPrompts.length / PAGE_SIZE)}
               </span>
             )}
           </div>
-          {recentPrompts && recentPrompts.length > PAGE_SIZE && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span>Page {promptPage + 1} of {Math.ceil(recentPrompts.length / PAGE_SIZE)}</span>
+
+          {promptsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => <PromptCardSkeleton key={i} />)}
             </div>
-          )}
-        </div>
+          ) : recentPrompts && recentPrompts.length > 0 ? (
+            <>
+              <motion.div
+                key={promptPage}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
+                {recentPrompts
+                  .slice(promptPage * PAGE_SIZE, (promptPage + 1) * PAGE_SIZE)
+                  .map((prompt, i) => {
+                    const proj = projects?.find((p) => p.id === prompt.project_id) ?? null;
+                    return (
+                      <motion.div
+                        key={prompt.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                      >
+                        <PromptCard
+                          prompt={prompt}
+                          onShare={(e) => { e.stopPropagation(); if (proj) setShareProject(proj); }}
+                        />
+                      </motion.div>
+                    );
+                  })}
+              </motion.div>
 
-        {promptsLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => <PromptCardSkeleton key={i} />)}
-          </div>
-        ) : recentPrompts && recentPrompts.length > 0 ? (
-          <>
-            {/* Grid */}
-            <motion.div
-              key={promptPage}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-            >
-              {recentPrompts
-                .slice(promptPage * PAGE_SIZE, (promptPage + 1) * PAGE_SIZE)
-                .map((prompt, i) => {
-                  const proj = projects?.find((p) => p.id === prompt.project_id) ?? null;
-                  return (
-                    <motion.div
-                      key={prompt.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
+              {recentPrompts.length > PAGE_SIZE && (() => {
+                const totalPages = Math.ceil(recentPrompts.length / PAGE_SIZE);
+                return (
+                  <div className="flex items-center justify-center gap-3 mt-6">
+                    <button
+                      onClick={() => setPromptPage((p) => Math.max(0, p - 1))}
+                      disabled={promptPage === 0}
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-ink-500 hover:text-ink-900 hover:bg-ink-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-ink-300"
                     >
-                      <PromptCard
-                        prompt={prompt}
-                        onShare={(e) => { e.stopPropagation(); if (proj) setShareProject(proj); }}
-                      />
-                    </motion.div>
-                  );
-                })}
-            </motion.div>
-
-            {/* Pagination dots */}
-            {recentPrompts.length > PAGE_SIZE && (() => {
-              const totalPages = Math.ceil(recentPrompts.length / PAGE_SIZE);
-              return (
-                <div className="flex items-center justify-center gap-4 mt-6">
-                  {/* Prev */}
-                  <button
-                    onClick={() => setPromptPage((p) => Math.max(0, p - 1))}
-                    disabled={promptPage === 0}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    <Icon name="chevron_left" size={18} />
-                  </button>
-
-                  {/* Dots */}
-                  <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }).map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setPromptPage(idx)}
-                        className={cn(
-                          'rounded-full transition-all duration-200',
-                          idx === promptPage
-                            ? 'w-6 h-2 bg-blue-500'
-                            : 'w-2 h-2 bg-gray-700 hover:bg-gray-500',
-                        )}
-                        aria-label={`Page ${idx + 1}`}
-                      />
-                    ))}
+                      <Icon name="chevron_left" size={18} />
+                    </button>
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: totalPages }).map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setPromptPage(idx)}
+                          className={cn(
+                            'rounded-full transition-all duration-200',
+                            idx === promptPage
+                              ? 'w-5 h-2 bg-brand-400'
+                              : 'w-2 h-2 bg-ink-300 hover:bg-ink-500',
+                          )}
+                          aria-label={`Page ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setPromptPage((p) => Math.min(totalPages - 1, p + 1))}
+                      disabled={promptPage === totalPages - 1}
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-ink-500 hover:text-ink-900 hover:bg-ink-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-ink-300"
+                    >
+                      <Icon name="chevron_right" size={18} />
+                    </button>
                   </div>
+                );
+              })()}
+            </>
+          ) : (
+            <EmptyState
+              icon={<Icon name="add_circle" size={24} />}
+              title="No prompts yet"
+              description="Select a project and create your first prompt."
+            />
+          )}
+        </section>
+      </div>
 
-                  {/* Next */}
-                  <button
-                    onClick={() => setPromptPage((p) => Math.min(totalPages - 1, p + 1))}
-                    disabled={promptPage === totalPages - 1}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    <Icon name="chevron_right" size={18} />
-                  </button>
-                </div>
-              );
-            })()}
-          </>
-        ) : (
-          <EmptyState
-            icon={<Icon name="add_circle" size={24} className="text-gray-500" />}
-            title="No prompts yet"
-            description="Select a project and create your first prompt."
-          />
-        )}
-      </section>
-    </div>
-
-    {/* Project share modal */}
-    {shareProject && (
-      <FileShareModal
-        open={!!shareProject}
-        onClose={() => setShareProject(null)}
-        projectId={shareProject.id}
-      />
-    )}
-  </>
+      {shareProject && (
+        <FileShareModal
+          open={!!shareProject}
+          onClose={() => setShareProject(null)}
+          projectId={shareProject.id}
+        />
+      )}
+    </>
   );
 }

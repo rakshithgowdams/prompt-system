@@ -25,55 +25,65 @@ export function ForgotPasswordPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     setSent(true);
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-900/40">
-            <Icon name="lock" size={28} className="text-white" weight={400} fill />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Reset Password</h1>
-          <p className="text-gray-400 text-sm mt-1">We'll send you a reset link</p>
-        </div>
-
-        {sent ? (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-green-500/10 rounded-full flex items-center justify-center">
-              <Icon name="mark_email_read" size={32} className="text-green-400" weight={300} />
+    <div className="min-h-screen bg-ink-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
+          {sent ? (
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto bg-brand-50 border border-brand-100 rounded-md flex items-center justify-center">
+                <Icon name="mark_email_read" size={28} className="text-brand-400" />
+              </div>
+              <h2 className="text-xl font-extrabold text-ink-900">Check your inbox</h2>
+              <p className="text-ink-500 text-sm">We've sent a password reset link to your email address.</p>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-500 text-sm font-medium transition-colors"
+              >
+                <Icon name="arrow_back" size={15} />
+                Back to login
+              </Link>
             </div>
-            <p className="text-white font-medium">Check your inbox</p>
-            <p className="text-gray-400 text-sm">We've sent a password reset link to your email address.</p>
-            <Link to="/login" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium">
-              <Icon name="arrow_back" size={15} />
-              Back to login
-            </Link>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              placeholder="you@example.com"
-              error={errors.email?.message}
-              autoComplete="email"
-              {...register('email')}
-            />
-            <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>
-              Send Reset Link
-            </Button>
-            <Link to="/login" className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200 text-sm transition-colors mt-2">
-              <Icon name="arrow_back" size={15} />
-              Back to login
-            </Link>
-          </form>
-        )}
+          ) : (
+            <>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
+                  <Icon name="bolt" size={24} className="text-white" fill />
+                </div>
+                <h1 className="text-2xl font-extrabold text-ink-900">Reset Password</h1>
+                <p className="text-ink-500 text-sm mt-1">We'll send you a reset link</p>
+              </div>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="you@example.com"
+                  error={errors.email?.message}
+                  autoComplete="email"
+                  {...register('email')}
+                />
+                <Button type="submit" variant="primary" className="w-full" size="lg" loading={isSubmitting}>
+                  Send Reset Link
+                </Button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 text-ink-500 hover:text-ink-900 text-sm transition-colors"
+                >
+                  <Icon name="arrow_back" size={15} />
+                  Back to login
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -87,7 +87,7 @@ export function FollowPopup() {
               {/* Glow ring */}
               <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-pink-500/30 via-transparent to-red-500/20 blur-sm" />
 
-              <div className="relative bg-gray-900 border border-gray-700/80 rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
+              <div className="relative bg-white border border-ink-200 rounded-3xl overflow-hidden shadow-2xl shadow-black/20">
                 {/* Top gradient bar */}
                 <div className="h-1 bg-gradient-to-r from-pink-500 via-rose-400 to-red-500" />
 
@@ -95,7 +95,7 @@ export function FollowPopup() {
                   {/* Close */}
                   <button
                     onClick={dismiss}
-                    className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                    className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full bg-ink-100 hover:bg-ink-200 text-ink-500 hover:text-ink-900 transition-colors"
                     aria-label="Close"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -106,7 +106,7 @@ export function FollowPopup() {
                   {/* Avatar */}
                   <div className="flex justify-center mb-5">
                     <div className="relative">
-                      <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-offset-2 ring-offset-gray-900 ring-pink-500/60 shadow-lg shadow-pink-900/40">
+                      <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-offset-2 ring-offset-white ring-pink-500/60 shadow-lg shadow-pink-200/60">
                         <AvatarImage />
                       </div>
                       {/* Animated ring */}
@@ -116,10 +116,10 @@ export function FollowPopup() {
 
                   {/* Heading */}
                   <div className="text-center mb-6">
-                    <h2 className="text-xl font-bold text-white mb-1.5">
+                    <h2 className="text-xl font-bold text-ink-900 mb-1.5">
                       Welcome to aiwithrakshith.tech!
                     </h2>
-                    <p className="text-gray-400 text-sm leading-relaxed">
+                    <p className="text-ink-500 text-sm leading-relaxed">
                       Created by <span className="text-pink-300 font-semibold">@aiwithrakshith</span> — follow for AI tips,
                       tutorials and more free tools like this one.
                     </p>
@@ -169,7 +169,7 @@ export function FollowPopup() {
                   {/* Skip */}
                   <button
                     onClick={dismiss}
-                    className="w-full text-xs text-gray-600 hover:text-gray-400 transition-colors py-1"
+                    className="w-full text-xs text-ink-400 hover:text-ink-600 transition-colors py-1"
                   >
                     Maybe later
                   </button>

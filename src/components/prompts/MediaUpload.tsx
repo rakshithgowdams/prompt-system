@@ -47,7 +47,7 @@ function ProgressRing({ progress, status }: { progress: number; status: UploadIt
 
   return (
     <svg width="36" height="36" className="flex-shrink-0 -rotate-90">
-      <circle cx="18" cy="18" r={r} fill="none" stroke="#374151" strokeWidth="2.5" />
+      <circle cx="18" cy="18" r={r} fill="none" stroke="#D1D7DC" strokeWidth="2.5" />
       <motion.circle
         cx="18"
         cy="18"
@@ -55,7 +55,7 @@ function ProgressRing({ progress, status }: { progress: number; status: UploadIt
         fill="none"
         strokeWidth="2.5"
         strokeLinecap="round"
-        stroke={status === 'error' ? '#f87171' : status === 'done' ? '#34d399' : '#3b82f6'}
+        stroke={status === 'error' ? '#f87171' : status === 'done' ? '#34d399' : '#A435F0'}
         strokeDasharray={circ}
         initial={{ strokeDashoffset: circ }}
         animate={{ strokeDashoffset: offset }}
@@ -88,7 +88,7 @@ function ProgressRing({ progress, status }: { progress: number; status: UploadIt
             textAnchor="middle"
             fontSize="7"
             fontWeight="600"
-            fill="#93c5fd"
+            fill="#A435F0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
@@ -193,8 +193,8 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-gray-200">Attachments</p>
-        <span className="text-xs text-gray-500">
+        <p className="text-sm font-semibold text-ink-900">Attachments</p>
+        <span className="text-xs text-ink-500">
           {existingFiles.length} file{existingFiles.length !== 1 ? 's' : ''} attached
         </span>
       </div>
@@ -205,11 +205,11 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onClick={() => fileInputRef.current?.click()}
-        animate={dragging ? { scale: 1.02, borderColor: '#3b82f6' } : { scale: 1, borderColor: '#374151' }}
+        animate={dragging ? { scale: 1.02, borderColor: '#A435F0' } : { scale: 1, borderColor: '#D1D7DC' }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
         className={cn(
-          'relative flex flex-col items-center justify-center gap-3 p-8 rounded-2xl border-2 border-dashed cursor-pointer transition-colors duration-200',
-          dragging ? 'bg-blue-500/10' : 'hover:border-gray-500 hover:bg-gray-800/50 bg-gray-900/30',
+          'relative flex flex-col items-center justify-center gap-3 p-8 rounded-lg border-2 border-dashed cursor-pointer transition-colors duration-200',
+          dragging ? 'bg-brand-50 border-brand-400' : 'bg-white hover:border-ink-500 hover:bg-ink-50',
         )}
       >
         {/* Animated upload icon */}
@@ -218,27 +218,27 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           className={cn(
             'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-            dragging ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-800 text-gray-500',
+            dragging ? 'bg-brand-50 text-brand-400' : 'bg-ink-100 text-ink-500',
           )}
         >
           <Icon name="cloud_upload" size={22} />
         </motion.div>
 
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-300">
+          <p className="text-sm font-medium text-ink-700">
             {dragging ? 'Drop to upload' : 'Drop files or click to browse'}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-ink-400 mt-1">
             Images · Videos · PDFs · Documents · Audio · Any file
           </p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">
           {[
-            { label: 'Images', icon: 'image', color: 'text-emerald-400 bg-emerald-400/10' },
-            { label: 'Videos', icon: 'videocam', color: 'text-blue-400 bg-blue-400/10' },
-            { label: 'Documents', icon: 'description', color: 'text-amber-400 bg-amber-400/10' },
-            { label: 'Audio', icon: 'music_note', color: 'text-pink-400 bg-pink-400/10' },
+            { label: 'Images', icon: 'image', color: 'text-success bg-green-50' },
+            { label: 'Videos', icon: 'videocam', color: 'text-brand-400 bg-brand-50' },
+            { label: 'Documents', icon: 'description', color: 'text-amber-600 bg-amber-50' },
+            { label: 'Audio', icon: 'music_note', color: 'text-pink-500 bg-pink-50' },
           ].map(({ label, icon, color }) => (
             <span
               key={label}
@@ -257,9 +257,9 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 rounded-2xl pointer-events-none"
+              className="absolute inset-0 rounded-lg pointer-events-none"
               style={{
-                background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 70%)',
+                background: 'radial-gradient(ellipse at center, rgba(164,53,240,0.06) 0%, transparent 70%)',
               }}
             />
           )}
@@ -291,7 +291,7 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
                 ? 'bg-red-500/5 border-red-500/20'
                 : u.status === 'done'
                 ? 'bg-emerald-500/5 border-emerald-500/20'
-                : 'bg-gray-800/80 border-gray-700',
+                : 'bg-ink-100 border-ink-300',
             )}
           >
             {/* Radial ring progress */}
@@ -299,15 +299,15 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <p className="text-xs font-medium text-gray-200 truncate">{u.name}</p>
-                <span className="text-xs text-gray-500 flex-shrink-0">{formatFileSize(u.size)}</span>
+                <p className="text-xs font-medium text-ink-900 truncate">{u.name}</p>
+                <span className="text-xs text-ink-500 flex-shrink-0">{formatFileSize(u.size)}</span>
               </div>
 
               {/* Segmented progress bar */}
               {u.status === 'uploading' && (
-                <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-1 bg-ink-200 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400"
+                    className="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400"
                     initial={{ width: '0%' }}
                     animate={{ width: `${u.progress}%` }}
                     transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -321,7 +321,7 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-xs text-emerald-400"
+                  className="text-xs text-success"
                 >
                   Uploaded successfully
                 </motion.p>
@@ -336,7 +336,7 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
                   exit={{ opacity: 0, scale: 0 }}
                   type="button"
                   onClick={() => removeItem(u.id)}
-                  className="text-gray-500 hover:text-gray-300 flex-shrink-0 p-1 rounded-lg hover:bg-gray-700 transition-colors"
+                  className="text-ink-400 hover:text-ink-900 flex-shrink-0 p-1 rounded-md hover:bg-ink-100 transition-colors"
                 >
                   <Icon name="close" size={14} />
                 </motion.button>

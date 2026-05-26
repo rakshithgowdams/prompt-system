@@ -216,18 +216,18 @@ export function ProjectFilesPage() {
   if (projectLoading) {
     return (
       <div className="p-4 lg:p-8 space-y-4">
-        <div className="h-40 rounded-2xl bg-gray-800/60 animate-pulse" />
+        <div className="h-40 rounded-lg bg-ink-100 animate-pulse" />
         <FileGridSkeleton count={12} />
       </div>
     );
   }
 
-  if (!project) return <div className="p-8 text-center text-gray-400">Project not found.</div>;
+  if (!project) return <div className="p-8 text-center text-ink-500">Project not found.</div>;
 
   const totalItems = visibleFolders.length + visibleFiles.length;
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-gray-950">
+    <div className="flex flex-col h-full min-h-screen bg-white">
       {/* ── Top bar ── */}
       <div className={cn(
         'px-4 lg:px-8 py-5 bg-gradient-to-r text-white relative overflow-hidden',
@@ -304,7 +304,7 @@ export function ProjectFilesPage() {
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white text-gray-900 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white text-ink-900 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
               >
                 <Icon name="upload" size={16} />
                 Upload
@@ -320,13 +320,13 @@ export function ProjectFilesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search files..."
-                className="w-full h-9 pl-9 pr-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-colors"
+                className="w-full h-9 pl-9 pr-3 rounded-md bg-white/10 border border-white/10 text-white placeholder-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-colors"
               />
             </div>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as FileType | '')}
-              className="h-9 px-3 rounded-xl bg-white/10 border border-white/10 text-white text-sm focus:outline-none"
+              className="h-9 px-3 rounded-md bg-white/10 border border-white/10 text-white text-sm focus:outline-none"
             >
               <option value="">All types</option>
               <option value="image">Images</option>
@@ -348,7 +348,7 @@ export function ProjectFilesPage() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 overflow-hidden"
+            className="bg-white backdrop-blur-sm border-b border-ink-300 overflow-hidden"
           >
             <div className="px-4 lg:px-8 py-3 space-y-2">
               <AnimatePresence mode="popLayout">
@@ -361,10 +361,10 @@ export function ProjectFilesPage() {
                     exit={{ opacity: 0, x: 16, scale: 0.95 }}
                     transition={{ type: 'spring', stiffness: 350, damping: 28 }}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-xl border transition-colors',
+                      'flex items-center gap-3 px-3 py-2 rounded-md border transition-colors',
                       u.status === 'error' ? 'bg-red-500/5 border-red-500/20'
                       : u.status === 'done' ? 'bg-emerald-500/5 border-emerald-500/20'
-                      : 'bg-gray-800/60 border-gray-700/60',
+                      : 'bg-ink-100 border-ink-300',
                     )}
                   >
                     {/* Animated status icon */}
@@ -398,13 +398,13 @@ export function ProjectFilesPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs text-gray-300 truncate font-medium">{u.name}</p>
-                        <span className="text-xs text-gray-500 flex-shrink-0">{formatFileSize(u.size)}</span>
+                        <p className="text-xs text-ink-900 truncate font-medium">{u.name}</p>
+                        <span className="text-xs text-ink-500 flex-shrink-0">{formatFileSize(u.size)}</span>
                       </div>
                       {u.status === 'uploading' && (
-                        <div className="mt-1 h-0.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="mt-1 h-0.5 bg-ink-300 rounded-full overflow-hidden">
                           <motion.div
-                            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400"
+                            className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-400"
                             initial={{ width: '0%' }}
                             animate={{ width: `${u.progress}%` }}
                             transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -421,7 +421,7 @@ export function ProjectFilesPage() {
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0 }}
                           onClick={() => setUploads((p) => p.filter((x) => x.id !== u.id))}
-                          className="text-gray-500 hover:text-gray-300 flex-shrink-0 p-1 rounded-lg hover:bg-gray-700 transition-colors"
+                          className="text-ink-500 hover:text-ink-900 flex-shrink-0 p-1 rounded-lg hover:bg-ink-100 transition-colors"
                         >
                           <Icon name="close" size={12} />
                         </motion.button>
@@ -449,11 +449,11 @@ export function ProjectFilesPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-20 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-none flex items-center justify-center"
+              className="absolute inset-0 z-20 bg-brand-50 border-2 border-dashed border-brand-400 rounded-none flex items-center justify-center"
             >
               <div className="text-center">
-                <Icon name="cloud_upload" size={48} className="text-blue-400 mx-auto mb-3" />
-                <p className="text-blue-300 text-lg font-semibold">Drop files here to upload</p>
+                <Icon name="cloud_upload" size={48} className="text-brand-400 mx-auto mb-3" />
+                <p className="text-brand-400 text-lg font-semibold">Drop files here to upload</p>
               </div>
             </motion.div>
           )}
@@ -464,7 +464,7 @@ export function ProjectFilesPage() {
             viewMode === 'grid' ? <FileGridSkeleton count={12} /> : <ListRowSkeleton count={8} />
           ) : totalItems === 0 ? (
             <EmptyState
-              icon={<Icon name="folder_open" size={28} className="text-gray-500" />}
+              icon={<Icon name="folder_open" size={28} className="text-ink-500" />}
               title={activeFolderId ? 'This folder is empty' : 'No files yet'}
               description={activeFolderId ? 'Upload files to this folder.' : 'Upload files or create folders to get started.'}
               action={{ label: 'Upload files', onClick: () => fileInputRef.current?.click() }}
@@ -502,14 +502,14 @@ export function ProjectFilesPage() {
         {!activeFolderId && (
           <button
             onClick={() => setNewFolderOpen(true)}
-            className="w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95"
+            className="w-12 h-12 bg-ink-300 hover:bg-ink-500 text-ink-900 rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95"
           >
             <Icon name="create_new_folder" size={20} />
           </button>
         )}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-900/40 flex items-center justify-center transition-all active:scale-95"
+          className="w-14 h-14 bg-brand-400 hover:bg-brand-400 text-white rounded-full shadow-xl shadow-brand-400/40 flex items-center justify-center transition-all active:scale-95"
         >
           <Icon name="upload" size={24} />
         </button>
@@ -540,13 +540,13 @@ export function ProjectFilesPage() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-6"
+              className="relative z-10 w-full max-w-sm bg-white border border-ink-300 rounded-lg shadow-2xl p-6"
             >
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400">
+                <div className="w-10 h-10 rounded-md bg-brand-50 flex items-center justify-center text-brand-400">
                   <Icon name="create_new_folder" size={20} />
                 </div>
-                <h2 className="text-lg font-semibold text-white">New Folder</h2>
+                <h2 className="text-lg font-semibold text-ink-900">New Folder</h2>
               </div>
               <input
                 autoFocus
@@ -554,12 +554,12 @@ export function ProjectFilesPage() {
                 onChange={(e) => setNewFolderName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
                 placeholder="Folder name"
-                className="w-full h-11 px-4 rounded-xl bg-gray-800 border border-gray-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+                className="w-full h-11 px-4 rounded-md bg-white border border-ink-300 text-ink-900 placeholder-ink-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 mb-4"
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => setNewFolderOpen(false)}
-                  className="flex-1 h-10 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 text-sm transition-colors"
+                  className="flex-1 h-10 rounded-md border border-ink-300 text-ink-500 hover:text-ink-900 hover:border-ink-500 text-sm transition-colors"
                 >
                   Cancel
                 </button>
@@ -592,25 +592,25 @@ export function ProjectFilesPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative z-10 w-full max-w-2xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl"
+              className="relative z-10 w-full max-w-2xl bg-white border border-ink-300 rounded-lg overflow-hidden shadow-2xl"
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-ink-300">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-ink-100 flex items-center justify-center flex-shrink-0">
                     <FileTypeIcon mimeType={previewFile.mime_type} fileName={previewFile.file_name} fileType={previewFile.file_type} size={18} />
                   </div>
-                  <p className="text-sm font-medium text-white truncate">{previewFile.file_name}</p>
+                  <p className="text-sm font-medium text-ink-900 truncate">{previewFile.file_name}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                   <button
                     onClick={() => handleDownload(previewFile)}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-ink-100 hover:bg-ink-300 text-ink-700 hover:text-ink-900 transition-colors"
                   >
                     <Icon name="download" size={16} />
                   </button>
                   <button
                     onClick={() => setPreviewFile(null)}
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-ink-100 hover:bg-ink-300 text-ink-700 hover:text-ink-900 transition-colors"
                   >
                     <Icon name="close" size={16} />
                   </button>
@@ -618,7 +618,7 @@ export function ProjectFilesPage() {
               </div>
               <div className="p-4">
                 {previewFile.file_type === 'video' ? (
-                  <video src={previewFile.signedUrl} controls className="w-full rounded-xl max-h-[70vh]" />
+                  <video src={previewFile.signedUrl} controls className="w-full rounded-md max-h-[70vh]" />
                 ) : previewFile.file_type === 'audio' ? (
                   <div className="flex flex-col items-center gap-6 py-10">
                     <div className="w-24 h-24 rounded-full bg-pink-400/10 flex items-center justify-center">
@@ -627,13 +627,13 @@ export function ProjectFilesPage() {
                     <audio src={previewFile.signedUrl} controls className="w-full" />
                   </div>
                 ) : previewFile.mime_type === 'application/pdf' ? (
-                  <iframe src={previewFile.signedUrl} className="w-full h-[70vh] rounded-xl" title={previewFile.file_name} />
+                  <iframe src={previewFile.signedUrl} className="w-full h-[70vh] rounded-md" title={previewFile.file_name} />
                 ) : (
                   <div className="flex flex-col items-center gap-4 py-12">
-                    <div className="w-24 h-24 rounded-2xl bg-gray-800 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-lg bg-ink-100 flex items-center justify-center">
                       <FileTypeIcon mimeType={previewFile.mime_type} fileName={previewFile.file_name} fileType={previewFile.file_type} size={52} />
                     </div>
-                    <p className="text-gray-400 text-sm">Preview not available for this file type</p>
+                    <p className="text-ink-500 text-sm">Preview not available for this file type</p>
                     <Button onClick={() => handleDownload(previewFile)} size="sm">
                       <Icon name="download" size={14} />
                       Download file
@@ -722,14 +722,14 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           <button
             onDoubleClick={() => onOpenFolder(folder)}
             onClick={() => onOpenFolder(folder)}
-            className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-gray-900 border border-gray-800 rounded-2xl hover:border-amber-500/40 hover:bg-gray-800/80 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-black/30 p-3"
+            className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-white border border-ink-300 rounded-lg hover:border-ink-500 hover:bg-ink-100 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-black/10 p-3"
           >
             <Icon name="folder" size={36} className="text-amber-400" fill />
-            <span className="text-xs text-gray-300 font-medium truncate w-full text-center">{folder.name}</span>
+            <span className="text-xs text-ink-900 font-medium truncate w-full text-center">{folder.name}</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === folder.id ? null : folder.id); }}
-            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-gray-800/80 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity"
+            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-ink-100 text-ink-500 opacity-0 group-hover:opacity-100 hover:text-ink-900 transition-opacity"
           >
             <Icon name="more_vert" size={14} />
           </button>
@@ -757,16 +757,16 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           >
             <button
               onClick={() => onPreviewFile(file)}
-              className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-gray-900 border border-gray-800 rounded-2xl hover:border-gray-600 hover:bg-gray-800/80 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-black/30 overflow-hidden"
+              className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-white border border-ink-300 rounded-lg hover:border-ink-500 hover:bg-ink-100 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-black/10 overflow-hidden"
             >
               {file.file_type === 'image' && thumbUrls[file.id] ? (
                 <img src={thumbUrls[file.id]} alt={file.file_name} className="w-full h-full object-cover" />
               ) : (
                 <div className="flex flex-col items-center gap-2 p-3">
-                  <div className="w-12 h-12 rounded-xl bg-gray-800/60 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-md bg-ink-100 flex items-center justify-center">
                     <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={28} />
                   </div>
-                  <span className="text-xs text-gray-500 font-medium truncate w-full text-center">
+                  <span className="text-xs text-ink-500 font-medium truncate w-full text-center">
                     {file.file_name.split('.').pop()?.toUpperCase() ?? 'FILE'}
                   </span>
                 </div>
@@ -778,11 +778,11 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
               )}
             </button>
             {file.file_type !== 'image' && (
-              <p className="text-xs text-gray-500 truncate text-center mt-1 px-1">{file.file_name}</p>
+              <p className="text-xs text-ink-500 truncate text-center mt-1 px-1">{file.file_name}</p>
             )}
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === file.id ? null : file.id); }}
-              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-gray-800/80 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-white transition-opacity z-10"
+              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-ink-100 text-ink-500 opacity-0 group-hover:opacity-100 hover:text-ink-900 transition-opacity z-10"
             >
               <Icon name="more_vert" size={14} />
             </button>
@@ -809,7 +809,7 @@ function ListView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
   return (
     <div className="space-y-1">
       {/* Header */}
-      <div className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
+      <div className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 px-3 py-2 text-xs font-medium text-ink-500 uppercase tracking-wide">
         <div className="w-8" />
         <span>Name</span>
         <span className="hidden sm:block">Size</span>
@@ -823,28 +823,28 @@ function ListView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           initial={{ opacity: 0, x: -4 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => onOpenFolder(folder)}
-          className="group relative w-full grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-xl hover:bg-gray-800/60 transition-colors text-left"
+          className="group relative w-full grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-md hover:bg-ink-100 transition-colors text-left"
         >
           <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center flex-shrink-0">
             <Icon name="folder" size={18} className="text-amber-400" fill />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white">{folder.name}</p>
-            <p className="text-xs text-gray-500">Folder</p>
+            <p className="text-sm font-medium text-ink-900 truncate group-hover:text-ink-900">{folder.name}</p>
+            <p className="text-xs text-ink-500">Folder</p>
           </div>
-          <span className="hidden sm:block text-xs text-gray-500">—</span>
-          <span className="hidden sm:block text-xs text-gray-500">{formatRelative(folder.created_at)}</span>
+          <span className="hidden sm:block text-xs text-ink-500">—</span>
+          <span className="hidden sm:block text-xs text-ink-500">{formatRelative(folder.created_at)}</span>
           <div className="absolute right-4 opacity-0 group-hover:opacity-100 flex gap-1">
             <button
               onClick={(e) => { e.stopPropagation(); onShareFolder(folder); }}
-              className="p-1.5 rounded-lg hover:bg-blue-500/10 text-gray-500 hover:text-blue-400 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-brand-50 text-ink-500 hover:text-brand-400 transition-colors"
               title="Share folder"
             >
               <Icon name="share" size={14} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder); }}
-              className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-red-500/10 text-ink-500 hover:text-red-400 transition-colors"
             >
               <Icon name="delete" size={14} />
             </button>
@@ -858,36 +858,36 @@ function ListView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           key={file.id}
           initial={{ opacity: 0, x: -4 }}
           animate={{ opacity: 1, x: 0 }}
-          className="group relative grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-xl hover:bg-gray-800/60 transition-colors"
+          className="group relative grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-md hover:bg-ink-100 transition-colors"
         >
           <button onClick={() => onPreviewFile(file)} className="contents">
-            <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-ink-100 flex items-center justify-center flex-shrink-0">
               <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={17} />
             </div>
             <div className="min-w-0 text-left">
-              <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white">{file.file_name}</p>
-              <p className="text-xs text-gray-500 capitalize">{file.file_type}</p>
+              <p className="text-sm font-medium text-ink-900 truncate group-hover:text-ink-900">{file.file_name}</p>
+              <p className="text-xs text-ink-500 capitalize">{file.file_type}</p>
             </div>
-            <span className="hidden sm:block text-xs text-gray-500">{file.file_size ? formatFileSize(file.file_size) : '—'}</span>
-            <span className="hidden sm:block text-xs text-gray-500">{formatRelative(file.created_at)}</span>
+            <span className="hidden sm:block text-xs text-ink-500">{file.file_size ? formatFileSize(file.file_size) : '—'}</span>
+            <span className="hidden sm:block text-xs text-ink-500">{formatRelative(file.created_at)}</span>
           </button>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex gap-1">
             <button
               onClick={() => onShareFile(file)}
-              className="p-1.5 rounded-lg hover:bg-blue-500/10 text-gray-500 hover:text-blue-400 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-brand-50 text-ink-500 hover:text-brand-400 transition-colors"
               title="Share file"
             >
               <Icon name="share" size={14} />
             </button>
             <button
               onClick={() => onDownloadFile(file)}
-              className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-500 hover:text-gray-200 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
             >
               <Icon name="download" size={14} />
             </button>
             <button
               onClick={() => onDeleteFile(file)}
-              className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-red-500/10 text-ink-500 hover:text-red-400 transition-colors"
             >
               <Icon name="delete" size={14} />
             </button>
@@ -911,14 +911,14 @@ function ContextMenu({ items, onClose }: { items: ContextMenuItem[]; onClose: ()
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div className="absolute top-8 right-0 z-20 bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-1 min-w-32 overflow-hidden">
+      <div className="absolute top-8 right-0 z-20 bg-white border border-ink-300 rounded-md shadow-xl py-1 min-w-32 overflow-hidden">
         {items.map((item) => (
           <button
             key={item.label}
             onClick={item.onClick}
             className={cn(
               'w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors',
-              item.danger ? 'text-red-400 hover:bg-red-500/10' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+              item.danger ? 'text-red-400 hover:bg-red-500/10' : 'text-ink-700 hover:bg-ink-100 hover:text-ink-900',
             )}
           >
             <Icon name={item.icon} size={14} />

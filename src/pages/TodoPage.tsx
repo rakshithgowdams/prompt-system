@@ -51,10 +51,10 @@ function CountdownBadge({ dueAt }: { dueAt: string | null }) {
     <span className={cn(
       'inline-flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-md font-medium',
       overdue
-        ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+        ? 'bg-red-50 text-danger border border-red-200'
         : urgent
-          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse'
-          : 'bg-gray-700/60 text-gray-400 border border-gray-700',
+          ? 'bg-amber-50 text-amber-600 border border-amber-200 animate-pulse'
+          : 'bg-ink-100 text-ink-500 border border-ink-300',
     )}>
       <Icon name={overdue ? 'warning' : 'timer'} size={11} fill={overdue} />
       {text}
@@ -65,9 +65,9 @@ function CountdownBadge({ dueAt }: { dueAt: string | null }) {
 // ── Priority config ───────────────────────────────────────────────────────────
 
 const PRIORITY_CONFIG = {
-  high: { label: 'High', color: 'text-red-400 bg-red-500/10 border-red-500/30', dot: 'bg-red-400' },
-  medium: { label: 'Medium', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30', dot: 'bg-amber-400' },
-  low: { label: 'Low', color: 'text-teal-400 bg-teal-500/10 border-teal-500/30', dot: 'bg-teal-400' },
+  high: { label: 'High', color: 'text-danger bg-red-50 border-red-200', dot: 'bg-danger' },
+  medium: { label: 'Medium', color: 'text-amber-600 bg-amber-50 border-amber-200', dot: 'bg-amber-500' },
+  low: { label: 'Low', color: 'text-teal-600 bg-teal-50 border-teal-200', dot: 'bg-teal-500' },
 };
 
 // ── Todo form ─────────────────────────────────────────────────────────────────
@@ -110,14 +110,14 @@ function TodoForm({ initial, onSubmit, onCancel, loading }: TodoFormProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       onSubmit={handleSubmit}
-      className="bg-gray-900 border border-gray-700 rounded-2xl p-5 space-y-4 shadow-xl"
+      className="bg-white border border-ink-300 rounded-lg p-5 space-y-4 shadow-card"
     >
       <input
         ref={titleRef}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="What needs to be done?"
-        className="w-full bg-transparent text-white text-base font-medium placeholder-gray-500 focus:outline-none"
+        className="w-full bg-transparent text-ink-900 text-base font-medium placeholder-ink-400 focus:outline-none"
         required
       />
 
@@ -126,46 +126,44 @@ function TodoForm({ initial, onSubmit, onCancel, loading }: TodoFormProps) {
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Add notes (optional)"
         rows={2}
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        className="w-full bg-ink-100 border border-ink-300 rounded-md px-3 py-2.5 text-sm text-ink-700 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 resize-none transition-colors"
       />
 
       <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
-        {/* Due date */}
         <div className="flex items-center gap-2">
-          <Icon name="calendar_today" size={15} className="text-gray-400 flex-shrink-0" />
+          <Icon name="calendar_today" size={15} className="text-ink-500 flex-shrink-0" />
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 [color-scheme:dark]"
+            className="flex-1 min-w-0 bg-ink-100 border border-ink-300 rounded-md px-2.5 py-1.5 text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 transition-colors"
           />
         </div>
-        {/* Due time */}
         <div className="flex items-center gap-2">
-          <Icon name="schedule" size={15} className="text-gray-400 flex-shrink-0" />
+          <Icon name="schedule" size={15} className="text-ink-500 flex-shrink-0" />
           <input
             type="time"
             value={dueTime}
             onChange={(e) => setDueTime(e.target.value)}
             disabled={!dueDate}
-            className="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 [color-scheme:dark]"
+            className="flex-1 min-w-0 bg-ink-100 border border-ink-300 rounded-md px-2.5 py-1.5 text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 disabled:opacity-40 transition-colors"
           />
         </div>
       </div>
 
       {/* Priority */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 font-medium">Priority:</span>
+        <span className="text-xs text-ink-500 font-medium">Priority:</span>
         {(['high', 'medium', 'low'] as const).map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => setPriority(p)}
             className={cn(
-              'px-2.5 py-1 rounded-lg text-xs font-medium border transition-all',
+              'px-2.5 py-1 rounded-md text-xs font-medium border transition-all',
               priority === p
                 ? PRIORITY_CONFIG[p].color
-                : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-gray-300',
+                : 'bg-white border-ink-300 text-ink-500 hover:text-ink-900 hover:border-ink-500',
             )}
           >
             {PRIORITY_CONFIG[p].label}
@@ -180,7 +178,7 @@ function TodoForm({ initial, onSubmit, onCancel, loading }: TodoFormProps) {
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+          className="px-3 py-1.5 rounded-md text-sm text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors"
         >
           Cancel
         </button>
@@ -209,10 +207,10 @@ function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 300, damping: 28 }}
       className={cn(
-        'group flex gap-4 p-4 rounded-2xl border transition-all duration-200',
+        'group flex gap-4 p-4 rounded-lg border transition-all duration-200',
         todo.completed
-          ? 'bg-gray-900/40 border-gray-800/50 opacity-60'
-          : 'bg-gray-900 border-gray-800 hover:border-gray-700',
+          ? 'bg-ink-50 border-ink-200 opacity-60'
+          : 'bg-white border-ink-300 hover:border-ink-500 hover:shadow-card',
       )}
     >
       {/* Checkbox */}
@@ -224,8 +222,8 @@ function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
         <div className={cn(
           'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200',
           todo.completed
-            ? 'bg-emerald-500 border-emerald-500'
-            : 'border-gray-600 hover:border-emerald-400',
+            ? 'bg-success border-success'
+            : 'border-ink-400 hover:border-success',
         )}>
           <AnimatePresence>
             {todo.completed && (
@@ -246,32 +244,28 @@ function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
         <div className="flex items-start gap-2 flex-wrap">
           <p className={cn(
             'text-sm font-medium leading-snug',
-            todo.completed ? 'line-through text-gray-500' : 'text-white',
+            todo.completed ? 'line-through text-ink-400' : 'text-ink-900',
           )}>
             {todo.title}
           </p>
-          {/* Priority dot */}
           <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5', p.dot)} title={`${p.label} priority`} />
         </div>
 
         {todo.notes && (
-          <p className="text-xs text-gray-500 leading-relaxed">{todo.notes}</p>
+          <p className="text-xs text-ink-500 leading-relaxed">{todo.notes}</p>
         )}
 
         <div className="flex items-center flex-wrap gap-2 pt-0.5">
-          {/* Countdown timer */}
           {!todo.completed && <CountdownBadge dueAt={todo.due_at} />}
 
-          {/* Due date label */}
           {todo.due_at && (
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-ink-400">
               {new Date(todo.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
 
-          {/* Completed timestamp */}
           {todo.completed && todo.completed_at && (
-            <span className="text-xs text-emerald-600">
+            <span className="text-xs text-success">
               Done {new Date(todo.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
@@ -283,14 +277,14 @@ function TodoCard({ todo, onToggle, onEdit, onDelete }: TodoCardProps) {
         {!todo.completed && (
           <button
             onClick={() => onEdit(todo)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+            className="p-1.5 rounded-md text-ink-400 hover:text-brand-400 hover:bg-brand-50 transition-colors"
           >
             <Icon name="edit" size={14} />
           </button>
         )}
         <button
           onClick={() => onDelete(todo.id)}
-          className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="p-1.5 rounded-md text-ink-400 hover:text-danger hover:bg-red-50 transition-colors"
         >
           <Icon name="delete" size={14} />
         </button>
@@ -375,11 +369,11 @@ export function TodoPage() {
         className="flex items-start justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl font-bold text-white">Todos</h1>
-          <p className="text-gray-400 text-sm mt-0.5">
+          <h1 className="text-2xl font-extrabold text-ink-900">Todos</h1>
+          <p className="text-ink-500 text-sm mt-0.5">
             {activeTodos.length} remaining
             {overdueTodos.length > 0 && (
-              <span className="text-red-400 ml-2">· {overdueTodos.length} overdue</span>
+              <span className="text-danger ml-2">· {overdueTodos.length} overdue</span>
             )}
           </p>
         </div>
@@ -397,11 +391,11 @@ export function TodoPage() {
         className="grid grid-cols-3 gap-2 sm:gap-3"
       >
         {[
-          { label: 'Active', value: activeTodos.length, icon: 'radio_button_unchecked', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-          { label: 'Overdue', value: overdueTodos.length, icon: 'warning', color: overdueTodos.length > 0 ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-gray-500 bg-gray-800 border-gray-700' },
-          { label: 'Done', value: completedCount, icon: 'check_circle', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+          { label: 'Active', value: activeTodos.length, icon: 'radio_button_unchecked', color: 'text-brand-400 bg-brand-50 border-brand-100' },
+          { label: 'Overdue', value: overdueTodos.length, icon: 'warning', color: overdueTodos.length > 0 ? 'text-danger bg-red-50 border-red-200' : 'text-ink-500 bg-white border-ink-300' },
+          { label: 'Done', value: completedCount, icon: 'check_circle', color: 'text-success bg-green-50 border-green-200' },
         ].map((stat) => (
-          <div key={stat.label} className={cn('flex flex-col xs:flex-row items-center xs:items-start gap-1 xs:gap-3 px-2 xs:px-4 py-3 rounded-xl border text-center xs:text-left', stat.color)}>
+          <div key={stat.label} className={cn('flex flex-col xs:flex-row items-center xs:items-start gap-1 xs:gap-3 px-2 xs:px-4 py-3 rounded-lg border text-center xs:text-left', stat.color)}>
             <Icon name={stat.icon} size={18} fill={stat.icon !== 'radio_button_unchecked'} className="flex-shrink-0" />
             <div>
               <p className="text-xl font-bold leading-none">{stat.value}</p>
@@ -427,16 +421,16 @@ export function TodoPage() {
       {/* Filters */}
       <div className="flex flex-col xs:flex-row flex-wrap items-start xs:items-center gap-2 xs:gap-3">
         {/* Tab filter */}
-        <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 gap-0.5">
+        <div className="flex bg-white border border-ink-300 rounded-md p-1 gap-0.5">
           {(['active', 'all', 'completed'] as FilterTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize',
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize',
                 filter === tab
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-400 hover:text-white',
+                  ? 'bg-brand-400 text-white'
+                  : 'text-ink-500 hover:text-ink-900',
               )}
             >
               {tab}
@@ -451,12 +445,12 @@ export function TodoPage() {
               key={p}
               onClick={() => setPriorityFilter(p)}
               className={cn(
-                'px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                'px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all',
                 priorityFilter === p
                   ? p === 'all'
-                    ? 'bg-gray-700 border-gray-600 text-white'
+                    ? 'bg-ink-900 border-ink-900 text-white'
                     : PRIORITY_CONFIG[p].color
-                  : 'bg-gray-900 border-gray-800 text-gray-500 hover:text-gray-300',
+                  : 'bg-white border-ink-300 text-ink-500 hover:text-ink-900 hover:border-ink-500',
               )}
             >
               {p === 'all' ? 'All priority' : PRIORITY_CONFIG[p].label}
@@ -474,21 +468,21 @@ export function TodoPage() {
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-16 gap-4"
         >
-          <div className="w-16 h-16 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-center">
-            <Icon name="checklist" size={28} className="text-gray-600" />
+          <div className="w-16 h-16 rounded-lg bg-ink-100 border border-ink-300 flex items-center justify-center">
+            <Icon name="checklist" size={28} className="text-ink-400" />
           </div>
           <div className="text-center">
-            <p className="text-gray-400 font-medium">
+            <p className="text-ink-700 font-medium">
               {filter === 'completed' ? 'No completed todos yet' : filter === 'active' ? 'All caught up!' : 'No todos yet'}
             </p>
-            <p className="text-gray-600 text-sm mt-0.5">
+            <p className="text-ink-400 text-sm mt-0.5">
               {filter === 'active' ? 'Add a new todo to get started' : ''}
             </p>
           </div>
           {filter === 'active' && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-brand-400 hover:bg-brand-500 text-white text-sm font-medium transition-colors"
             >
               <Icon name="add" size={16} />
               Add your first todo
@@ -526,7 +520,7 @@ export function TodoPage() {
                 await Promise.all(completed.map((t) => deleteTodo.mutateAsync(t.id)));
                 toast.success(`Cleared ${completed.length} completed todo${completed.length !== 1 ? 's' : ''}`);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/10 border border-gray-800 hover:border-red-500/20 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm text-ink-500 hover:text-danger hover:bg-red-50 border border-ink-300 hover:border-red-200 transition-all"
             >
               <Icon name="delete_sweep" size={16} />
               Clear {completedCount} completed

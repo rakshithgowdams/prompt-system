@@ -38,21 +38,21 @@ export function Button({
   };
 
   const base =
-    'relative inline-flex items-center justify-center gap-2 font-medium rounded-xl overflow-hidden ' +
-    'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 ' +
-    'disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95';
+    'relative inline-flex items-center justify-center gap-2 font-bold rounded-md overflow-hidden ' +
+    'transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 ' +
+    'disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
 
-  const variants = {
-    primary:  'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white focus:ring-blue-500 shadow-lg shadow-blue-900/30',
-    secondary:'bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-100 focus:ring-gray-500',
-    ghost:    'hover:bg-gray-800 active:bg-gray-700 text-gray-300 hover:text-white focus:ring-gray-500',
-    danger:   'bg-red-600 hover:bg-red-500 active:bg-red-700 text-white focus:ring-red-500 shadow-lg shadow-red-900/30',
-    outline:  'border border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white hover:bg-gray-800 active:bg-gray-700 focus:ring-gray-500',
+  const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
+    primary:   'bg-brand-400 hover:bg-brand-500 text-white',
+    secondary: 'bg-ink-900 hover:bg-ink-700 text-white',
+    ghost:     'bg-transparent hover:bg-ink-100 text-ink-900 font-medium',
+    danger:    'bg-danger hover:bg-danger/90 text-white',
+    outline:   'bg-white border-2 border-ink-900 text-ink-900 hover:bg-ink-100',
   };
 
-  const sizes = {
-    sm: 'h-8 px-3 text-sm',
-    md: 'h-10 px-4 text-sm',
+  const sizes: Record<NonNullable<ButtonProps['size']>, string> = {
+    sm: 'h-9 px-3 text-sm',
+    md: 'h-11 px-4 text-sm',
     lg: 'h-12 px-6 text-base',
   };
 
@@ -64,7 +64,6 @@ export function Button({
       onClick={handleClick}
       {...props}
     >
-      {/* Ripple effects */}
       {ripples.map((r) => (
         <span
           key={r.id}
@@ -73,7 +72,6 @@ export function Button({
         />
       ))}
 
-      {/* Spinner */}
       {loading && (
         <svg className="animate-spin h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />

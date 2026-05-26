@@ -38,14 +38,13 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
   const { data: thumbnail } = useThumbnail(prompt.id);
 
   return (
-    <div className="group relative text-left w-full bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 transition-all duration-200">
+    <div className="group relative text-left w-full bg-white border border-ink-300 rounded-lg overflow-hidden hover:border-ink-500 hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-150">
       <button onClick={() => navigate(`/prompts/${prompt.id}`)} className="w-full text-left block">
 
         {/* Thumbnail — natural aspect ratio, never cropped */}
-        <div className="relative bg-gray-800 w-full">
+        <div className="relative bg-ink-100 w-full">
           {thumbnail ? (
             <>
-              {/* Invisible spacer that takes the image's natural ratio */}
               <img
                 src={thumbnail}
                 alt=""
@@ -53,7 +52,6 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
                 className="w-full block invisible"
                 loading="lazy"
               />
-              {/* Actual visible image, absolutely positioned over the spacer */}
               <img
                 src={thumbnail}
                 alt={prompt.title}
@@ -62,7 +60,7 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
               />
             </>
           ) : (
-            <div className="w-full aspect-video flex items-center justify-center text-gray-700">
+            <div className="w-full aspect-video flex items-center justify-center text-ink-300">
               <Icon name="image" size={36} weight={200} />
             </div>
           )}
@@ -72,7 +70,7 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(e, prompt); }}
-              className="absolute top-2.5 right-2.5 z-10 w-7 h-7 bg-black/60 hover:bg-blue-600/80 rounded-lg flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
+              className="absolute top-2.5 right-2.5 z-10 w-7 h-7 bg-black/60 hover:bg-brand-400/80 rounded-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
               title="Share"
             >
               <Icon name="share" size={13} />
@@ -82,11 +80,11 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
 
         {/* Content */}
         <div className="p-3 sm:p-4 space-y-2">
-          <h3 className="font-semibold text-white text-sm line-clamp-1 group-hover:text-blue-300 transition-colors leading-snug">
+          <h3 className="font-semibold text-ink-900 text-sm line-clamp-1 group-hover:text-brand-400 transition-colors leading-snug">
             {prompt.title}
           </h3>
 
-          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-ink-500 line-clamp-2 leading-relaxed">
             {prompt.prompt_text}
           </p>
 
@@ -95,10 +93,10 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
               <PlatformBadge platform={prompt.platform} />
               {prompt.tags[0] && <TagChip tag={prompt.tags[0]} />}
               {prompt.tags.length > 1 && (
-                <span className="text-xs text-gray-600">+{prompt.tags.length - 1}</span>
+                <span className="text-xs text-ink-400">+{prompt.tags.length - 1}</span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-600 flex-shrink-0">
+            <div className="flex items-center gap-1 text-xs text-ink-400 flex-shrink-0">
               <Icon name="calendar_today" size={10} />
               <span className="whitespace-nowrap">{formatRelative(prompt.created_at)}</span>
             </div>

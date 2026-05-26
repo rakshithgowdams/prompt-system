@@ -69,7 +69,6 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
     },
   });
 
-  // Reset form when project changes
   useEffect(() => {
     if (!project) return;
     form.reset({ name: project.name, color: (project.color as ProjectForm['color']) ?? 'blue' });
@@ -78,7 +77,6 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
     setRemoveCover(false);
   }, [project?.id]);
 
-  // Load existing cover
   useEffect(() => {
     if (!project?.cover_image) { setExistingCoverUrl(null); return; }
     getSignedUrl(project.cover_image, 3600).then(setExistingCoverUrl).catch(() => {});
@@ -128,15 +126,15 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
         {/* Cover image */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300 block">Cover Image</label>
+          <label className="text-sm font-medium text-ink-700 block">Cover Image</label>
           <div
             onDrop={(e) => { e.preventDefault(); setCoverDragging(false); const f = e.dataTransfer.files[0]; if (f) handleCoverFile(f); }}
             onDragOver={(e) => { e.preventDefault(); setCoverDragging(true); }}
             onDragLeave={() => setCoverDragging(false)}
             onClick={() => coverInputRef.current?.click()}
             className={cn(
-              'relative w-full h-36 sm:h-44 rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden transition-all duration-200',
-              coverDragging ? 'border-blue-400 bg-blue-500/10' : 'border-gray-700 hover:border-gray-500 bg-gray-800/50',
+              'relative w-full h-36 sm:h-44 rounded-lg border-2 border-dashed cursor-pointer overflow-hidden transition-all duration-200',
+              coverDragging ? 'border-brand-400 bg-brand-50' : 'border-ink-300 hover:border-ink-500 bg-ink-100',
             )}
           >
             <AnimatePresence mode="wait">
@@ -144,18 +142,18 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
                 <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
                   <img src={displayPreview} alt="Cover" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <span className="text-sm text-white font-medium bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2 flex items-center gap-2">
+                    <span className="text-sm text-white font-medium bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 flex items-center gap-2">
                       <Icon name="edit" size={15} /> Change image
                     </span>
                   </div>
                 </motion.div>
               ) : (
                 <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
-                  <div className="w-10 h-10 rounded-2xl bg-gray-700 flex items-center justify-center">
-                    <Icon name="add_photo_alternate" size={22} className="text-gray-400" />
+                  <div className="w-10 h-10 rounded-md bg-white border border-ink-300 flex items-center justify-center">
+                    <Icon name="add_photo_alternate" size={22} className="text-ink-500" />
                   </div>
-                  <p className="text-sm font-medium text-gray-300">Upload cover image</p>
-                  <p className="text-xs text-gray-500 hidden sm:block">Drag & drop or click to browse</p>
+                  <p className="text-sm font-medium text-ink-700">Upload cover image</p>
+                  <p className="text-xs text-ink-500 hidden sm:block">Drag & drop or click to browse</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -165,7 +163,7 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setCoverFile(null); setCoverPreview(null); setRemoveCover(true); }}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-400 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-ink-500 hover:text-danger transition-colors"
             >
               <Icon name="delete" size={13} /> Remove image
             </button>
@@ -187,8 +185,8 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
 
         {/* Color */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-300 block">
-            Accent Color <span className="text-gray-500 font-normal">(fallback when no cover)</span>
+          <label className="text-sm font-medium text-ink-700 block">
+            Accent Color <span className="text-ink-400 font-normal">(fallback when no cover)</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {COLOR_OPTIONS.map((color) => (
@@ -199,7 +197,7 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
                 className={cn(
                   'w-8 h-8 rounded-full bg-gradient-to-br transition-all',
                   PROJECT_COLORS[color],
-                  form.watch('color') === color ? 'ring-2 ring-white scale-110' : 'opacity-60 hover:opacity-100',
+                  form.watch('color') === color ? 'ring-2 ring-ink-900 scale-110' : 'opacity-60 hover:opacity-100',
                 )}
               />
             ))}
@@ -305,24 +303,24 @@ export function SettingsPage() {
         <motion.h1
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-bold text-white"
+          className="text-2xl font-extrabold text-ink-900"
         >
           Settings
         </motion.h1>
 
         {/* ── Profile ─────────────────────────────────────────────── */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-gray-800">
-            <Icon name="person" size={18} className="text-blue-400 flex-shrink-0" fill />
-            <h2 className="font-semibold text-white">Profile</h2>
+        <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
+          <div className="flex items-center gap-3 pb-3 border-b border-ink-300">
+            <Icon name="person" size={18} className="text-brand-400 flex-shrink-0" fill />
+            <h2 className="font-semibold text-ink-900">Profile</h2>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 w-full min-w-0">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-lg sm:text-xl font-bold flex-shrink-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-lg sm:text-xl font-bold flex-shrink-0">
               {user?.email?.[0]?.toUpperCase() ?? 'U'}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-white text-sm sm:text-base truncate">{user?.email}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="font-medium text-ink-900 text-sm sm:text-base truncate">{user?.email}</p>
+              <p className="text-xs text-ink-500 mt-0.5">
                 Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
               </p>
             </div>
@@ -330,10 +328,10 @@ export function SettingsPage() {
         </section>
 
         {/* ── Change Password ──────────────────────────────────────── */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-gray-800">
-            <Icon name="key" size={18} className="text-blue-400 flex-shrink-0" />
-            <h2 className="font-semibold text-white">Change Password</h2>
+        <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
+          <div className="flex items-center gap-3 pb-3 border-b border-ink-300">
+            <Icon name="key" size={18} className="text-brand-400 flex-shrink-0" />
+            <h2 className="font-semibold text-ink-900">Change Password</h2>
           </div>
           <form onSubmit={pwForm.handleSubmit(handlePasswordChange)} className="space-y-4">
             <div className="relative">
@@ -348,7 +346,7 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 bottom-0 h-11 flex items-center text-gray-400 hover:text-gray-200 transition-colors"
+                className="absolute right-3 bottom-0 h-11 flex items-center text-ink-500 hover:text-ink-900 transition-colors"
               >
                 <Icon name={showPw ? 'visibility_off' : 'visibility'} size={18} />
               </button>
@@ -367,9 +365,9 @@ export function SettingsPage() {
         </section>
 
         {/* ── Projects ────────────────────────────────────────────── */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl p-4 sm:p-5 space-y-4">
-          <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-800">
-            <h2 className="font-semibold text-white">Projects</h2>
+        <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-ink-300">
+            <h2 className="font-semibold text-ink-900">Projects</h2>
             <Button variant="outline" size="sm" onClick={() => setNewProjectOpen(true)}>
               <Icon name="add" size={14} />
               New Project
@@ -380,11 +378,11 @@ export function SettingsPage() {
             {(projects ?? []).map((project) => (
               <div
                 key={project.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-gray-800/50 hover:bg-gray-800 transition-colors w-full min-w-0 group"
+                className="flex items-center gap-3 p-3 rounded-md bg-ink-50 hover:bg-ink-100 border border-ink-200 hover:border-ink-300 transition-colors w-full min-w-0 group"
               >
                 {/* Thumbnail */}
                 <div className={cn(
-                  'w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br',
+                  'w-10 h-10 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br',
                   !project.cover_image && (PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray),
                 )}>
                   {project.cover_image
@@ -395,29 +393,27 @@ export function SettingsPage() {
 
                 {/* Name */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">@{project.name}</p>
+                  <p className="text-sm font-medium text-ink-900 truncate">@{project.name}</p>
                   {project.is_default && (
-                    <p className="text-xs text-gray-500">Default project</p>
+                    <p className="text-xs text-ink-500">Default project</p>
                   )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Edit — available for all projects */}
                   <button
                     onClick={() => setEditProject(project)}
-                    className="p-2 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                    className="p-2 rounded-md text-ink-500 hover:text-brand-400 hover:bg-brand-50 transition-colors"
                     aria-label={`Edit ${project.name}`}
                     title="Edit project"
                   >
                     <Icon name="edit" size={15} />
                   </button>
 
-                  {/* Delete — only non-default projects */}
                   {!project.is_default && (
                     <button
                       onClick={() => setDeleteTarget(project)}
-                      className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="p-2 rounded-md text-ink-500 hover:text-danger hover:bg-red-50 transition-colors"
                       aria-label={`Delete ${project.name}`}
                       title="Delete project"
                     >
@@ -429,7 +425,7 @@ export function SettingsPage() {
             ))}
 
             {projects?.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">No projects yet.</p>
+              <p className="text-sm text-ink-500 text-center py-4">No projects yet.</p>
             )}
           </div>
         </section>
@@ -439,15 +435,15 @@ export function SettingsPage() {
       <Modal open={newProjectOpen} onClose={creatingProject ? () => {} : closeNewProject} title="New Project">
         <form onSubmit={projectForm.handleSubmit(handleCreateProject)} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 block">Project Cover Image</label>
+            <label className="text-sm font-medium text-ink-700 block">Project Cover Image</label>
             <div
               onDrop={(e) => { e.preventDefault(); setCoverDragging(false); const f = e.dataTransfer.files[0]; if (f) handleCoverFile(f); }}
               onDragOver={(e) => { e.preventDefault(); setCoverDragging(true); }}
               onDragLeave={() => setCoverDragging(false)}
               onClick={() => coverInputRef.current?.click()}
               className={cn(
-                'relative w-full h-36 sm:h-44 rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden transition-all duration-200',
-                coverDragging ? 'border-blue-400 bg-blue-500/10' : 'border-gray-700 hover:border-gray-500 bg-gray-800/50',
+                'relative w-full h-36 sm:h-44 rounded-lg border-2 border-dashed cursor-pointer overflow-hidden transition-all duration-200',
+                coverDragging ? 'border-brand-400 bg-brand-50' : 'border-ink-300 hover:border-ink-500 bg-ink-100',
               )}
             >
               <AnimatePresence mode="wait">
@@ -455,19 +451,19 @@ export function SettingsPage() {
                   <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0">
                     <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <span className="text-sm text-white font-medium bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2 flex items-center gap-2">
+                      <span className="text-sm text-white font-medium bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 flex items-center gap-2">
                         <Icon name="edit" size={15} /> Change image
                       </span>
                     </div>
                   </motion.div>
                 ) : (
                   <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
-                    <div className="w-10 h-10 rounded-2xl bg-gray-700 flex items-center justify-center">
-                      <Icon name="add_photo_alternate" size={22} className="text-gray-400" />
+                    <div className="w-10 h-10 rounded-md bg-white border border-ink-300 flex items-center justify-center">
+                      <Icon name="add_photo_alternate" size={22} className="text-ink-500" />
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-medium text-gray-300">Upload cover image</p>
-                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Drag & drop or click to browse</p>
+                      <p className="text-sm font-medium text-ink-700">Upload cover image</p>
+                      <p className="text-xs text-ink-500 mt-0.5 hidden sm:block">Drag & drop or click to browse</p>
                     </div>
                   </motion.div>
                 )}
@@ -475,7 +471,7 @@ export function SettingsPage() {
             </div>
             {coverPreview && (
               <button type="button" onClick={(e) => { e.stopPropagation(); setCoverFile(null); setCoverPreview(null); }}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-400 transition-colors">
+                className="flex items-center gap-1.5 text-xs text-ink-500 hover:text-danger transition-colors">
                 <Icon name="delete" size={13} /> Remove image
               </button>
             )}
@@ -493,14 +489,14 @@ export function SettingsPage() {
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 block">
-              Accent Color <span className="text-gray-500 font-normal">(fallback when no cover)</span>
+            <label className="text-sm font-medium text-ink-700 block">
+              Accent Color <span className="text-ink-400 font-normal">(fallback when no cover)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {COLOR_OPTIONS.map((color) => (
                 <button key={color} type="button" onClick={() => projectForm.setValue('color', color)}
                   className={cn('w-8 h-8 rounded-full bg-gradient-to-br transition-all', PROJECT_COLORS[color],
-                    projectForm.watch('color') === color ? 'ring-2 ring-white scale-110' : 'opacity-60 hover:opacity-100')}
+                    projectForm.watch('color') === color ? 'ring-2 ring-ink-900 scale-110' : 'opacity-60 hover:opacity-100')}
                 />
               ))}
             </div>

@@ -63,7 +63,7 @@ function Favicon({ siteUrl, platform }: { siteUrl: string; platform: string }) {
   const letter = (platform.trim()[0] ?? '?').toUpperCase();
   const color = GRADIENT_COLORS[(letter.charCodeAt(0) ?? 0) % GRADIENT_COLORS.length];
   return (
-    <div className={cn('w-full h-full rounded-xl bg-gradient-to-br flex items-center justify-center', color)}>
+    <div className={cn('w-full h-full rounded-md bg-gradient-to-br flex items-center justify-center', color)}>
       <span className="text-white font-bold text-base leading-none select-none">{letter}</span>
     </div>
   );
@@ -109,31 +109,31 @@ function EntryForm({ initial, onSubmit, onCancel, submitting, submitLabel }: Ent
     });
   };
 
-  const field = 'w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors';
+  const field = 'w-full bg-ink-100 border border-ink-300 rounded-md px-3 py-2.5 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 transition-colors';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Platform row with live favicon */}
       <div className="flex gap-3 items-end">
-        <div className="w-12 h-12 rounded-xl bg-gray-800 border border-gray-700 flex-shrink-0 overflow-hidden">
+        <div className="w-12 h-12 rounded-md bg-ink-100 border border-ink-300 flex-shrink-0 overflow-hidden">
           {siteUrl && faviconSrc && faviconOk ? (
             <img src={faviconSrc} alt="" className="w-full h-full object-contain p-1" onError={() => setFaviconOk(false)} />
           ) : platform ? (
             <div className={cn(
-              'w-full h-full rounded-xl bg-gradient-to-br flex items-center justify-center',
+              'w-full h-full rounded-md bg-gradient-to-br flex items-center justify-center',
               GRADIENT_COLORS[(platform.charCodeAt(0) ?? 0) % GRADIENT_COLORS.length],
             )}>
               <span className="text-white font-bold text-lg select-none">{platform[0]?.toUpperCase()}</span>
             </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Icon name="language" size={22} className="text-gray-500" />
+              <Icon name="language" size={22} className="text-ink-400" />
             </div>
           )}
         </div>
         <div className="flex-1">
-          <label className="text-xs font-medium text-gray-400 block mb-1.5">
-            Platform Name <span className="text-red-400">*</span>
+          <label className="text-xs font-medium text-ink-700 block mb-1.5">
+            Platform Name <span className="text-danger">*</span>
           </label>
           <input
             ref={platformRef}
@@ -148,8 +148,8 @@ function EntryForm({ initial, onSubmit, onCancel, submitting, submitLabel }: Ent
 
       {/* Website URL */}
       <div>
-        <label className="text-xs font-medium text-gray-400 block mb-1.5">
-          Website URL <span className="text-gray-600 font-normal">(for favicon)</span>
+        <label className="text-xs font-medium text-ink-700 block mb-1.5">
+          Website URL <span className="text-ink-400 font-normal">(for favicon)</span>
         </label>
         <input
           type="text"
@@ -162,8 +162,8 @@ function EntryForm({ initial, onSubmit, onCancel, submitting, submitLabel }: Ent
 
       {/* Username */}
       <div>
-        <label className="text-xs font-medium text-gray-400 block mb-1.5">
-          Username / Email <span className="text-red-400">*</span>
+        <label className="text-xs font-medium text-ink-700 block mb-1.5">
+          Username / Email <span className="text-danger">*</span>
         </label>
         <input
           type="text"
@@ -177,8 +177,8 @@ function EntryForm({ initial, onSubmit, onCancel, submitting, submitLabel }: Ent
 
       {/* Password */}
       <div>
-        <label className="text-xs font-medium text-gray-400 block mb-1.5">
-          Password <span className="text-red-400">*</span>
+        <label className="text-xs font-medium text-ink-700 block mb-1.5">
+          Password <span className="text-danger">*</span>
         </label>
         <div className="relative">
           <input
@@ -192,12 +192,12 @@ function EntryForm({ initial, onSubmit, onCancel, submitting, submitLabel }: Ent
           <button
             type="button"
             onClick={() => setShowPw(!showPw)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-900 transition-colors"
           >
             <Icon name={showPw ? 'visibility_off' : 'visibility'} size={17} />
           </button>
         </div>
-        <p className="text-xs text-gray-600 mt-1.5 flex items-center gap-1">
+        <p className="text-xs text-ink-400 mt-1.5 flex items-center gap-1">
           <Icon name="lock" size={11} />
           Encrypted with AES-256-GCM before saving
         </p>
@@ -205,8 +205,8 @@ function EntryForm({ initial, onSubmit, onCancel, submitting, submitLabel }: Ent
 
       {/* Notes */}
       <div>
-        <label className="text-xs font-medium text-gray-400 block mb-1.5">
-          Notes <span className="text-gray-600 font-normal">(optional)</span>
+        <label className="text-xs font-medium text-ink-700 block mb-1.5">
+          Notes <span className="text-ink-400 font-normal">(optional)</span>
         </label>
         <textarea
           value={notes}
@@ -274,11 +274,11 @@ function VaultCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
-      className="group bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-2xl p-4 transition-all duration-200 hover:shadow-lg hover:shadow-black/20"
+      className="group bg-white border border-ink-300 hover:border-ink-500 rounded-lg p-4 transition-all duration-200 hover:shadow-card"
     >
       <div className="flex items-start gap-3">
         {/* Favicon */}
-        <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-gray-800 border border-gray-700/50">
+        <div className="w-11 h-11 rounded-md overflow-hidden flex-shrink-0 bg-ink-100 border border-ink-300">
           <Favicon siteUrl={entry.site_url} platform={entry.platform} />
         </div>
 
@@ -286,13 +286,13 @@ function VaultCard({
           {/* Top row: name + actions */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-white text-sm truncate">{entry.platform}</p>
+              <p className="font-semibold text-ink-900 text-sm truncate">{entry.platform}</p>
               {entry.site_url && (
                 <a
                   href={entry.site_url.startsWith('http') ? entry.site_url : `https://${entry.site_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-gray-500 hover:text-blue-400 transition-colors truncate block"
+                  className="text-xs text-ink-500 hover:text-brand-400 transition-colors truncate block"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {entry.site_url.replace(/^https?:\/\//, '')}
@@ -304,14 +304,14 @@ function VaultCard({
             <div className="flex items-center gap-1 flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onEdit(entry)}
-                className="p-2 rounded-xl text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                className="p-2 rounded-md text-ink-500 hover:text-brand-400 hover:bg-brand-50 transition-colors"
                 title="Edit"
               >
                 <Icon name="edit" size={15} />
               </button>
               <button
                 onClick={() => onDelete(entry)}
-                className="p-2 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                className="p-2 rounded-md text-ink-500 hover:text-danger hover:bg-red-50 transition-colors"
                 title="Delete"
               >
                 <Icon name="delete" size={15} />
@@ -321,25 +321,25 @@ function VaultCard({
 
           {/* Username row */}
           <div className="mt-2.5 flex items-center gap-2 min-w-0">
-            <Icon name="person" size={13} className="text-gray-500 flex-shrink-0" />
-            <span className="text-xs text-gray-300 truncate flex-1 min-w-0">{entry.username}</span>
+            <Icon name="person" size={13} className="text-ink-500 flex-shrink-0" />
+            <span className="text-xs text-ink-700 truncate flex-1 min-w-0">{entry.username}</span>
             <button
               onClick={() => copyText(entry.username, 'user')}
-              className="flex-shrink-0 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+              className="flex-shrink-0 p-1.5 rounded-lg text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors"
               title="Copy username"
             >
               <Icon
                 name={copied === 'user' ? 'check' : 'content_copy'}
                 size={13}
-                className={copied === 'user' ? 'text-emerald-400' : ''}
+                className={copied === 'user' ? 'text-success' : ''}
               />
             </button>
           </div>
 
           {/* Password row */}
           <div className="mt-1.5 flex items-center gap-2 min-w-0">
-            <Icon name="key" size={13} className="text-gray-500 flex-shrink-0" />
-            <span className={cn('text-xs flex-1 truncate min-w-0 font-mono', revealed ? 'text-gray-200' : 'text-gray-500 tracking-widest')}>
+            <Icon name="key" size={13} className="text-ink-500 flex-shrink-0" />
+            <span className={cn('text-xs flex-1 truncate min-w-0 font-mono', revealed ? 'text-ink-900' : 'text-ink-300 tracking-widest')}>
               {revealed ? plaintext : '••••••••••'}
             </span>
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -350,13 +350,13 @@ function VaultCard({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     onClick={() => copyText(plaintext, 'pw')}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+                    className="p-1.5 rounded-lg text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors"
                     title="Copy password"
                   >
                     <Icon
                       name={copied === 'pw' ? 'check' : 'content_copy'}
                       size={13}
-                      className={copied === 'pw' ? 'text-emerald-400' : ''}
+                      className={copied === 'pw' ? 'text-success' : ''}
                     />
                   </motion.button>
                 )}
@@ -364,7 +364,7 @@ function VaultCard({
               <button
                 onClick={reveal}
                 disabled={decrypting}
-                className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
+                className="p-1.5 rounded-lg text-ink-400 hover:text-brand-400 hover:bg-brand-50 transition-colors disabled:opacity-50"
                 title={revealed ? 'Hide password' : 'Reveal password'}
               >
                 {decrypting ? (
@@ -381,7 +381,7 @@ function VaultCard({
 
           {/* Notes */}
           {entry.notes && (
-            <p className="mt-2 text-xs text-gray-500 italic line-clamp-1">{entry.notes}</p>
+            <p className="mt-2 text-xs text-ink-400 italic line-clamp-1">{entry.notes}</p>
           )}
         </div>
       </div>
@@ -468,10 +468,10 @@ export function PasswordVaultPage() {
           {/* Title row */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                <Icon name="shield" size={18} className="text-blue-400" />
+              <div className="w-9 h-9 rounded-md bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
+                <Icon name="shield" size={18} className="text-brand-400" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white leading-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-ink-900 leading-tight">
                 Password Vault
               </h1>
             </div>
@@ -486,7 +486,7 @@ export function PasswordVaultPage() {
           </div>
 
           {/* Subtitle */}
-          <p className="text-sm text-gray-400 mt-2 ml-12 sm:ml-0">
+          <p className="text-sm text-ink-500 mt-2 ml-12 sm:ml-0">
             Passwords are encrypted with AES-256-GCM — only you can decrypt them.
           </p>
 
@@ -504,10 +504,10 @@ export function PasswordVaultPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.08 }}
-          className="flex items-start gap-3 px-3.5 py-3 bg-emerald-500/5 border border-emerald-500/15 rounded-xl mb-5"
+          className="flex items-start gap-3 px-3.5 py-3 bg-green-50 border border-green-200 rounded-md mb-5"
         >
-          <Icon name="verified_user" size={15} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-emerald-300 leading-relaxed">
+          <Icon name="verified_user" size={15} className="text-success flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-green-700 leading-relaxed">
             All passwords are encrypted on your device before being stored. The server only ever sees ciphertext — your plaintext passwords never leave this browser.
           </p>
         </motion.div>
@@ -515,18 +515,18 @@ export function PasswordVaultPage() {
         {/* ── Search ─────────────────────────────────────────────────── */}
         {entries.length > 3 && (
           <div className="relative mb-5">
-            <Icon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            <Icon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search platforms, usernames…"
-              className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-white border border-ink-300 rounded-md pl-10 pr-4 py-2.5 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-900 transition-colors"
               >
                 <Icon name="close" size={15} />
               </button>
@@ -538,7 +538,7 @@ export function PasswordVaultPage() {
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-[88px] bg-gray-900 border border-gray-800 rounded-2xl animate-pulse" />
+              <div key={i} className="h-[88px] bg-ink-100 border border-ink-300 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -547,13 +547,13 @@ export function PasswordVaultPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-14 sm:py-20"
           >
-            <div className="w-16 h-16 rounded-2xl bg-gray-800/60 border border-gray-700 flex items-center justify-center mx-auto mb-4">
-              <Icon name="lock" size={26} className="text-gray-500" />
+            <div className="w-16 h-16 rounded-lg bg-ink-100 border border-ink-300 flex items-center justify-center mx-auto mb-4">
+              <Icon name="lock" size={26} className="text-ink-400" />
             </div>
-            <p className="text-gray-300 font-medium mb-1">
+            <p className="text-ink-900 font-medium mb-1">
               {search ? 'No matching entries' : 'Your vault is empty'}
             </p>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-ink-500 mb-6">
               {search ? 'Try a different search term.' : 'Add your first saved password to get started.'}
             </p>
             {!search && (
@@ -581,7 +581,7 @@ export function PasswordVaultPage() {
 
         {/* Entry count */}
         {filtered.length > 0 && (
-          <p className="text-xs text-gray-600 text-center mt-6">
+          <p className="text-xs text-ink-400 text-center mt-6">
             {filtered.length} entr{filtered.length === 1 ? 'y' : 'ies'} stored
           </p>
         )}

@@ -62,13 +62,13 @@ export function NewPromptPage() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate(`/projects/${slug}`)}
-          className="p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+          className="p-2 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
         >
           <Icon name="arrow_back" size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-white">New Prompt</h1>
-          {project && <p className="text-sm text-gray-400">in @{project.name}</p>}
+          <h1 className="text-xl font-extrabold text-ink-900">New Prompt</h1>
+          {project && <p className="text-sm text-ink-500">in @{project.name}</p>}
         </div>
       </div>
 
@@ -117,8 +117,8 @@ export function NewPromptPage() {
           </Button>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-              <p className="text-green-400 text-sm font-medium text-center">Prompt created! You can now add media files below.</p>
+            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-success text-sm font-medium text-center">Prompt created! You can now add media files below.</p>
             </div>
             <MediaUpload promptId={createdId} existingFiles={[]} />
             <Button type="button" onClick={handleFinish} className="w-full" size="lg" variant="secondary">

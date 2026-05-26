@@ -85,7 +85,7 @@ export function ProjectPage() {
   if (projectLoading) {
     return (
       <div className="p-4 lg:p-8">
-        <div className="h-32 bg-gray-800 rounded-2xl animate-pulse mb-8" />
+        <div className="h-32 bg-ink-100 rounded-lg animate-pulse mb-8" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => <PromptCardSkeleton key={i} />)}
         </div>
@@ -94,32 +94,31 @@ export function ProjectPage() {
   }
 
   if (!project) {
-    return <div className="p-8 text-center"><p className="text-gray-400">Project not found.</p></div>;
+    return <div className="p-8 text-center"><p className="text-ink-500">Project not found.</p></div>;
   }
 
   return (
     <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-6">
       {/* Project header */}
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
         className={cn(
-          'p-5 sm:p-6 rounded-2xl bg-gradient-to-br text-white relative overflow-hidden',
+          'p-5 sm:p-6 rounded-lg bg-gradient-to-br text-white relative overflow-hidden',
           PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray,
         )}
       >
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative z-10">
           <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <span className="text-2xl sm:text-3xl">{project.icon}</span>
-                <div>
-                  <h1 className="text-lg sm:text-xl font-bold">@{project.name}</h1>
-                  <p className="text-white/70 text-xs sm:text-sm">
-                    {allPrompts?.length ?? 0} prompt{(allPrompts?.length ?? 0) !== 1 ? 's' : ''} · {pages.length} page{pages.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl sm:text-3xl">{project.icon}</span>
+              <div>
+                <h1 className="text-lg sm:text-xl font-extrabold">@{project.name}</h1>
+                <p className="text-white/70 text-xs sm:text-sm">
+                  {allPrompts?.length ?? 0} prompt{(allPrompts?.length ?? 0) !== 1 ? 's' : ''} · {pages.length} page{pages.length !== 1 ? 's' : ''}
+                </p>
               </div>
             </div>
             <Button
@@ -133,18 +132,17 @@ export function ProjectPage() {
             </Button>
           </div>
 
-          {/* Quick nav pills */}
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => navigate(`/projects/${slug}/files`)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium transition-colors"
             >
               <Icon name="folder_open" size={13} />
               Files
             </button>
             <button
               onClick={() => setShareOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium transition-colors"
             >
               <Icon name="share" size={13} />
               Share
@@ -154,16 +152,16 @@ export function ProjectPage() {
       </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+      <div className="flex gap-0 bg-white border border-ink-300 rounded-md p-1 w-fit">
         {(['prompts', 'pages'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize',
+              'px-4 py-2 rounded-md text-sm font-medium transition-all capitalize',
               tab === t
-                ? 'bg-gray-700 text-white shadow'
-                : 'text-gray-400 hover:text-white',
+                ? 'bg-ink-900 text-white shadow-sm'
+                : 'text-ink-500 hover:text-ink-900',
             )}
           >
             {t === 'prompts' ? `Prompts${allPrompts ? ` (${allPrompts.length})` : ''}` : `Pages${pages.length ? ` (${pages.length})` : ''}`}
@@ -178,40 +176,39 @@ export function ProjectPage() {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.15 }}
             className="space-y-4"
           >
-            {/* Search & Filters */}
             <div className="space-y-3">
               <div className="flex gap-3">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none">
                     <Icon name="search" size={17} />
                   </span>
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search prompts..."
-                    className="w-full h-11 pl-9 pr-4 rounded-xl bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-600 transition-colors"
+                    className="w-full h-11 pl-9 pr-4 rounded-md bg-white border border-ink-300 text-ink-900 placeholder-ink-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 hover:border-ink-500 transition-colors"
                   />
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={cn(
-                    'h-11 w-11 flex items-center justify-center rounded-xl border text-sm transition-colors',
+                    'h-11 w-11 flex items-center justify-center rounded-md border text-sm transition-colors',
                     showFilters
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:border-gray-600',
+                      ? 'bg-brand-400 border-brand-400 text-white'
+                      : 'bg-white border-ink-300 text-ink-500 hover:text-ink-900 hover:border-ink-500',
                   )}
                 >
                   <Icon name="tune" size={17} />
                 </button>
                 <div className="hidden sm:flex items-center gap-2">
-                  <Icon name="swap_vert" size={15} className="text-gray-500" />
+                  <Icon name="swap_vert" size={15} className="text-ink-500" />
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
-                    className="h-11 px-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-11 px-3 rounded-md bg-white border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 transition-colors"
                   >
                     {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
@@ -235,7 +232,7 @@ export function ProjectPage() {
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
-                    className="sm:hidden flex-1 min-w-32 h-9 px-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 text-xs focus:outline-none"
+                    className="sm:hidden flex-1 min-w-32 h-9 px-3 rounded-md bg-white border border-ink-300 text-ink-900 text-xs focus:outline-none"
                   >
                     {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
@@ -257,7 +254,7 @@ export function ProjectPage() {
               </div>
             ) : (
               <EmptyState
-                icon={<Icon name="description" size={24} className="text-gray-500" />}
+                icon={<Icon name="description" size={24} />}
                 title={search || statusFilter || platformFilter ? 'No prompts match your filters' : 'No prompts yet'}
                 description={search || statusFilter || platformFilter ? 'Try adjusting your search or filters.' : 'Create your first prompt for this channel.'}
                 action={!search && !statusFilter && !platformFilter ? {
@@ -273,17 +270,17 @@ export function ProjectPage() {
             initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 8 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.15 }}
           >
             {pagesLoading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-gray-900 rounded-2xl animate-pulse" />
+                  <div key={i} className="h-16 bg-ink-100 rounded-md animate-pulse" />
                 ))}
               </div>
             ) : pages.length === 0 ? (
               <EmptyState
-                icon={<Icon name="article" size={24} className="text-gray-500" />}
+                icon={<Icon name="article" size={24} />}
                 title="No pages yet"
                 description="Create a Notion-style page to write notes, docs, and more."
                 action={{ label: '+ New Page', onClick: () => setActionOpen(true) }}
@@ -297,30 +294,30 @@ export function ProjectPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     onClick={() => navigate(`/projects/${slug}/pages/${page.id}`)}
-                    className="w-full flex items-center gap-4 p-4 bg-gray-900 border border-gray-800 rounded-2xl hover:border-gray-600 hover:bg-gray-800/50 transition-all text-left group"
+                    className="w-full flex items-center gap-4 p-4 bg-white border border-ink-300 rounded-md hover:border-ink-500 hover:shadow-card transition-all text-left group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <div className="w-10 h-10 rounded-md bg-ink-100 border border-ink-300 flex items-center justify-center text-xl flex-shrink-0">
                       {page.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{page.title || 'Untitled'}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Updated {formatRelative(page.updated_at)}</p>
+                      <p className="text-sm font-medium text-ink-900 truncate">{page.title || 'Untitled'}</p>
+                      <p className="text-xs text-ink-500 mt-0.5">Updated {formatRelative(page.updated_at)}</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => handleDeletePage(page, e)}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors"
+                        className="p-1.5 rounded-md hover:bg-red-50 text-ink-500 hover:text-danger transition-colors"
                         title="Delete page"
                       >
                         <Icon name="delete" size={15} />
                       </button>
                     </div>
-                    <Icon name="chevron_right" size={16} className="text-gray-600 group-hover:text-gray-400 transition-colors flex-shrink-0" />
+                    <Icon name="chevron_right" size={16} className="text-ink-300 group-hover:text-ink-500 transition-colors flex-shrink-0" />
                   </motion.button>
                 ))}
                 <button
                   onClick={() => setActionOpen(true)}
-                  className="w-full flex items-center gap-3 p-4 border border-dashed border-gray-700 hover:border-gray-500 rounded-2xl text-gray-500 hover:text-gray-300 transition-all text-sm"
+                  className="w-full flex items-center gap-3 p-4 border border-dashed border-ink-300 hover:border-brand-400 rounded-md text-ink-500 hover:text-brand-400 transition-all text-sm"
                 >
                   <Icon name="add" size={18} />
                   New page
@@ -334,7 +331,7 @@ export function ProjectPage() {
       {/* FAB on mobile */}
       <button
         onClick={() => setActionOpen(true)}
-        className="lg:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-900/40 flex items-center justify-center transition-all active:scale-95 z-10"
+        className="lg:hidden fixed bottom-20 right-4 w-14 h-14 bg-brand-400 hover:bg-brand-500 text-white rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95 z-10"
         aria-label="New item"
       >
         <Icon name="add" size={24} />

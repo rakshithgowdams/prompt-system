@@ -87,16 +87,16 @@ function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
 
   return (
     <div
-      className="relative aspect-video w-full rounded-2xl overflow-hidden bg-gray-800 border-2 border-dashed border-gray-700 hover:border-blue-500/50 transition-colors cursor-pointer group"
+      className="relative aspect-video w-full rounded-lg overflow-hidden bg-ink-100 border-2 border-dashed border-ink-300 hover:border-brand-400/50 transition-colors cursor-pointer group"
       onClick={() => !uploading && inputRef.current?.click()}
     >
       {url ? (
         <img src={url} alt="Cover" className="w-full h-full object-cover" />
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-500">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-ink-500">
           <Icon name="add_photo_alternate" size={32} />
           <span className="text-sm font-medium">Click to upload cover image</span>
-          <span className="text-xs text-gray-600">JPG, PNG, WEBP · Max 10 MB</span>
+          <span className="text-xs text-ink-300">JPG, PNG, WEBP · Max 10 MB</span>
         </div>
       )}
       {/* Hover / uploading overlay */}
@@ -106,7 +106,7 @@ function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
             <Spinner size={24} />
             <span className="text-sm font-medium">Uploading… {progress}%</span>
             <div className="w-32 h-1 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${progress}%` }} />
+              <div className="h-full bg-brand-400 rounded-full transition-all" style={{ width: `${progress}%` }} />
             </div>
           </>
         ) : (
@@ -276,19 +276,19 @@ function LessonEditor({
       onClick={() => !uploading && onClick()}
       disabled={uploading}
       className={cn(
-        'w-full border-2 border-dashed rounded-2xl transition-all flex flex-col items-center justify-center gap-2 py-6 px-4 disabled:opacity-50 disabled:cursor-not-allowed',
-        color === 'blue' ? 'border-gray-700 hover:border-blue-500/60 hover:bg-blue-600/5' :
-        color === 'emerald' ? 'border-gray-700 hover:border-emerald-500/60 hover:bg-emerald-600/5' :
-        'border-gray-700 hover:border-amber-500/60 hover:bg-amber-600/5',
+        'w-full border-2 border-dashed rounded-lg transition-all flex flex-col items-center justify-center gap-2 py-6 px-4 disabled:opacity-50 disabled:cursor-not-allowed',
+        color === 'blue' ? 'border-ink-300 hover:border-brand-400/60 hover:bg-brand-50' :
+        color === 'emerald' ? 'border-ink-300 hover:border-emerald-500/60 hover:bg-green-50' :
+        'border-ink-300 hover:border-amber-500/60 hover:bg-amber-600/5',
       )}
     >
       {uploading ? (
         <>
           <Spinner size={20} />
-          <span className="text-sm font-medium text-gray-300">{uploadLabel}…</span>
-          <div className="w-36 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+          <span className="text-sm font-medium text-ink-700">{uploadLabel}…</span>
+          <div className="w-36 h-1.5 bg-ink-300 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-blue-400 rounded-full"
+              className="h-full bg-brand-400 rounded-full"
               initial={{ width: '0%' }}
               animate={{ width: `${uploadProgress}%` }}
               transition={{ duration: 0.3 }}
@@ -298,16 +298,16 @@ function LessonEditor({
       ) : (
         <>
           <div className={cn(
-            'w-11 h-11 rounded-2xl flex items-center justify-center',
-            color === 'blue' ? 'bg-blue-500/15 text-blue-400' :
-            color === 'emerald' ? 'bg-emerald-500/15 text-emerald-400' :
+            'w-11 h-11 rounded-lg flex items-center justify-center',
+            color === 'blue' ? 'bg-brand-50 text-brand-400' :
+            color === 'emerald' ? 'bg-green-50 text-success' :
             'bg-amber-500/15 text-amber-400',
           )}>
             <Icon name={icon} size={22} />
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold text-gray-200">{label}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{sublabel}</p>
+            <p className="text-sm font-semibold text-ink-900">{label}</p>
+            <p className="text-xs text-ink-500 mt-0.5">{sublabel}</p>
           </div>
         </>
       )}
@@ -315,26 +315,26 @@ function LessonEditor({
   );
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 border-l border-gray-800">
+    <div className="flex flex-col h-full bg-white border-l border-ink-300">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 flex-shrink-0">
-        <h3 className="font-semibold text-white text-sm truncate flex-1 mr-3">{title || 'Untitled Lesson'}</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ink-300 flex-shrink-0">
+        <h3 className="font-semibold text-ink-900 text-sm truncate flex-1 mr-3">{title || 'Untitled Lesson'}</h3>
         <div className="flex items-center gap-1.5">
-          <button onClick={onDelete} className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+          <button onClick={onDelete} className="p-1.5 rounded-lg text-ink-500 hover:text-red-400 hover:bg-red-500/10 transition-colors">
             <Icon name="delete" size={15} />
           </button>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors">
             <Icon name="close" size={15} />
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-800 flex-shrink-0">
+      <div className="flex border-b border-ink-300 flex-shrink-0">
         {([['content', 'Content'], ['resources', 'Resources']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             className={cn('flex-1 py-2.5 text-xs font-medium transition-colors border-b-2',
-              tab === key ? 'text-blue-400 border-blue-500' : 'text-gray-500 border-transparent hover:text-gray-300'
+              tab === key ? 'text-brand-400 border-brand-400' : 'text-ink-500 border-transparent hover:text-ink-700'
             )}>
             {label}
           </button>
@@ -346,15 +346,15 @@ function LessonEditor({
           <>
             {/* Title */}
             <div>
-              <label className="text-xs font-medium text-gray-400 mb-1 block">Title</label>
+              <label className="text-xs font-medium text-ink-500 mb-1 block">Title</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)}
-                className="w-full h-9 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-9 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                 placeholder="Lesson title" />
             </div>
 
             {/* Type selector */}
             <div>
-              <label className="text-xs font-medium text-gray-400 mb-1.5 block">Lesson Type</label>
+              <label className="text-xs font-medium text-ink-500 mb-1.5 block">Lesson Type</label>
               <div className="grid grid-cols-4 gap-1.5">
                 {([
                   ['video', 'smart_display', 'Video'],
@@ -363,10 +363,10 @@ function LessonEditor({
                   ['resource', 'attach_file', 'File'],
                 ] as const).map(([type, icon, label]) => (
                   <button key={type} onClick={() => setLessonType(type)}
-                    className={cn('flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                    className={cn('flex flex-col items-center gap-1 py-2.5 rounded-md border text-xs font-medium transition-all',
                       lessonType === type
-                        ? 'bg-blue-600/20 border-blue-500/50 text-blue-300'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-200'
+                        ? 'bg-brand-50 border-brand-400 text-brand-400'
+                        : 'bg-ink-100 border-ink-300 text-ink-500 hover:border-ink-300 hover:text-ink-900'
                     )}>
                     <Icon name={icon} size={15} />
                     {label}
@@ -380,7 +380,7 @@ function LessonEditor({
               <div className="space-y-3">
                 {/* Existing uploaded video preview */}
                 {videoPreviewUrl && !uploading && (
-                  <div className="rounded-xl overflow-hidden bg-black aspect-video">
+                  <div className="rounded-md overflow-hidden bg-black aspect-video">
                     <video src={videoPreviewUrl} controls className="w-full h-full" />
                   </div>
                 )}
@@ -397,22 +397,22 @@ function LessonEditor({
                   onChange={(e) => e.target.files?.[0] && handleVideoUpload(e.target.files[0])} />
 
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-gray-800" />
-                  <span className="text-xs text-gray-600 font-medium">or paste a link</span>
-                  <div className="flex-1 h-px bg-gray-800" />
+                  <div className="flex-1 h-px bg-ink-300" />
+                  <span className="text-xs text-ink-300 font-medium">or paste a link</span>
+                  <div className="flex-1 h-px bg-ink-300" />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-1 block">YouTube / Vimeo URL</label>
+                  <label className="text-xs font-medium text-ink-500 mb-1 block">YouTube / Vimeo URL</label>
                   <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
-                    className="w-full h-9 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-9 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                     placeholder="https://youtube.com/watch?v=..." />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-1 block">Duration (minutes)</label>
+                  <label className="text-xs font-medium text-ink-500 mb-1 block">Duration (minutes)</label>
                   <input value={durationMin} onChange={(e) => setDurationMin(e.target.value)} type="number" min="0"
-                    className="w-full h-9 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-9 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                     placeholder="e.g. 12.5" />
                 </div>
               </div>
@@ -423,7 +423,7 @@ function LessonEditor({
               <div className="space-y-3">
                 {/* Current image preview */}
                 {imagePreviewUrl && !uploading ? (
-                  <div className="relative rounded-2xl overflow-hidden bg-gray-800 group">
+                  <div className="relative rounded-lg overflow-hidden bg-ink-100 group">
                     <img src={imagePreviewUrl} alt="Lesson" className="w-full object-contain max-h-64" />
                     <button
                       onClick={() => imgInputRef.current?.click()}
@@ -449,9 +449,9 @@ function LessonEditor({
                   onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
 
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-1 block">Caption / Notes</label>
+                  <label className="text-xs font-medium text-ink-500 mb-1 block">Caption / Notes</label>
                   <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3}
-                    className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                     placeholder="Add a caption or context for this image..." />
                 </div>
               </div>
@@ -460,9 +460,9 @@ function LessonEditor({
             {/* ── TEXT type ── */}
             {lessonType === 'text' && (
               <div>
-                <label className="text-xs font-medium text-gray-400 mb-1 block">Lesson Content</label>
+                <label className="text-xs font-medium text-ink-500 mb-1 block">Lesson Content</label>
                 <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={12}
-                  className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono leading-relaxed"
+                  className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none font-mono leading-relaxed"
                   placeholder={'# Lesson Title\n\nWrite your lesson content here...\n\n## Section\n\nSupports markdown formatting.'} />
               </div>
             )}
@@ -472,19 +472,19 @@ function LessonEditor({
               <div className="space-y-3">
                 {/* Show current main file if any */}
                 {lesson.video_path && !uploading && (
-                  <div className="flex items-center gap-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
-                    <div className="w-9 h-9 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-center gap-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-md">
+                    <div className="w-9 h-9 bg-amber-500/15 rounded-md flex items-center justify-center flex-shrink-0">
                       <Icon name="description" size={17} className="text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-200 truncate">
+                      <p className="text-xs font-semibold text-ink-900 truncate">
                         {lesson.video_path.split('/').pop()}
                       </p>
                       <p className="text-[10px] text-amber-400/70 mt-0.5">Main lesson file</p>
                     </div>
                     <button
                       onClick={() => mainFileInputRef.current?.click()}
-                      className="text-xs text-gray-500 hover:text-gray-200 transition-colors flex-shrink-0"
+                      className="text-xs text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
                     >
                       Replace
                     </button>
@@ -505,9 +505,9 @@ function LessonEditor({
                   onChange={(e) => e.target.files?.[0] && handleMainFileUpload(e.target.files[0])} />
 
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-1 block">Description / Instructions</label>
+                  <label className="text-xs font-medium text-ink-500 mb-1 block">Description / Instructions</label>
                   <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={4}
-                    className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                     placeholder="Describe what this file is and how students should use it..." />
                 </div>
               </div>
@@ -515,9 +515,9 @@ function LessonEditor({
 
             {/* Description (all types) */}
             <div>
-              <label className="text-xs font-medium text-gray-400 mb-1 block">Lesson Summary</label>
+              <label className="text-xs font-medium text-ink-500 mb-1 block">Lesson Summary</label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                 placeholder="Brief one-line description of this lesson" />
             </div>
 
@@ -525,18 +525,18 @@ function LessonEditor({
             <button
               onClick={() => setIsPreview((v) => !v)}
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left',
+                'w-full flex items-center gap-3 px-4 py-3 rounded-md border transition-all text-left',
                 isPreview
                   ? 'bg-teal-500/10 border-teal-500/30'
-                  : 'bg-gray-800 border-gray-700 hover:border-gray-600',
+                  : 'bg-ink-100 border-ink-300 hover:border-ink-300',
               )}
             >
-              <div className={cn('w-9 h-5 rounded-full relative transition-colors flex-shrink-0', isPreview ? 'bg-teal-500' : 'bg-gray-600')}>
+              <div className={cn('w-9 h-5 rounded-full relative transition-colors flex-shrink-0', isPreview ? 'bg-teal-500' : 'bg-ink-300')}>
                 <div className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform', isPreview ? 'translate-x-4' : 'translate-x-0.5')} />
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-200">Free Preview</span>
-                <p className="text-xs text-gray-500">Non-enrolled students can view this lesson</p>
+                <span className="text-sm font-medium text-ink-900">Free Preview</span>
+                <p className="text-xs text-ink-500">Non-enrolled students can view this lesson</p>
               </div>
             </button>
           </>
@@ -546,29 +546,29 @@ function LessonEditor({
         {tab === 'resources' && (
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-semibold text-gray-200 mb-0.5">Attachments</p>
-              <p className="text-xs text-gray-500">Downloadable files for students (PDFs, ZIPs, code, etc.)</p>
+              <p className="text-sm font-semibold text-ink-900 mb-0.5">Attachments</p>
+              <p className="text-xs text-ink-500">Downloadable files for students (PDFs, ZIPs, code, etc.)</p>
             </div>
 
             <button onClick={() => !uploading && resInputRef.current?.click()}
               disabled={uploading}
-              className="w-full border-2 border-dashed border-gray-700 hover:border-blue-500/60 hover:bg-blue-600/5 rounded-2xl text-xs transition-all flex flex-col items-center justify-center gap-2 py-5 disabled:opacity-50 disabled:cursor-not-allowed">
+              className="w-full border-2 border-dashed border-ink-300 hover:border-brand-400/60 hover:bg-brand-50 rounded-lg text-xs transition-all flex flex-col items-center justify-center gap-2 py-5 disabled:opacity-50 disabled:cursor-not-allowed">
               {uploading ? (
                 <>
                   <Spinner size={18} />
-                  <span className="text-sm text-gray-300">{uploadLabel}…</span>
-                  <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <motion.div className="h-full bg-blue-400 rounded-full" animate={{ width: `${uploadProgress}%` }} transition={{ duration: 0.3 }} />
+                  <span className="text-sm text-ink-700">{uploadLabel}…</span>
+                  <div className="w-32 h-1.5 bg-ink-300 rounded-full overflow-hidden">
+                    <motion.div className="h-full bg-brand-400 rounded-full" animate={{ width: `${uploadProgress}%` }} transition={{ duration: 0.3 }} />
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="w-9 h-9 bg-blue-500/15 text-blue-400 rounded-xl flex items-center justify-center">
+                  <div className="w-9 h-9 bg-brand-50 text-brand-400 rounded-md flex items-center justify-center">
                     <Icon name="attach_file" size={18} />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-200">Add Attachment</p>
-                    <p className="text-gray-500 text-xs mt-0.5">Any file type · Max 100 MB</p>
+                    <p className="text-sm font-semibold text-ink-900">Add Attachment</p>
+                    <p className="text-ink-500 text-xs mt-0.5">Any file type · Max 100 MB</p>
                   </div>
                 </>
               )}
@@ -578,26 +578,26 @@ function LessonEditor({
 
             {resources.length === 0 ? (
               <div className="text-center py-8">
-                <Icon name="folder_open" size={28} className="text-gray-700 mx-auto mb-2" />
-                <p className="text-xs text-gray-600">No attachments yet</p>
+                <Icon name="folder_open" size={28} className="text-ink-300 mx-auto mb-2" />
+                <p className="text-xs text-ink-300">No attachments yet</p>
               </div>
             ) : (
               <div className="space-y-1.5">
                 {resources.map((res, i) => (
-                  <div key={i} className="flex items-center gap-2.5 p-3 bg-gray-800 hover:bg-gray-700/70 rounded-xl transition-colors group">
-                    <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div key={i} className="flex items-center gap-2.5 p-3 bg-ink-100 hover:bg-ink-100 rounded-md transition-colors group">
+                    <div className="w-8 h-8 bg-ink-300 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Icon name={
                         res.mime_type?.startsWith('image/') ? 'image' :
                         res.mime_type?.startsWith('video/') ? 'smart_display' :
                         res.mime_type === 'application/pdf' ? 'picture_as_pdf' :
                         res.mime_type?.includes('zip') ? 'folder_zip' : 'description'
-                      } size={14} className="text-gray-400" />
+                      } size={14} className="text-ink-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-200 truncate">{res.name}</p>
-                      <p className="text-[10px] text-gray-500">{formatBytes(res.size)}</p>
+                      <p className="text-xs font-medium text-ink-900 truncate">{res.name}</p>
+                      <p className="text-[10px] text-ink-500">{formatBytes(res.size)}</p>
                     </div>
-                    <button onClick={() => removeResource(i)} className="text-gray-600 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
+                    <button onClick={() => removeResource(i)} className="text-ink-300 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
                       <Icon name="delete" size={14} />
                     </button>
                   </div>
@@ -608,7 +608,7 @@ function LessonEditor({
         )}
       </div>
 
-      <div className="p-3 border-t border-gray-800 flex-shrink-0">
+      <div className="p-3 border-t border-ink-300 flex-shrink-0">
         <Button className="w-full" onClick={save}>
           <Icon name="save" size={14} />
           Save Lesson
@@ -746,61 +746,61 @@ export function CourseEditorPage() {
   const totalMin = lessons.reduce((sum, l) => sum + Number(l.video_duration_minutes || 0), 0);
 
   if (isLoading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center space-y-3">
-        <svg className="h-8 w-8 animate-spin text-blue-400 mx-auto" fill="none" viewBox="0 0 24 24">
+        <svg className="h-8 w-8 animate-spin text-brand-400 mx-auto" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
-        <p className="text-gray-500 text-sm">Loading editor...</p>
+        <p className="text-ink-500 text-sm">Loading editor...</p>
       </div>
     </div>
   );
 
-  if (!course) return <div className="p-8 text-center text-gray-400">Course not found.</div>;
-  if (course.user_id !== user?.id) return <div className="p-8 text-center text-gray-400">Access denied.</div>;
+  if (!course) return <div className="p-8 text-center text-ink-500">Course not found.</div>;
+  if (course.user_id !== user?.id) return <div className="p-8 text-center text-ink-500">Access denied.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Top bar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6 py-3 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 flex-shrink-0">
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6 py-3 bg-white/95 backdrop-blur-md border-b border-ink-300 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={() => navigate('/courses')} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors flex-shrink-0">
+          <button onClick={() => navigate('/courses')} className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0">
             <Icon name="arrow_back" size={18} />
           </button>
           <div className="min-w-0">
-            <h1 className="text-sm font-semibold text-white truncate">{course.title || 'Untitled Course'}</h1>
+            <h1 className="text-sm font-semibold text-ink-900 truncate">{course.title || 'Untitled Course'}</h1>
             <div className="flex items-center gap-2">
-              <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', course.is_published ? 'text-emerald-300 bg-emerald-500/15' : 'text-gray-400 bg-gray-700/50')}>
+              <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', course.is_published ? 'text-success bg-green-50' : 'text-ink-500 bg-ink-100')}>
                 {course.is_published ? 'PUBLISHED' : 'DRAFT'}
               </span>
-              {totalMin > 0 && <span className="text-[11px] text-gray-500">{Math.round(totalMin)}m total</span>}
+              {totalMin > 0 && <span className="text-[11px] text-ink-500">{Math.round(totalMin)}m total</span>}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button onClick={handlePublish}
-            className={cn('px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors',
+            className={cn('px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors',
               course.is_published
-                ? 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-200'
-                : 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10'
+                ? 'border-ink-300 text-ink-500 hover:border-ink-300 hover:text-ink-900'
+                : 'border-emerald-500/50 text-success hover:bg-green-50'
             )}>
             {course.is_published ? 'Unpublish' : 'Publish'}
           </button>
           <button onClick={() => setShareOpen(true)}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-teal-600/20 text-teal-300 border border-teal-500/30 hover:bg-teal-600/30 transition-colors flex items-center gap-1.5">
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-teal-600/20 text-teal-300 border border-teal-500/30 hover:bg-teal-600/30 transition-colors flex items-center gap-1.5">
             <Icon name="share" size={13} />
             Share
           </button>
           <button onClick={() => navigate(`/courses/${course.id}/learn`)}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition-colors">
+            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-brand-50 text-brand-400 border border-brand-100 hover:bg-brand-50 transition-colors">
             Preview
           </button>
         </div>
       </div>
 
       {/* Editor tabs */}
-      <div className="flex border-b border-gray-800 bg-gray-900 flex-shrink-0">
+      <div className="flex border-b border-ink-300 bg-white flex-shrink-0">
         {([
           ['structure', 'auto_awesome_mosaic', 'Curriculum'],
           ['details', 'info', 'Details'],
@@ -808,7 +808,7 @@ export function CourseEditorPage() {
         ] as const).map(([key, icon, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
             className={cn('flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors',
-              activeTab === key ? 'text-blue-400 border-blue-500 bg-blue-600/5' : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-gray-800/50'
+              activeTab === key ? 'text-brand-400 border-brand-400 bg-brand-50' : 'text-ink-500 border-transparent hover:text-ink-700 hover:bg-ink-100'
             )}>
             <Icon name={icon} size={15} />
             {label}
@@ -823,11 +823,11 @@ export function CourseEditorPage() {
         {activeTab === 'structure' && (
           <div className="flex flex-1 min-w-0 overflow-hidden">
             {/* Section/lesson tree */}
-            <div className={cn('flex flex-col bg-gray-950 border-r border-gray-800 overflow-y-auto', editingLesson ? 'w-80 flex-shrink-0 hidden lg:flex' : 'flex-1')}>
-              <div className="p-4 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
+            <div className={cn('flex flex-col bg-white border-r border-ink-300 overflow-y-auto', editingLesson ? 'w-80 flex-shrink-0 hidden lg:flex' : 'flex-1')}>
+              <div className="p-4 border-b border-ink-300 flex items-center justify-between flex-shrink-0">
                 <div>
-                  <h2 className="text-sm font-semibold text-white">Curriculum</h2>
-                  <p className="text-xs text-gray-500">{sections.length} sections · {lessons.length} lessons</p>
+                  <h2 className="text-sm font-semibold text-ink-900">Curriculum</h2>
+                  <p className="text-xs text-ink-500">{sections.length} sections · {lessons.length} lessons</p>
                 </div>
                 <Button size="sm" onClick={handleAddSection} loading={createSection.isPending}>
                   <Icon name="add" size={14} />
@@ -838,10 +838,10 @@ export function CourseEditorPage() {
               <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {sections.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <Icon name="auto_awesome_mosaic" size={32} className="text-gray-700" />
+                    <Icon name="auto_awesome_mosaic" size={32} className="text-ink-300" />
                     <div>
-                      <p className="text-sm text-gray-400 font-medium">No sections yet</p>
-                      <p className="text-xs text-gray-600 mt-1">Add a section to start building your curriculum</p>
+                      <p className="text-sm text-ink-500 font-medium">No sections yet</p>
+                      <p className="text-xs text-ink-300 mt-1">Add a section to start building your curriculum</p>
                     </div>
                     <Button size="sm" onClick={handleAddSection}>
                       <Icon name="add" size={14} />
@@ -853,26 +853,26 @@ export function CourseEditorPage() {
                     const sectionLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
                     const isExpanded = expandedSections.has(section.id);
                     return (
-                      <div key={section.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                      <div key={section.id} className="bg-white border border-ink-300 rounded-md overflow-hidden">
                         {/* Section header */}
                         <div className="flex items-center gap-2 p-3">
-                          <button onClick={() => toggleSection(section.id)} className="text-gray-500 hover:text-gray-300 flex-shrink-0">
+                          <button onClick={() => toggleSection(section.id)} className="text-ink-500 hover:text-ink-700 flex-shrink-0">
                             <motion.span animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.15 }} className="inline-flex">
                               <Icon name="chevron_right" size={16} />
                             </motion.span>
                           </button>
-                          <span className="w-5 h-5 rounded-full bg-gray-800 text-gray-500 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                          <span className="w-5 h-5 rounded-full bg-ink-100 text-ink-500 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
                             {sIdx + 1}
                           </span>
                           <input
                             value={section.title}
                             onChange={(e) => updateSection.mutate({ id: section.id, courseId: course.id, title: e.target.value })}
-                            className="flex-1 bg-transparent text-sm font-semibold text-gray-200 focus:outline-none placeholder-gray-600 min-w-0"
+                            className="flex-1 bg-transparent text-sm font-semibold text-ink-900 focus:outline-none placeholder-ink-300 min-w-0"
                             placeholder="Section title"
                           />
-                          <span className="text-[10px] text-gray-600 flex-shrink-0">{sectionLessons.length} lessons</span>
+                          <span className="text-[10px] text-ink-300 flex-shrink-0">{sectionLessons.length} lessons</span>
                           <button onClick={() => deleteSection.mutate({ id: section.id, courseId: course.id })}
-                            className="p-1 text-gray-700 hover:text-red-400 transition-colors flex-shrink-0">
+                            className="p-1 text-ink-300 hover:text-red-400 transition-colors flex-shrink-0">
                             <Icon name="delete" size={13} />
                           </button>
                         </div>
@@ -883,29 +883,29 @@ export function CourseEditorPage() {
                             <motion.div
                               initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
                               transition={{ duration: 0.2 }} className="overflow-hidden">
-                              <div className="border-t border-gray-800 divide-y divide-gray-800/60">
+                              <div className="border-t border-ink-300 divide-y divide-ink-300">
                                 {sectionLessons.map((lesson, lIdx) => (
                                   <button key={lesson.id} onClick={() => setEditingLesson(lesson)}
-                                    className={cn('w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-gray-800/50',
-                                      editingLesson?.id === lesson.id && 'bg-blue-600/10 border-l-2 border-l-blue-500'
+                                    className={cn('w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-ink-100',
+                                      editingLesson?.id === lesson.id && 'bg-brand-50 border-l-2 border-l-brand-400'
                                     )}>
-                                    <span className="text-[10px] text-gray-600 w-4 flex-shrink-0">{lIdx + 1}</span>
+                                    <span className="text-[10px] text-ink-300 w-4 flex-shrink-0">{lIdx + 1}</span>
                                     <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0',
-                                      lesson.lesson_type === 'video' ? 'bg-blue-500/15 text-blue-400' :
-                                      lesson.lesson_type === 'image' ? 'bg-emerald-500/15 text-emerald-400' :
+                                      lesson.lesson_type === 'video' ? 'bg-brand-50 text-brand-400' :
+                                      lesson.lesson_type === 'image' ? 'bg-green-50 text-success' :
                                       lesson.lesson_type === 'text' ? 'bg-amber-500/15 text-amber-400' :
-                                      'bg-gray-700 text-gray-400')}>
+                                      'bg-ink-300 text-ink-500')}>
                                       <Icon name={lesson.lesson_type === 'video' ? 'smart_display' : lesson.lesson_type === 'image' ? 'image' : lesson.lesson_type === 'text' ? 'article' : 'attach_file'} size={12} fill />
                                     </div>
-                                    <span className="text-xs text-gray-300 truncate flex-1">{lesson.title || 'Untitled'}</span>
+                                    <span className="text-xs text-ink-700 truncate flex-1">{lesson.title || 'Untitled'}</span>
                                     {lesson.is_preview && <span className="text-[9px] text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded flex-shrink-0">PREVIEW</span>}
                                     {lesson.video_duration_minutes > 0 && (
-                                      <span className="text-[10px] text-gray-600 flex-shrink-0">{lesson.video_duration_minutes}m</span>
+                                      <span className="text-[10px] text-ink-300 flex-shrink-0">{lesson.video_duration_minutes}m</span>
                                     )}
                                   </button>
                                 ))}
                                 <button onClick={() => handleAddLesson(section)}
-                                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-gray-600 hover:text-gray-300 hover:bg-gray-800/40 transition-colors">
+                                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-ink-300 hover:text-ink-700 hover:bg-ink-100 transition-colors">
                                   <Icon name="add" size={13} />
                                   Add Lesson
                                 </button>
@@ -941,7 +941,7 @@ export function CourseEditorPage() {
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* Cover */}
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-2 block">Course Cover</label>
+                  <label className="text-xs font-medium text-ink-500 mb-2 block">Course Cover</label>
                   <CourseCoverUpload
                     courseId={course.id}
                     currentPath={course.cover_image}
@@ -952,38 +952,38 @@ export function CourseEditorPage() {
                 {/* Basic info */}
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-medium text-gray-400 mb-1 block">Title</label>
+                    <label className="text-xs font-medium text-ink-500 mb-1 block">Title</label>
                     <input value={title} onChange={(e) => setTitle(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                       placeholder="Course title" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-400 mb-1 block">Short Description</label>
+                    <label className="text-xs font-medium text-ink-500 mb-1 block">Short Description</label>
                     <input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                       placeholder="One line summary" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-400 mb-1 block">Category</label>
+                    <label className="text-xs font-medium text-ink-500 mb-1 block">Category</label>
                     <select value={category} onChange={(e) => setCategory(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100">
                       {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-medium text-gray-400 mb-1 block">Level</label>
+                      <label className="text-xs font-medium text-ink-500 mb-1 block">Level</label>
                       <select value={level} onChange={(e) => setLevel(e.target.value as typeof level)}
-                        className="w-full h-10 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100">
                         <option value="beginner">Beginner</option>
                         <option value="intermediate">Intermediate</option>
                         <option value="advanced">Advanced</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-400 mb-1 block">Language</label>
+                      <label className="text-xs font-medium text-ink-500 mb-1 block">Language</label>
                       <input value={language} onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full h-10 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                         placeholder="English" />
                     </div>
                   </div>
@@ -991,30 +991,30 @@ export function CourseEditorPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-400 mb-1 block">Full Description</label>
+                <label className="text-xs font-medium text-ink-500 mb-1 block">Full Description</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
-                  className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                   placeholder="Detailed course description" />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-400 mb-1 block">Tags (comma-separated)</label>
+                <label className="text-xs font-medium text-ink-500 mb-1 block">Tags (comma-separated)</label>
                 <input value={tags} onChange={(e) => setTags(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                   placeholder="design, ui, figma" />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-400 mb-1 block">What You'll Learn (one per line)</label>
+                <label className="text-xs font-medium text-ink-500 mb-1 block">What You'll Learn (one per line)</label>
                 <textarea value={whatYouLearn} onChange={(e) => setWhatYouLearn(e.target.value)} rows={4}
-                  className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                   placeholder="Build responsive websites&#10;Understand CSS Grid&#10;Create animations" />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-400 mb-1 block">Requirements (one per line)</label>
+                <label className="text-xs font-medium text-ink-500 mb-1 block">Requirements (one per line)</label>
                 <textarea value={requirements} onChange={(e) => setRequirements(e.target.value)} rows={3}
-                  className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                   placeholder="Basic HTML knowledge&#10;A code editor installed" />
               </div>
 
@@ -1030,37 +1030,37 @@ export function CourseEditorPage() {
         {activeTab === 'settings' && (
           <div className="flex-1 overflow-y-auto p-4 lg:p-8">
             <div className="max-w-lg mx-auto space-y-4">
-              <h2 className="text-base font-semibold text-white mb-4">Course Settings</h2>
+              <h2 className="text-base font-semibold text-ink-900 mb-4">Course Settings</h2>
 
               {/* Visibility & publish */}
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-0">
+              <div className="bg-white border border-ink-300 rounded-lg p-5 space-y-0">
 
                 {/* Published toggle */}
                 <div className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm font-medium text-white">Published</p>
-                    <p className="text-xs text-gray-500">Make this course live for students to enroll</p>
+                    <p className="text-sm font-medium text-ink-900">Published</p>
+                    <p className="text-xs text-ink-500">Make this course live for students to enroll</p>
                   </div>
                   <button
                     onClick={handlePublish}
-                    className={cn('w-11 h-6 rounded-full relative transition-colors flex-shrink-0', course.is_published ? 'bg-emerald-500' : 'bg-gray-700')}
+                    className={cn('w-11 h-6 rounded-full relative transition-colors flex-shrink-0', course.is_published ? 'bg-emerald-500' : 'bg-ink-300')}
                   >
                     <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform', course.is_published ? 'translate-x-6' : 'translate-x-1')} />
                   </button>
                 </div>
 
-                <div className="border-t border-gray-800" />
+                <div className="border-t border-ink-300" />
 
                 {/* Hide from Explore toggle */}
                 <div className="flex items-start justify-between py-3 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-white flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-ink-900 flex items-center gap-1.5">
                       Hide from Explore
                       {course.is_hidden && (
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">HIDDEN</span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                    <p className="text-xs text-ink-500 mt-0.5 leading-relaxed">
                       When enabled, this course will not appear in the Explore section.
                       Share links and enrolled students are not affected.
                     </p>
@@ -1072,52 +1072,52 @@ export function CourseEditorPage() {
                         toast.success(course.is_hidden ? 'Course visible in Explore' : 'Course hidden from Explore');
                       } catch { toast.error('Failed'); }
                     }}
-                    className={cn('w-11 h-6 rounded-full relative transition-colors flex-shrink-0 mt-0.5', course.is_hidden ? 'bg-amber-500' : 'bg-gray-700')}
+                    className={cn('w-11 h-6 rounded-full relative transition-colors flex-shrink-0 mt-0.5', course.is_hidden ? 'bg-amber-500' : 'bg-ink-300')}
                   >
                     <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform', course.is_hidden ? 'translate-x-6' : 'translate-x-1')} />
                   </button>
                 </div>
 
-                <div className="border-t border-gray-800" />
+                <div className="border-t border-ink-300" />
 
                 {/* Free badge */}
                 <div className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm font-medium text-white">Free Course</p>
-                    <p className="text-xs text-gray-500">This course is always free for everyone</p>
+                    <p className="text-sm font-medium text-ink-900">Free Course</p>
+                    <p className="text-xs text-ink-500">This course is always free for everyone</p>
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 rounded-full flex-shrink-0">Always Free</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-green-50 text-success border border-green-200 rounded-full flex-shrink-0">Always Free</span>
                 </div>
               </div>
 
               {/* Upload limits info */}
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                  <Icon name="upload" size={15} className="text-blue-400" />
+              <div className="bg-white border border-ink-300 rounded-lg p-5">
+                <p className="text-sm font-semibold text-ink-900 mb-3 flex items-center gap-2">
+                  <Icon name="upload" size={15} className="text-brand-400" />
                   Upload Limits
                 </p>
                 <div className="space-y-2">
                   {[
-                    { icon: 'smart_display', label: 'Video files', limit: 'Up to 500 MB per video', color: 'text-blue-400' },
-                    { icon: 'image', label: 'Image files', limit: 'Up to 100 MB per image', color: 'text-emerald-400' },
+                    { icon: 'smart_display', label: 'Video files', limit: 'Up to 500 MB per video', color: 'text-brand-400' },
+                    { icon: 'image', label: 'Image files', limit: 'Up to 100 MB per image', color: 'text-success' },
                     { icon: 'attach_file', label: 'Resource files', limit: 'Up to 100 MB per file', color: 'text-amber-400' },
                     { icon: 'add_photo_alternate', label: 'Cover image', limit: 'Up to 10 MB (JPG, PNG, WEBP)', color: 'text-pink-400' },
                   ].map(({ icon, label, limit, color }) => (
                     <div key={label} className="flex items-center gap-3 py-1.5">
                       <Icon name={icon} size={14} className={color} />
                       <div className="flex-1">
-                        <span className="text-xs font-medium text-gray-300">{label}</span>
+                        <span className="text-xs font-medium text-ink-700">{label}</span>
                       </div>
-                      <span className="text-xs text-gray-500">{limit}</span>
+                      <span className="text-xs text-ink-500">{limit}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Danger zone */}
-              <div className="bg-red-500/5 border border-red-500/15 rounded-2xl p-5">
-                <p className="text-sm font-medium text-white mb-1">Danger Zone</p>
-                <p className="text-xs text-gray-500 mb-3">Permanently delete this course and all its content. This cannot be undone.</p>
+              <div className="bg-red-500/5 border border-red-500/15 rounded-lg p-5">
+                <p className="text-sm font-medium text-ink-900 mb-1">Danger Zone</p>
+                <p className="text-xs text-ink-500 mb-3">Permanently delete this course and all its content. This cannot be undone.</p>
                 <button
                   onClick={async () => {
                     if (!confirm('Delete this course permanently? All lessons, sections, and enrollments will be removed.')) return;
@@ -1127,7 +1127,7 @@ export function CourseEditorPage() {
                       navigate('/courses');
                     } catch { toast.error('Failed to delete course'); }
                   }}
-                  className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-medium hover:bg-red-500/20 transition-colors"
+                  className="px-4 py-2 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-medium hover:bg-red-500/20 transition-colors"
                 >
                   Delete Course
                 </button>

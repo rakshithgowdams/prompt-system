@@ -39,14 +39,14 @@ const queryClient = new QueryClient({
 
 function PageFallback() {
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col gap-4 p-8">
+    <div className="min-h-screen bg-white flex flex-col gap-4 p-8">
       <Skeleton className="h-8 w-48" />
       <Skeleton className="h-5 w-full" />
       <Skeleton className="h-5 w-5/6" />
       <Skeleton className="h-5 w-3/4" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-40 rounded-2xl" />
+          <Skeleton key={i} className="h-40 rounded-lg" />
         ))}
       </div>
     </div>
@@ -96,9 +96,9 @@ export default function App() {
           position="bottom-right"
           toastOptions={{
             style: {
-              background: '#1f2937',
-              border: '1px solid #374151',
-              color: '#f9fafb',
+              background: '#FFFFFF',
+              border: '1px solid #D1D7DC',
+              color: '#1C1D1F',
             },
           }}
         />
