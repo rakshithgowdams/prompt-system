@@ -9,12 +9,68 @@ interface Props {
 const W = 1414;
 const H = 1000;
 
-const SUPABASE_URL = 'https://igkgdltwlsnxdlqkhuul.supabase.co';
-const ASSETS = {
-  logo:      `${SUPABASE_URL}/storage/v1/object/public/certificate-assets/company-logo.png`,
-  seal:      `${SUPABASE_URL}/storage/v1/object/public/certificate-assets/round-seal.png`,
-  signature: `${SUPABASE_URL}/storage/v1/object/public/certificate-assets/founder-signature.png`,
-};
+// SVG inline assets — replaces empty public-folder placeholder files
+function LogoSVG({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 320 80" style={style} xmlns="http://www.w3.org/2000/svg">
+      {/* MD mark */}
+      <g transform="translate(0,8)">
+        <rect x="0" y="0" width="64" height="64" fill="none"/>
+        {/* M shape */}
+        <path d="M4 60 L4 4 L20 4 L32 36 L44 4 L60 4 L60 60 L50 60 L50 18 L36 50 L28 50 L14 18 L14 60 Z" fill="#111"/>
+        {/* D shape with cut */}
+        <path d="M66 4 L88 4 Q108 4 108 32 Q108 60 88 60 L66 60 Z" fill="#111"/>
+        <path d="M76 14 L86 14 Q96 14 96 32 Q96 50 86 50 L76 50 Z" fill="white"/>
+        {/* diagonal cut */}
+        <path d="M66 60 L108 4 L108 60 Z" fill="#111"/>
+        <path d="M88 4 L108 4 L66 60 L66 50 Z" fill="white"/>
+      </g>
+      {/* Wordmark */}
+      <text x="120" y="38" fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="700" fontSize="22" fill="#1a1a1a" letterSpacing="0.5">MyDesign</text>
+      <text x="120" y="38" fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="300" fontSize="22" fill="#888" letterSpacing="0.5" dx="89">Nexus</text>
+      <text x="120" y="56" fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="400" fontSize="10" fill="#aaa" letterSpacing="2">AI Solution Company</text>
+    </svg>
+  );
+}
+
+function SealSVG({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 100 100" style={style} xmlns="http://www.w3.org/2000/svg">
+      {/* Outer gear ring */}
+      {Array.from({ length: 16 }).map((_, i) => {
+        const angle = (i * 360) / 16;
+        const rad = (angle * Math.PI) / 180;
+        const x1 = 50 + 44 * Math.cos(rad);
+        const y1 = 50 + 44 * Math.sin(rad);
+        const x2 = 50 + 38 * Math.cos(rad);
+        const y2 = 50 + 38 * Math.sin(rad);
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1a2744" strokeWidth="3.5" strokeLinecap="round"/>;
+      })}
+      <circle cx="50" cy="50" r="36" fill="#1a2744"/>
+      <circle cx="50" cy="50" r="30" fill="none" stroke="#c8a84b" strokeWidth="1.5"/>
+      {/* MD text */}
+      <text x="50" y="46" textAnchor="middle" fill="white" fontWeight="900" fontSize="14" fontFamily="Inter,sans-serif" letterSpacing="1">MD</text>
+      <text x="50" y="60" textAnchor="middle" fill="#c8a84b" fontWeight="700" fontSize="7" fontFamily="Inter,sans-serif" letterSpacing="1.5">NEXUS</text>
+      <text x="50" y="70" textAnchor="middle" fill="#c8a84b" fontWeight="400" fontSize="5.5" fontFamily="Inter,sans-serif" letterSpacing="1">EST 2025</text>
+    </svg>
+  );
+}
+
+function SignatureSVG({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 200 70" style={style} xmlns="http://www.w3.org/2000/svg">
+      {/* Stylized "Rakshith" cursive signature path */}
+      <path
+        d="M10 50 C20 20 30 10 40 30 C45 40 42 50 38 45 C34 40 36 30 45 28 C55 26 58 35 60 42 C62 50 60 55 55 50 C50 45 52 35 60 32 C70 28 75 40 80 48 C85 56 82 62 78 58 C74 54 76 44 84 40 C94 35 100 48 108 54 C116 60 120 58 125 52 C130 46 128 36 136 34 C146 32 155 45 165 50 C172 54 178 52 185 46 C190 41 192 36 190 50"
+        fill="none"
+        stroke="#111"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 const FOOTER_TEXT =
   'mydesignnexus.in  |  Hassan, Karnataka, India  |  AI Automation • AI Call Agents • Web Development  |  Film Making  |  Digital Marketing  |  AI Advertising';
@@ -76,15 +132,10 @@ export function CertificateView({ cert, forExport = false }: Props) {
         alignItems: 'flex-start',
         gap: py(4),
       }}>
-        <img
-          src={ASSETS.logo}
-          alt="MyDesignNexus"
-          style={{
-            width: forExport ? '220px' : `${(220 / W) * 100}%`,
-            height: 'auto',
-            objectFit: 'contain',
-          }}
-        />
+        <LogoSVG style={{
+          width: forExport ? '220px' : `${(220 / W) * 100}%`,
+          height: 'auto',
+        }} />
       </div>
 
       {/* ── Top-right: EST 2025 badge ── */}
@@ -279,15 +330,10 @@ export function CertificateView({ cert, forExport = false }: Props) {
         gap: py(6),
       }}>
         <div style={{ fontSize: fs(12), color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 500 }}>Seal</div>
-        <img
-          src={ASSETS.seal}
-          alt="Seal"
-          style={{
-            width: forExport ? '80px' : `${(80 / W) * 100}%`,
-            height: 'auto',
-            objectFit: 'contain',
-          }}
-        />
+        <SealSVG style={{
+          width: forExport ? '80px' : `${(80 / W) * 100}%`,
+          height: 'auto',
+        }} />
       </div>
 
       {/* Vertical separator right */}
@@ -310,16 +356,11 @@ export function CertificateView({ cert, forExport = false }: Props) {
         alignItems: 'flex-end',
         gap: py(3),
       }}>
-        <img
-          src={ASSETS.signature}
-          alt="Authorized Signature"
-          style={{
-            width: forExport ? '130px' : `${(130 / W) * 100}%`,
-            height: 'auto',
-            objectFit: 'contain',
-            marginBottom: py(4),
-          }}
-        />
+        <SignatureSVG style={{
+          width: forExport ? '130px' : `${(130 / W) * 100}%`,
+          height: 'auto',
+          marginBottom: py(4),
+        }} />
         <div style={{ width: forExport ? '150px' : `${(150 / W) * 100}%`, height: forExport ? '1.5px' : '0.15%', background: '#333' }} />
         <div style={{ fontSize: fs(11), color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>Authorized Signature</div>
         <div style={{ fontSize: fs(21), fontWeight: 900, color: '#111' }}>Rakshith</div>
