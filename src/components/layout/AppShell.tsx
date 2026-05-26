@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bug } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProjects } from '../../hooks/useProjects';
 import { useFolders, useAllProjectFiles } from '../../hooks/useProjectFiles';
 import { Icon } from '../ui/Icon';
 import { FileTypeIcon } from '../files/FileTypeIcon';
 import { FollowPopup } from '../ui/FollowPopup';
+import { BugReportModal } from '../ui/BugReportModal';
 import { getSignedUrl } from '../../lib/storage';
 import { cn, PROJECT_COLORS } from '../../lib/utils';
 import type { Project } from '../../lib/database.types';
@@ -415,6 +417,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: projects } = useProjects();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
 
   // Close sidebar on route change
   useEffect(() => {
@@ -454,6 +457,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white flex overflow-x-hidden">
       <FollowPopup />
+      <BugReportModal open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-ink-300 fixed inset-y-0 left-0 z-30">
@@ -510,6 +514,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="overflow-x-hidden w-full min-w-0 lg:pt-0 pt-14 pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
+
+        {/* Floating bug report button — desktop only (mobile uses bottom-nav padding) */}
+        <motion.button
+          onClick={() => setBugReportOpen(true)}
+          title="Report an issue"
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          className="hidden lg:flex fixed bottom-6 right-6 z-40 items-center gap-2 px-4 py-2.5 rounded-full bg-ink-900 text-white text-[12px] font-semibold shadow-xl shadow-ink-900/20 hover:bg-ink-700 transition-colors"
+        >
+          <Bug size={14} />
+          Report Issue
+        </motion.button>
+
+        {/* Mobile bug report button — above bottom nav */}
+        <motion.button
+          onClick={() => setBugReportOpen(true)}
+          title="Report an issue"
+          whileTap={{ scale: 0.9 }}
+          className="lg:hidden fixed bottom-[calc(56px+env(safe-area-inset-bottom)+12px)] right-4 z-30 w-10 h-10 rounded-full bg-ink-900 text-white flex items-center justify-center shadow-lg shadow-ink-900/25"
+        >
+          <Bug size={16} />
+        </motion.button>
 
         {/* Mobile bottom nav — liquid drop indicator */}
         <nav
