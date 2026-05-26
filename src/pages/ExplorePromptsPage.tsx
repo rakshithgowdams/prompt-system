@@ -408,27 +408,33 @@ function DetailModal({
         className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 pointer-events-none"
       >
         <div
-          className="pointer-events-auto w-full max-w-5xl max-h-[96vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col lg:flex-row"
+          className="pointer-events-auto w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col lg:flex-row"
           onClick={(e) => e.stopPropagation()}
-          style={{ height: 'min(96vh, 700px)' }}
+          style={{ height: 'min(94vh, 720px)', minHeight: 0 }}
         >
-          {/* ── Left panel: images ─────────────────────────────────────── */}
-          <div className="lg:w-[54%] flex-shrink-0 bg-[#f5f5f5] flex flex-col overflow-hidden">
+          {/* ── Left panel: images (independently scrollable) ─────────── */}
+          <div
+            className="lg:w-[54%] flex-shrink-0 bg-[#f4f4f4] flex flex-col rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none overflow-hidden"
+            style={{ minHeight: 0 }}
+          >
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-black/8">
-              <span className="text-[12px] font-semibold text-ink-600">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.07] flex-shrink-0 bg-[#f4f4f4]">
+              <span className="text-[12px] font-semibold text-ink-500">
                 {images.length + videos.length} media file{images.length + videos.length !== 1 ? 's' : ''}
               </span>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-black/8 hover:bg-black/15 flex items-center justify-center transition-colors text-ink-700"
+                className="w-8 h-8 rounded-full bg-black/[0.07] hover:bg-black/[0.13] flex items-center justify-center transition-colors text-ink-700"
               >
                 <X size={15} />
               </button>
             </div>
 
-            {/* Media area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: 'thin' }}>
+            {/* Media area — Y-scrollable */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-3"
+              style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ccc transparent', minHeight: 0 }}
+            >
               {images.length > 0 ? (
                 <ImageCarousel images={images} urls={urls} loading={urlsLoading} />
               ) : videos.length > 0 ? (
@@ -438,7 +444,8 @@ function DetailModal({
                     src={urls[vid.id]}
                     controls
                     preload="metadata"
-                    className="w-full rounded-xl bg-black max-h-80"
+                    className="w-full rounded-xl bg-black"
+                    style={{ maxHeight: 360 }}
                   />
                 ))
               ) : (
@@ -448,22 +455,22 @@ function DetailModal({
                 </div>
               )}
 
-              {/* Prompt text sections — styled like reference image */}
-              <div className="space-y-3 pt-2">
-                {prompt.media_files.length > 0 ? (
-                  images.map((img, i) => (
-                    <div key={img.id} className="bg-white border border-ink-100 rounded-xl p-4">
+              {/* Per-image prompt text cards (like reference) */}
+              <div className="space-y-3 pt-1">
+                {images.length > 0 ? (
+                  images.map((_img, i) => (
+                    <div key={i} className="bg-white border border-ink-100 rounded-xl p-4 shadow-sm">
                       <div className="flex items-center gap-2 mb-2.5">
                         <ImageIcon size={12} className="text-ink-400" />
-                        <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide">Image · {i + 1}</span>
+                        <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Image · {i + 1}</span>
                       </div>
-                      <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap line-clamp-6">
+                      <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap">
                         {prompt.prompt_text}
                       </p>
-                      <div className="flex items-center gap-3 mt-3 pt-2 border-t border-ink-100">
+                      <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-ink-100">
                         <button
                           onClick={() => { navigator.clipboard.writeText(prompt.prompt_text); toast.success('Copied!'); }}
-                          className="flex items-center gap-1 text-[11px] text-ink-500 hover:text-ink-800 transition-colors"
+                          className="flex items-center gap-1 text-[11px] text-ink-500 hover:text-ink-900 font-medium transition-colors"
                         >
                           <Copy size={11} />
                           Copy
@@ -472,10 +479,10 @@ function DetailModal({
                     </div>
                   ))
                 ) : (
-                  <div className="bg-white border border-ink-100 rounded-xl p-4">
+                  <div className="bg-white border border-ink-100 rounded-xl p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-2.5">
                       <Layers size={12} className="text-ink-400" />
-                      <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide">Prompt</span>
+                      <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Prompt</span>
                     </div>
                     <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap">
                       {prompt.prompt_text}
@@ -486,56 +493,59 @@ function DetailModal({
             </div>
           </div>
 
-          {/* ── Right panel: meta + comments ──────────────────────────── */}
-          <div className="flex-1 flex flex-col bg-white border-l border-ink-100 overflow-hidden min-h-0">
+          {/* ── Right panel: meta + prompt text + comments ────────────── */}
+          <div
+            className="flex-1 flex flex-col bg-white rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none border-t lg:border-t-0 lg:border-l border-ink-100 overflow-hidden"
+            style={{ minHeight: 0 }}
+          >
+            {/* Close button (mobile — top of right panel) */}
+            <div className="lg:hidden flex justify-end px-4 pt-3 flex-shrink-0">
+              <button
+                onClick={onClose}
+                className="w-7 h-7 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
             {/* Author row */}
             <div className="px-5 pt-4 pb-3 border-b border-ink-100 flex-shrink-0">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-ink-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <User size={16} className="text-ink-500" />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-ink-900 leading-tight">
-                      {prompt.title}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded border', platformMeta.pill)}>
-                        {platformMeta.icon} {prompt.platform}
-                      </span>
-                      <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
-                    </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-ink-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <User size={16} className="text-ink-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold text-ink-900 leading-tight truncate">
+                    {prompt.title}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded border', platformMeta.pill)}>
+                      {platformMeta.icon} {prompt.platform}
+                    </span>
+                    <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Stats row */}
               <div className="flex items-center gap-4 mt-3">
-                {/* Like */}
                 <button
                   onClick={handleLike}
                   disabled={toggleLike.isPending}
                   className={cn(
                     'flex items-center gap-1.5 text-[13px] font-semibold transition-all',
-                    stats?.user_has_liked
-                      ? 'text-red-500'
-                      : 'text-ink-500 hover:text-red-500',
+                    stats?.user_has_liked ? 'text-red-500' : 'text-ink-500 hover:text-red-500',
                   )}
                 >
-                  <Heart
-                    size={15}
-                    className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')}
-                  />
+                  <Heart size={15} className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')} />
                   <span>{statsLoading ? '–' : formatCount(stats?.like_count ?? 0)}</span>
                 </button>
 
-                {/* Views */}
                 <div className="flex items-center gap-1.5 text-[13px] text-ink-500">
                   <BarChart2 size={14} />
                   <span>{statsLoading ? '–' : formatCount(stats?.view_count ?? 0)}</span>
                 </div>
 
-                {/* Comments */}
                 <button
                   onClick={() => { setActiveTab('comments'); commentInputRef.current?.focus(); }}
                   className="flex items-center gap-1.5 text-[13px] text-ink-500 hover:text-ink-800 transition-colors"
@@ -569,17 +579,20 @@ function DetailModal({
               ))}
             </div>
 
-            {/* Tab body */}
-            <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin' }}>
+            {/* Tab body — Y-scrollable */}
+            <div
+              className="flex-1"
+              style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ccc transparent', minHeight: 0 }}
+            >
               {activeTab === 'prompt' ? (
                 <div className="p-5 space-y-4">
-                  {/* Prompt text */}
+                  {/* Prompt text — fully expanded, no max-height cap */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider">Full Prompt</span>
                       <span className="text-[10px] text-ink-400">{prompt.prompt_text.length} chars</span>
                     </div>
-                    <div className="bg-ink-50 border border-ink-200 rounded-xl p-3.5 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                    <div className="bg-ink-50 border border-ink-200 rounded-xl p-3.5">
                       <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words select-all">
                         {prompt.prompt_text}
                       </p>
