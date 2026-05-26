@@ -246,7 +246,7 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
   const upsertProfile = useUpsertProfile();
   const { data: projects } = useProjects();
@@ -639,6 +639,23 @@ export function SettingsPage() {
             {projects?.length === 0 && (
               <p className="text-sm text-ink-500 text-center py-4">No projects yet.</p>
             )}
+          </div>
+        </section>
+
+        {/* ── Sign out ─────────────────────────────────────────────── */}
+        <section className="bg-white border border-red-200 rounded-lg p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ink-900">Sign out</p>
+              <p className="text-xs text-ink-500 mt-0.5">You will be signed out of all devices.</p>
+            </div>
+            <button
+              onClick={async () => { await signOut(); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-200 text-danger text-sm font-semibold hover:bg-red-50 transition-colors flex-shrink-0"
+            >
+              <Icon name="logout" size={16} className="text-danger" />
+              Sign out
+            </button>
           </div>
         </section>
       </div>

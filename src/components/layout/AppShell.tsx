@@ -402,9 +402,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    setSidebarOpen(false);
+    setUserMenuOpen(false);
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
+    setSidebarOpen(false);
+    setUserMenuOpen(false);
     await signOut();
     navigate('/');
   };
@@ -501,6 +506,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          <button
+            onClick={handleSignOut}
+            className="flex-1 flex flex-col items-center justify-center pt-2.5 pb-2 gap-1 text-[11px] font-medium text-danger transition-colors min-h-[52px]"
+            aria-label="Sign out"
+          >
+            <Icon name="logout" size={22} className="text-danger" />
+            <span>Sign out</span>
+          </button>
         </nav>
       </div>
     </div>
