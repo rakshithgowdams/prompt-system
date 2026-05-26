@@ -12,7 +12,7 @@ const H = 1000;
 function LogoSVG({ style }: { style?: React.CSSProperties }) {
   return (
     <img
-      src="/mdn-logo.png"
+      src="/mdn-logo copy.png"
       alt="MyDesignNexus"
       style={{ ...style, objectFit: 'contain' }}
     />
