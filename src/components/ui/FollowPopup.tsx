@@ -21,6 +21,28 @@ function YouTubeIcon({ size = 20 }: { size?: number }) {
   );
 }
 
+// Avatar with graceful fallback to gradient initials if image fails to load
+function AvatarImage() {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 flex items-center justify-center">
+        <span className="text-white font-bold text-2xl select-none">R</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src="/avatar-rakshith.png"
+      alt="@aiwithrakshith"
+      className="w-full h-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export function FollowPopup() {
   const [visible, setVisible] = useState(false);
 
@@ -85,11 +107,7 @@ export function FollowPopup() {
                   <div className="flex justify-center mb-5">
                     <div className="relative">
                       <div className="w-20 h-20 rounded-full overflow-hidden ring-2 ring-offset-2 ring-offset-gray-900 ring-pink-500/60 shadow-lg shadow-pink-900/40">
-                        <img
-                          src="/avatar-rakshith.png"
-                          alt="@aiwithrakshith"
-                          className="w-full h-full object-cover"
-                        />
+                        <AvatarImage />
                       </div>
                       {/* Animated ring */}
                       <div className="absolute -inset-1.5 rounded-full border-2 border-pink-400/25 animate-ping" style={{ animationDuration: '2.5s' }} />
