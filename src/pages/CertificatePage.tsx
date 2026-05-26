@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCourse, useMyCertificate, useCertificateTemplateUrl } from '../hooks/useCourses';
+import { useCourse, useMyCertificate } from '../hooks/useCourses';
 import { CertificateView } from '../components/certificate/CertificateView';
 import { CertificateActions } from '../components/certificate/CertificateActions';
 import { CertificateGate } from '../components/certificate/CertificateGate';
@@ -14,7 +14,6 @@ export function CertificatePage() {
   const navigate = useNavigate();
   const { data: course } = useCourse(courseId ?? '');
   const { data: certificate, isLoading } = useMyCertificate(courseId ?? '');
-  const { data: templateUrl } = useCertificateTemplateUrl();
 
   if (isLoading) {
     return (
@@ -24,7 +23,7 @@ export function CertificatePage() {
     );
   }
 
-  // No certificate at all, or it's a stub with empty required fields — show the gate form
+  // No cert at all, or it's a stub with empty required fields — show the gate form
   if (!certificate || !isCertificateComplete(certificate)) {
     return (
       <CertificateGate
@@ -39,7 +38,7 @@ export function CertificatePage() {
     <div className="min-h-screen bg-ink-100">
       {/* Top bar */}
       <div className="sticky top-0 z-20 bg-white border-b border-ink-300">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => navigate(`/courses/${courseId}/learn`)}
             className="flex items-center gap-2 text-ink-700 hover:text-ink-900 text-sm font-semibold transition-colors"
@@ -51,36 +50,31 @@ export function CertificatePage() {
             <Icon name="workspace_premium" size={18} className="text-amber-500" fill />
             <h1 className="text-sm font-bold text-ink-900">Your Certificate</h1>
           </div>
-          <div className="w-24" />
+          <div className="w-28" />
         </div>
       </div>
 
-      {/* Certificate display */}
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Verified badge */}
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
           <Icon name="verified" size={22} className="text-green-600" fill />
           <div>
             <p className="font-bold text-ink-900 text-sm">Verified Certificate of Completion</p>
             <p className="text-xs text-ink-500">
-              Issued to {certificate.student_name} on {new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              Issued to {certificate.student_name} &middot; {new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-ink-300">
-          {templateUrl && (
-            <CertificateView cert={certificate} templateUrl={templateUrl} />
-          )}
+        {/* Certificate */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-ink-300">
+          <CertificateView cert={certificate} />
         </div>
 
-        {/* Actions */}
-        {templateUrl && (
-          <CertificateActions certificate={certificate} templateUrl={templateUrl} />
-        )}
+        {/* Download + Share actions */}
+        <CertificateActions certificate={certificate} />
 
-        {/* Certificate details card */}
+        {/* Meta details */}
         <div className="bg-white border border-ink-300 rounded-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetaCell label="Serial Number" value={certificate.serial_number} mono />
           <MetaCell label="Issued On" value={new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} />
@@ -95,8 +89,8 @@ export function CertificatePage() {
 function MetaCell({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-widest text-ink-500 font-semibold">{label}</div>
-      <div className={`text-sm font-semibold text-ink-900 mt-0.5 ${mono ? 'font-mono' : ''}`}>{value || '—'}</div>
+      <p className="text-[10px] uppercase tracking-widest text-ink-500 font-semibold">{label}</p>
+      <p className={`text-sm font-semibold text-ink-900 mt-0.5 break-all ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
     </div>
   );
 }

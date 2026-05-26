@@ -1,6 +1,6 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useCertificateBySlug, useCertificateTemplateUrl } from '../hooks/useCourses';
+import { useCertificateBySlug } from '../hooks/useCourses';
 import { CertificateView } from '../components/certificate/CertificateView';
 import { CertificateActions } from '../components/certificate/CertificateActions';
 import { Icon } from '../components/ui/Icon';
@@ -8,7 +8,6 @@ import { Icon } from '../components/ui/Icon';
 export function PublicCertificatePage() {
   const { slug } = useParams<{ slug: string }>();
   const { data: cert, isLoading } = useCertificateBySlug(slug);
-  const { data: templateUrl } = useCertificateTemplateUrl();
 
   useEffect(() => {
     if (!cert) return;
@@ -24,8 +23,8 @@ export function PublicCertificatePage() {
       el.setAttribute('content', content);
     };
     setMeta('og:title', `${cert.student_name} — Certificate of Internship`);
-    setMeta('og:description', `Issued by MyDesignNexus on ${new Date(cert.issued_at).toDateString()} — ${cert.department}`);
-    setMeta('og:type', 'profile');
+    setMeta('og:description', `Verified certificate issued by MyDesignNexus on ${new Date(cert.issued_at).toDateString()}. Department: ${cert.department}`);
+    setMeta('og:type', 'article');
     setMeta('og:url', window.location.href);
   }, [cert]);
 
@@ -49,9 +48,9 @@ export function PublicCertificatePage() {
           </div>
           <h1 className="text-2xl font-bold text-ink-900">Certificate not found</h1>
           <p className="text-ink-500">This certificate link may be invalid or has been revoked.</p>
-          <a href="https://mydesignnexus.in" className="inline-block text-ink-900 font-semibold hover:underline">
-            Visit MyDesignNexus
-          </a>
+          <Link to="/" className="inline-block text-ink-900 font-semibold hover:underline">
+            Go to home
+          </Link>
         </div>
       </div>
     );
@@ -60,57 +59,57 @@ export function PublicCertificatePage() {
   return (
     <div className="min-h-screen bg-ink-100">
       {/* Public header */}
-      <header className="bg-white border-b border-ink-300">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <a href="https://mydesignnexus.in" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-ink-900 rounded-lg flex items-center justify-center text-white font-extrabold text-sm">
-              MD
-            </div>
-            <div>
-              <div className="font-extrabold text-ink-900 text-sm tracking-tight">MyDesignNexus</div>
-              <div className="text-[10px] text-ink-500 -mt-0.5">AI Solution Company</div>
-            </div>
-          </a>
-          <div className="text-xs text-ink-500 hidden md:block font-mono">
+      <header className="bg-white border-b border-ink-300 sticky top-0 z-20">
+        <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
+            <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain" />
+            <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-sm">
+              aiwithrakshith
+            </span>
+          </Link>
+          <div className="text-[11px] text-ink-500 font-mono hidden md:block truncate">
             {cert.serial_number}
+          </div>
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+            <Icon name="verified" size={14} className="text-green-600" fill />
+            <span className="text-xs font-semibold text-green-700 whitespace-nowrap">Verified Certificate</span>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-        {/* Verification badge */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-          <Icon name="verified" size={24} className="text-green-600" fill />
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        {/* Verification banner */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+          <Icon name="verified" size={22} className="text-green-600 flex-shrink-0 mt-0.5" fill />
           <div>
-            <div className="font-bold text-ink-900 text-sm">Verified Certificate</div>
-            <div className="text-xs text-ink-500">
-              Issued by MyDesignNexus to {cert.student_name} on {new Date(cert.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
+            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Internship</p>
+            <p className="text-xs text-ink-500 mt-0.5">
+              Issued by MyDesignNexus to <span className="font-semibold text-ink-700">{cert.student_name}</span> on {new Date(cert.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {cert.course_title && <> for completing <span className="font-semibold text-ink-700">{cert.course_title}</span></>}
+            </p>
           </div>
         </div>
 
-        {/* The cert */}
-        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-ink-300">
-          {templateUrl && <CertificateView cert={cert} templateUrl={templateUrl} />}
+        {/* The certificate */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-ink-300">
+          <CertificateView cert={cert} />
         </div>
 
-        {/* Actions */}
-        {templateUrl && (
-          <CertificateActions certificate={cert} templateUrl={templateUrl} isPublic />
-        )}
+        {/* Download + share */}
+        <CertificateActions certificate={cert} isPublic />
 
-        {/* Meta info card */}
+        {/* Meta info */}
         <div className="bg-white border border-ink-300 rounded-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetaCell label="Serial Number" value={cert.serial_number} mono />
-          <MetaCell label="Issued On" value={new Date(cert.issued_at).toLocaleDateString('en-IN')} />
+          <MetaCell label="Issued On" value={new Date(cert.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} />
           <MetaCell label="Department" value={cert.department} />
           <MetaCell label="Course" value={cert.course_title || '—'} />
         </div>
       </div>
 
-      <footer className="border-t border-ink-300 py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-4 text-center text-xs text-ink-500">
-          mydesignnexus.in &nbsp;&middot;&nbsp; Hassan, Karnataka, India &nbsp;&middot;&nbsp; AI Automation &bull; AI Call Agents &bull; Web Development
+      <footer className="border-t border-ink-300 py-6 mt-8">
+        <div className="max-w-5xl mx-auto px-4 text-center text-xs text-ink-500">
+          aiwithrakshith.tech &nbsp;&middot;&nbsp; Hassan, Karnataka, India &nbsp;&middot;&nbsp; AI Automation &bull; AI Courses &bull; Web Development
         </div>
       </footer>
     </div>
@@ -120,8 +119,8 @@ export function PublicCertificatePage() {
 function MetaCell({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-widest text-ink-500 font-semibold">{label}</div>
-      <div className={`text-sm font-semibold text-ink-900 mt-0.5 ${mono ? 'font-mono' : ''}`}>{value}</div>
+      <p className="text-[10px] uppercase tracking-widest text-ink-500 font-semibold">{label}</p>
+      <p className={`text-sm font-semibold text-ink-900 mt-0.5 break-all ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
     </div>
   );
 }
