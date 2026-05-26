@@ -9,6 +9,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+
 const schema = z.object({
   email: z.string({ error: 'Email is required' }).email('Enter a valid email'),
   password: z.string({ error: 'Password is required' }).min(6, 'Password must be at least 6 characters'),
@@ -20,29 +22,55 @@ type FormData = z.infer<typeof schema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
   const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
 
     if (error) {
-      if (
-        error.message.toLowerCase().includes('email not confirmed') ||
-        error.message.toLowerCase().includes('email_not_confirmed')
-      ) {
-        navigate(`/verify-email?email=${encodeURIComponent(data.email)}&pending=1`, { replace: false });
+      const msg = error.message.toLowerCase();
+
+      // Unverified account — offer to re-send OTP
+      if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+        setSendingOtp(true);
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: data.email }),
+          });
+          if (res.ok) {
+            toast.info('Account not verified — a new code has been sent to your inbox.');
+            navigate(
+              `/verify-email?email=${encodeURIComponent(data.email)}&pending=1`,
+              { replace: false }
+            );
+          } else {
+            toast.error('Email not confirmed. Please sign up again.');
+          }
+        } catch {
+          toast.error('Email not confirmed. Please sign up again.');
+        } finally {
+          setSendingOtp(false);
+        }
         return;
       }
+
       toast.error(error.message);
       return;
     }
 
-    navigate('/dashboard');
+    // JWT session is set automatically by the Supabase client
+    if (authData.session) {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -99,7 +127,13 @@ export function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" variant="primary" className="w-full" size="lg" loading={isSubmitting}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              size="lg"
+              loading={isSubmitting || sendingOtp}
+            >
               Sign in
             </Button>
           </form>
