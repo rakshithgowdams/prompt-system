@@ -23,7 +23,7 @@ export function ForgotPasswordPage() {
 
   const onSubmit = async (data: FormData) => {
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/settings`,
+      redirectTo: 'https://threemodelplanet.shop/reset-password',
     });
     if (error) {
       toast.error(error.message);
