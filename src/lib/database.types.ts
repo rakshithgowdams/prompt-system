@@ -220,6 +220,7 @@ export interface Database {
           password_hash: string | null;
           access_type: 'anyone' | 'can_edit' | 'password';
           allow_download: boolean;
+          is_active: boolean;
           expires_at: string | null;
           view_count: number;
           created_at: string;
@@ -234,6 +235,7 @@ export interface Database {
           password_hash?: string | null;
           access_type?: 'anyone' | 'can_edit' | 'password';
           allow_download?: boolean;
+          is_active?: boolean;
           expires_at?: string | null;
           view_count?: number;
           created_at?: string;
@@ -248,6 +250,7 @@ export interface Database {
           password_hash?: string | null;
           access_type?: 'anyone' | 'can_edit' | 'password';
           allow_download?: boolean;
+          is_active?: boolean;
           expires_at?: string | null;
           view_count?: number;
           created_at?: string;

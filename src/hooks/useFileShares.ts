@@ -43,7 +43,7 @@ interface CreateShareParams {
   folderId?: string | null;
   fileId?: string | null;
   shareName: string;
-  accessType: 'anyone' | 'password';
+  accessType: 'anyone' | 'can_edit' | 'password';
   password?: string;
   allowDownload: boolean;
   expiresAt?: string | null;
