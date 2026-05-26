@@ -270,22 +270,39 @@ export function CertificateView({ cert, forExport = false }: Props) {
 
       {/* ── Bottom trio: Date | Seal | Signature ── */}
 
-      {/* Date (bottom-left) */}
+      {/* Date + Instructor (bottom-left) */}
       <div style={{
         position: 'absolute',
-        bottom: py(90),
+        bottom: py(54),
         left: px(80),
+        display: 'flex',
+        flexDirection: 'column',
+        gap: py(18),
       }}>
-        <div style={{ fontSize: fs(16), fontWeight: 700, color: '#222', marginBottom: py(8) }}>Date:</div>
-        <div style={{
-          fontSize: fs(14),
-          color: '#444',
-          fontFamily: "'Courier New', monospace",
-          letterSpacing: '0.1em',
-          borderBottom: `${forExport ? '2px' : '0.2%'} dotted #555`,
-          paddingBottom: py(4),
-          minWidth: px(180),
-        }}>{issueDate}</div>
+        {/* Date */}
+        <div>
+          <div style={{ fontSize: fs(16), fontWeight: 700, color: '#222', marginBottom: py(6) }}>Date:</div>
+          <div style={{
+            fontSize: fs(14),
+            color: '#444',
+            fontFamily: "'Courier New', monospace",
+            letterSpacing: '0.1em',
+            borderBottom: `${forExport ? '2px' : '0.2%'} dotted #555`,
+            paddingBottom: py(4),
+            minWidth: px(180),
+          }}>{issueDate}</div>
+        </div>
+        {/* Instructor */}
+        <div>
+          <div style={{ fontSize: fs(11), color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 600, marginBottom: py(4) }}>Course Instructor</div>
+          <div style={{
+            fontSize: fs(16),
+            fontWeight: 800,
+            color: '#111',
+            letterSpacing: '0.01em',
+          }}>{cert.instructor_name || 'Rakshith'}</div>
+          <div style={{ width: px(160), height: forExport ? '1.5px' : '0.15%', background: '#aaa', marginTop: py(4) }} />
+        </div>
       </div>
 
       {/* Vertical separator left */}
