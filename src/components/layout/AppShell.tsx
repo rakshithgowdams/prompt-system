@@ -285,10 +285,7 @@ function SidebarNav({
     <>
       <div className="flex items-center justify-between gap-2 px-4 py-4 border-b border-ink-300 flex-shrink-0">
         <Link to="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-          <div className="w-7 h-7 bg-brand-400 rounded-md flex items-center justify-center flex-shrink-0">
-            <Icon name="bolt" size={15} className="text-white" fill />
-          </div>
-          <span className="font-display font-extrabold text-ink-900 text-base tracking-tight">aiwithrakshith.tech</span>
+          <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-8 w-auto" />
         </Link>
         {onClose && (
           <button
@@ -467,11 +464,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Icon name="menu" size={22} />
           </button>
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-brand-400 rounded-md flex items-center justify-center">
-              <Icon name="bolt" size={13} className="text-white" fill />
-            </div>
-            <span className="font-display font-extrabold text-ink-900 text-sm tracking-tight">aiwithrakshith.tech</span>
+          <Link to="/dashboard" className="flex items-center">
+            <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-7 w-auto" />
           </Link>
           <div className="w-9" />
         </header>

@@ -53,13 +53,13 @@ function Nav() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center flex-shrink-0">
-          <motion.span
+          <motion.img
+            src="/aiwithrakshith-tech-logo.png"
+            alt="aiwithrakshith.tech"
             whileHover={{ scale: 1.03 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="font-display font-extrabold text-ink-900 text-base tracking-tight"
-          >
-            aiwithrakshith
-          </motion.span>
+            className="h-8 w-auto"
+          />
         </Link>
 
         {/* Center nav — desktop */}
@@ -218,7 +218,7 @@ function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-4">
-              <span className="font-display font-extrabold text-white text-base">aiwithrakshith</span>
+              <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-10 w-auto brightness-0 invert" />
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
               Your prompts, projects, and learning — all in one vault. Free, forever, for students.

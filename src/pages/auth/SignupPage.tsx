@@ -314,8 +314,8 @@ export function SignupPage() {
             >
               <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
                 <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
-                    <Icon name="bolt" size={24} className="text-white" fill />
+                  <div className="flex justify-center mb-4">
+                    <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-16 w-auto" />
                   </div>
                   <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">Create Account</h1>
                   <p className="text-ink-500 text-sm mt-1">Start managing your AI prompts</p>
