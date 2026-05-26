@@ -261,7 +261,7 @@ function DetailModal({
       className="fixed inset-0 z-[100] bg-white flex flex-col"
     >
       {/* ── Top: Image carousel (dark bg) ── */}
-      <div className="relative flex-shrink-0 bg-neutral-900">
+      <div className="relative flex-shrink-0 bg-neutral-900" style={{ maxHeight: '50vh' }}>
         {/* Top bar: counter + actions */}
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 pt-3 pb-2">
           <div className="flex items-center gap-2">
@@ -304,18 +304,18 @@ function DetailModal({
               }}
             >
               {images.map((img) => (
-                <div key={img.id} className="flex-shrink-0 w-full snap-center flex items-center justify-center" style={{ minHeight: '40vh', maxHeight: '55vh' }}>
+                <div key={img.id} className="flex-shrink-0 w-full snap-center flex items-center justify-center" style={{ minHeight: '30vh', maxHeight: '50vh' }}>
                   {urlsLoading ? (
-                    <div className="w-full h-full min-h-[40vh] animate-pulse bg-neutral-800" />
+                    <div className="w-full h-full min-h-[30vh] animate-pulse bg-neutral-800" />
                   ) : urls[img.id] ? (
                     <img
                       src={urls[img.id]}
                       alt={img.file_name}
-                      className="max-w-full max-h-[55vh] object-contain mx-auto"
+                      className="max-w-full max-h-[50vh] object-contain mx-auto"
                       draggable={false}
                     />
                   ) : (
-                    <div className="flex items-center justify-center w-full min-h-[40vh]">
+                    <div className="flex items-center justify-center w-full min-h-[30vh]">
                       <ImageIcon size={40} className="text-neutral-600" />
                     </div>
                   )}
@@ -348,20 +348,20 @@ function DetailModal({
             )}
           </div>
         ) : videos.length > 0 ? (
-          <div className="flex items-center justify-center" style={{ minHeight: '40vh' }}>
+          <div className="flex items-center justify-center" style={{ minHeight: '30vh', maxHeight: '50vh' }}>
             {urls[videos[0]?.id] && (
-              <video src={urls[videos[0].id]} controls preload="metadata" className="max-w-full max-h-[55vh]" />
+              <video src={urls[videos[0].id]} controls preload="metadata" className="max-w-full max-h-[50vh]" />
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-center bg-neutral-800" style={{ minHeight: '30vh' }}>
+          <div className="flex items-center justify-center bg-neutral-800" style={{ minHeight: '25vh', maxHeight: '50vh' }}>
             <ImageIcon size={48} className="text-neutral-600" />
           </div>
         )}
       </div>
 
-      {/* ── Scrollable content below image (vertical scroll + horizontal scroll supported) ── */}
-      <div className="flex-1 overflow-y-auto overflow-x-auto bg-neutral-50" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+      {/* ── Scrollable content below image ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-neutral-50" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {/* User info row */}
         <div className="bg-white px-4 sm:px-6 pt-5 pb-4">
           <div className="flex items-center justify-between gap-3">
