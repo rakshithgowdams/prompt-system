@@ -212,7 +212,7 @@ function LessonEditor({
       await doUpload(file, path, 'Uploading video');
       const { data: signed } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
       if (signed?.signedUrl) setVideoPreviewUrl(signed.signedUrl);
-      onSave({ video_path: path, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0 });
+      onSave({ video_path: path, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources });
       toast.success('Video uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
   };
@@ -225,8 +225,8 @@ function LessonEditor({
       await doUpload(file, path, 'Uploading image');
       const { data: signed } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
       if (signed?.signedUrl) setImagePreviewUrl(signed.signedUrl);
-      // We store image path in video_path column (repurposed for non-video media)
-      onSave({ video_path: path, title, description, lesson_type: 'image', content, is_preview: isPreview });
+      // video_path column stores the image path for image-type lessons
+      onSave({ video_path: path, title, description, lesson_type: 'image', content, is_preview: isPreview, resources });
       toast.success('Image uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
   };
@@ -236,7 +236,6 @@ function LessonEditor({
     try {
       const path = `${user!.id}/courses/${lesson.course_id}/files/${lesson.id}/${safeName(file.name)}`;
       await doUpload(file, path, 'Uploading file');
-      // Store the main file as a resource too so it shows in the resources list
       const newRes = [{ name: file.name, path, size: file.size, mime_type: file.type }, ...resources.filter((r) => r.path !== path)];
       setResources(newRes);
       onSave({ video_path: path, title, description, lesson_type: 'resource', content, is_preview: isPreview, resources: newRes });
@@ -251,7 +250,8 @@ function LessonEditor({
       await doUpload(file, path, 'Uploading resource');
       const newRes = [...resources, { name: file.name, path, size: file.size, mime_type: file.type }];
       setResources(newRes);
-      onSave({ resources: newRes });
+      // Include full lesson state so nothing is wiped on save
+      onSave({ title, description, lesson_type: lessonType, video_url: videoUrl || null, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources: newRes });
       toast.success('Resource uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
   };
@@ -259,7 +259,7 @@ function LessonEditor({
   const removeResource = (idx: number) => {
     const newRes = resources.filter((_, i) => i !== idx);
     setResources(newRes);
-    onSave({ resources: newRes });
+    onSave({ title, description, lesson_type: lessonType, video_url: videoUrl || null, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources: newRes });
   };
 
   const save = () => onSave({
@@ -719,7 +719,9 @@ export function CourseEditorPage() {
   const handleSaveLesson = useCallback(async (patch: Partial<CourseLesson>) => {
     if (!editingLesson) return;
     try {
-      const updated = await updateLesson.mutateAsync({ id: editingLesson.id, ...patch });
+      // Merge patch on top of current saved state so partial saves never wipe existing fields
+      const merged = { ...editingLesson, ...patch };
+      const updated = await updateLesson.mutateAsync({ id: editingLesson.id, ...merged });
       setEditingLesson(updated);
     } catch { toast.error('Failed to save lesson'); }
   }, [editingLesson, updateLesson]);
