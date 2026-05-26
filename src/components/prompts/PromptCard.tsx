@@ -38,31 +38,41 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
   const { data: thumbnail } = useThumbnail(prompt.id);
 
   return (
-    <div className="group relative text-left w-full bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 transition-all duration-200 flex flex-col h-[300px]">
-      {/* Clickable area */}
-      <button onClick={() => navigate(`/prompts/${prompt.id}`)} className="w-full text-left flex flex-col flex-1 min-h-0">
+    <div className="group relative text-left w-full bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-600 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 transition-all duration-200">
+      <button onClick={() => navigate(`/prompts/${prompt.id}`)} className="w-full text-left block">
 
-        {/* Thumbnail — fixed height */}
-        <div className="h-[148px] flex-shrink-0 bg-gray-800 relative overflow-hidden">
+        {/* Thumbnail — natural aspect ratio, never cropped */}
+        <div className="relative bg-gray-800 w-full">
           {thumbnail ? (
-            <img
-              src={thumbnail}
-              alt={prompt.title}
-              loading="lazy"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            <>
+              {/* Invisible spacer that takes the image's natural ratio */}
+              <img
+                src={thumbnail}
+                alt=""
+                aria-hidden
+                className="w-full block invisible"
+                loading="lazy"
+              />
+              {/* Actual visible image, absolutely positioned over the spacer */}
+              <img
+                src={thumbnail}
+                alt={prompt.title}
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-300"
+              />
+            </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-600">
-              <Icon name="image" size={32} weight={200} />
+            <div className="w-full aspect-video flex items-center justify-center text-gray-700">
+              <Icon name="image" size={36} weight={200} />
             </div>
           )}
-          <div className="absolute top-2.5 left-2.5">
+          <div className="absolute top-2.5 left-2.5 z-10">
             <StatusBadge status={prompt.status} />
           </div>
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(e, prompt); }}
-              className="absolute top-2.5 right-2.5 w-7 h-7 bg-black/60 hover:bg-blue-600/80 rounded-lg flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
+              className="absolute top-2.5 right-2.5 z-10 w-7 h-7 bg-black/60 hover:bg-blue-600/80 rounded-lg flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
               title="Share"
             >
               <Icon name="share" size={13} />
@@ -70,29 +80,28 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
           )}
         </div>
 
-        {/* Content — fills remaining height, never overflows */}
-        <div className="p-3 sm:p-4 flex flex-col flex-1 min-h-0 gap-2">
+        {/* Content */}
+        <div className="p-3 sm:p-4 space-y-2">
           <h3 className="font-semibold text-white text-sm line-clamp-1 group-hover:text-blue-300 transition-colors leading-snug">
             {prompt.title}
           </h3>
 
-          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed flex-1 min-h-0">
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
             {prompt.prompt_text}
           </p>
 
-          <div className="flex flex-wrap gap-1.5 mt-auto">
-            <PlatformBadge platform={prompt.platform} />
-            {prompt.tags.slice(0, 2).map((tag) => (
-              <TagChip key={tag} tag={tag} />
-            ))}
-            {prompt.tags.length > 2 && (
-              <span className="text-xs text-gray-500">+{prompt.tags.length - 2}</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Icon name="calendar_today" size={11} />
-            {formatRelative(prompt.created_at)}
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <PlatformBadge platform={prompt.platform} />
+              {prompt.tags[0] && <TagChip tag={prompt.tags[0]} />}
+              {prompt.tags.length > 1 && (
+                <span className="text-xs text-gray-600">+{prompt.tags.length - 1}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-gray-600 flex-shrink-0">
+              <Icon name="calendar_today" size={10} />
+              <span className="whitespace-nowrap">{formatRelative(prompt.created_at)}</span>
+            </div>
           </div>
         </div>
 
