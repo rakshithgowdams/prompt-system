@@ -229,6 +229,7 @@ interface NavItem { label: string; href: string; icon: string }
 
 const mainNav: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
+  { label: 'Courses', href: '/courses', icon: 'school' },
   { label: 'Todos', href: '/todos', icon: 'checklist' },
   { label: 'Password Vault', href: '/vault', icon: 'shield' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
@@ -236,8 +237,8 @@ const mainNav: NavItem[] = [
 
 const bottomNav = [
   { href: '/dashboard', icon: 'dashboard', label: 'Home' },
+  { href: '/courses', icon: 'school', label: 'Courses' },
   { href: '/todos', icon: 'checklist', label: 'Todos' },
-  { href: '/vault', icon: 'shield', label: 'Vault' },
   { href: '/settings', icon: 'settings', label: 'Settings' },
 ];
 

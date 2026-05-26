@@ -25,6 +25,10 @@ const TodoPage          = lazy(() => import('./pages/TodoPage').then((m) => ({ d
 const NotionPageEditor  = lazy(() => import('./pages/NotionPageEditor').then((m) => ({ default: m.NotionPageEditor })));
 const SharePage         = lazy(() => import('./pages/SharePage').then((m) => ({ default: m.SharePage })));
 const PasswordVaultPage = lazy(() => import('./pages/PasswordVaultPage').then((m) => ({ default: m.PasswordVaultPage })));
+const CoursesPage       = lazy(() => import('./pages/CoursesPage').then((m) => ({ default: m.CoursesPage })));
+const CourseEditorPage  = lazy(() => import('./pages/CourseEditorPage').then((m) => ({ default: m.CourseEditorPage })));
+const CoursePlayerPage  = lazy(() => import('./pages/CoursePlayerPage').then((m) => ({ default: m.CoursePlayerPage })));
+const CertificatePage   = lazy(() => import('./pages/CertificatePage').then((m) => ({ default: m.CertificatePage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +81,10 @@ export default function App() {
                 <Route path="/todos" element={<TodoPage />} />
                 <Route path="/vault" element={<PasswordVaultPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/courses" element={<CoursesPage />} />
+                <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />
+                <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
+                <Route path="/courses/:courseId/certificate" element={<CertificatePage />} />
               </Route>
             </Routes>
           </Suspense>
