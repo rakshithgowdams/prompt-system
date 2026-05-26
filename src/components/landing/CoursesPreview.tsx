@@ -21,7 +21,7 @@ const COURSES = [
 
 function CourseCard({ course, index }: { course: typeof COURSES[0]; index: number }) {
   return (
-    <TiltCard className="flex-shrink-0 w-64 snap-start">
+    <TiltCard className="flex-shrink-0 w-56 sm:w-64 snap-start">
       <motion.div
         className="bg-white border border-ink-300 rounded-2xl overflow-hidden h-full"
         initial={{ opacity: 0, y: 40 }}
@@ -96,8 +96,8 @@ export function CoursesPreview() {
   }, []);
 
   return (
-    <section id="courses" className="py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="courses" className="py-16 sm:py-24 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">
@@ -127,7 +127,7 @@ export function CoursesPreview() {
 
       <div
         ref={stripRef}
-        className="flex gap-5 overflow-x-auto pb-4 px-6 snap-x snap-mandatory"
+        className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 px-4 sm:px-6 snap-x snap-mandatory"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {COURSES.map((course, i) => (
@@ -135,7 +135,7 @@ export function CoursesPreview() {
         ))}
         {/* CTA card */}
         <motion.div
-          className="flex-shrink-0 w-64 bg-ink-900 rounded-2xl overflow-hidden flex items-center justify-center snap-start"
+          className="flex-shrink-0 w-56 sm:w-64 bg-ink-900 rounded-2xl overflow-hidden flex items-center justify-center snap-start"
           whileHover={{ scale: 1.03, backgroundColor: '#A435F0' }}
           transition={{ duration: 0.3 }}
         >

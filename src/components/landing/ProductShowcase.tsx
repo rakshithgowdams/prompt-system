@@ -38,8 +38,8 @@ function Block1() {
   }, []);
 
   return (
-    <div ref={sectionRef} className="py-24 px-6 bg-white">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+    <div ref={sectionRef} className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">Capture</p>
           <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink-900 leading-tight mb-6">
@@ -145,8 +145,8 @@ function Block2() {
   ];
 
   return (
-    <div className="py-24 px-6 bg-ink-900">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+    <div className="py-16 sm:py-24 px-4 sm:px-6 bg-ink-900">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
         {/* Mock course builder */}
         <div ref={progressRef} className="order-2 lg:order-1">
           <motion.div
@@ -271,8 +271,8 @@ function ShareSVGLine() {
 
 function Block3() {
   return (
-    <div className="py-24 px-6 bg-white">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+    <div className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">Share</p>
           <h2 className="font-display font-extrabold text-4xl md:text-5xl text-ink-900 leading-tight mb-6">
@@ -304,13 +304,13 @@ function Block3() {
           </ul>
         </Reveal>
 
-        <div className="relative flex items-center justify-center gap-6">
-          <TiltCard>
+        <div className="relative flex items-center justify-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
+          <TiltCard className="w-full sm:w-auto">
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               whileHover={{ scale: 1.03 }}
-              className="bg-white border border-ink-300 rounded-2xl p-4 shadow-card-hover w-48"
+              className="bg-white border border-ink-300 rounded-2xl p-4 shadow-card-hover w-full sm:w-48"
             >
               <div className="w-full h-24 bg-gradient-to-br from-brand-100 to-brand-200 rounded-xl mb-3 flex items-center justify-center">
                 <Share2 className="w-8 h-8 text-brand-400" />

@@ -221,12 +221,12 @@ export default function PricingPage() {
       )}
 
       {/* Hero */}
-      <section className="pt-32 pb-12 px-6 text-center">
+      <section className="pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 text-center">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">Pricing</p>
         </Reveal>
         <Reveal delay={0.1}>
-          <h1 className="font-display font-extrabold text-5xl md:text-6xl text-ink-900 tracking-tight leading-tight">
+          <h1 className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl text-ink-900 tracking-tight leading-tight">
             Simple pricing.{' '}
             <em className="font-serif italic font-medium text-brand-400">Free forever</em>
             {' '}for students.
@@ -241,15 +241,15 @@ export default function PricingPage() {
       </section>
 
       {/* Billing toggle */}
-      <div className="flex justify-center px-6 mb-12">
+      <div className="flex justify-center px-4 sm:px-6 mb-8 sm:mb-12">
         <Reveal>
           <BillingToggle value={billing} onChange={setBilling} />
         </Reveal>
       </div>
 
       {/* Cards */}
-      <section className="px-6 pb-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <section className="px-4 sm:px-6 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 max-w-6xl mx-auto">
 
           {/* Free */}
           <TiltCard>
@@ -434,7 +434,7 @@ export default function PricingPage() {
       </section>
 
       {/* Comparison table */}
-      <section className="px-6 pb-20">
+      <section className="px-4 sm:px-6 pb-16 sm:pb-20">
         <ComparisonTable />
       </section>
 

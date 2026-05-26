@@ -100,7 +100,7 @@ export function TestimonialsWall() {
   const col3 = TESTIMONIALS.filter((_, i) => i % 3 === 2);
 
   return (
-    <section ref={sectionRef} className="bg-ink-100 py-24 px-6">
+    <section ref={sectionRef} className="bg-ink-100 py-16 sm:py-24 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <div className="testimonials-heading text-center mb-16">
           <Reveal>
@@ -115,38 +115,27 @@ export function TestimonialsWall() {
           </Reveal>
         </div>
 
-        {/* Desktop masonry — staggered columns */}
-        <div className="hidden md:grid md:grid-cols-3 gap-5">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+        {/* Desktop masonry — 3 columns */}
+        <div className="hidden lg:grid lg:grid-cols-3 gap-5">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             {col1.map((t, i) => <TestimonialCard key={t.name} t={t} i={i} />)}
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mt-8"
-          >
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }} className="mt-8">
             {col2.map((t, i) => <TestimonialCard key={t.name} t={t} i={i} />)}
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.2 }}>
             {col3.map((t, i) => <TestimonialCard key={t.name} t={t} i={i} />)}
           </motion.div>
         </div>
 
+        {/* Tablet — 2 columns */}
+        <div className="hidden sm:grid lg:hidden grid-cols-2 gap-5">
+          {TESTIMONIALS.map((t, i) => <TestimonialCard key={t.name} t={t} i={i} />)}
+        </div>
+
         {/* Mobile single column */}
-        <div className="md:hidden space-y-4">
-          {TESTIMONIALS.slice(0, 4).map((t, i) => <TestimonialCard key={t.name} t={t} i={i} />)}
+        <div className="sm:hidden space-y-4">
+          {TESTIMONIALS.slice(0, 5).map((t, i) => <TestimonialCard key={t.name} t={t} i={i} />)}
         </div>
       </div>
     </section>

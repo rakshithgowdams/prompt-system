@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Instagram, Twitter, Youtube } from 'lucide-react';
+import { Instagram, Twitter, Youtube } from 'lucide-react';
 import { MagneticButton } from './motion';
 
 function Nav() {
@@ -52,17 +52,14 @@ function Nav() {
     >
       <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            className="w-8 h-8 bg-brand-400 rounded-lg flex items-center justify-center shadow-sm"
+        <Link to="/" className="flex items-center flex-shrink-0">
+          <motion.span
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className="font-display font-extrabold text-ink-900 text-base tracking-tight"
           >
-            <Lock className="w-4 h-4 text-white" strokeWidth={2.5} />
-          </motion.div>
-          <span className="font-display font-extrabold text-ink-900 text-base tracking-tight">
             aiwithrakshith
-          </span>
+          </motion.span>
         </Link>
 
         {/* Center nav — desktop */}
@@ -103,8 +100,8 @@ function Nav() {
         </nav>
 
         {/* Right CTAs */}
-        <div className="flex items-center gap-3">
-          <motion.div whileHover={{ y: -1 }} className="hidden sm:block">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <motion.div whileHover={{ y: -1 }} className="hidden md:block">
             <Link
               to="/login"
               className="text-sm font-semibold text-ink-700 hover:text-ink-900 transition-colors px-3 py-1.5"
@@ -116,14 +113,14 @@ function Nav() {
           <MagneticButton
             as="a"
             href="/signup"
-            className="inline-flex items-center gap-2 bg-ink-900 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-brand-400 transition-colors shadow-sm cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-2 bg-ink-900 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-brand-400 transition-colors shadow-sm cursor-pointer"
           >
             Get started free
           </MagneticButton>
 
           {/* Hamburger */}
           <motion.button
-            className="md:hidden ml-1 p-1.5 rounded-md text-ink-700 hover:bg-ink-100 transition-colors"
+            className="md:hidden p-1.5 rounded-md text-ink-700 hover:bg-ink-100 transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
             whileTap={{ scale: 0.9 }}
@@ -220,14 +217,7 @@ function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-16 border-b border-white/10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                className="w-8 h-8 bg-brand-400 rounded-lg flex items-center justify-center"
-              >
-                <Lock className="w-4 h-4 text-white" strokeWidth={2.5} />
-              </motion.div>
+            <div className="mb-4">
               <span className="font-display font-extrabold text-white text-base">aiwithrakshith</span>
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">

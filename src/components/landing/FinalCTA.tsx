@@ -48,7 +48,7 @@ export function FinalCTA() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative bg-ink-900 text-white py-32 px-6 overflow-hidden">
+    <section ref={sectionRef} className="relative bg-ink-900 text-white py-20 sm:py-32 px-4 sm:px-6 overflow-hidden">
       {/* Blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
@@ -127,7 +127,7 @@ export function FinalCTA() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.35 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto"
         >
           <MagneticButton
             className="group flex items-center gap-2 bg-brand-400 text-white font-bold text-base h-14 px-10 rounded-xl hover:bg-brand-500 transition-colors shadow-lg shadow-brand-500/30 cursor-pointer"

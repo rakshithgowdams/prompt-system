@@ -19,14 +19,14 @@ const BEFORE_CARDS = [
 
 function BeforeContent() {
   return (
-    <div className="relative h-72 overflow-hidden rounded-2xl bg-ink-100 border border-ink-300 p-4">
+    <div className="relative h-72 sm:h-80 overflow-hidden rounded-2xl bg-ink-100 border border-ink-300 p-4">
       {BEFORE_CARDS.map((card, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.08, type: 'spring', stiffness: 300 }}
-          className={`absolute ${card.top} ${card.bg} border rounded-xl p-3 shadow-sm w-40`}
+          className={`absolute ${card.top} ${card.bg} border rounded-xl p-2.5 sm:p-3 shadow-sm w-36 sm:w-40`}
           style={{ rotate: card.rotate }}
           whileHover={{ scale: 1.04, zIndex: 10 }}
         >
@@ -57,7 +57,7 @@ function BeforeContent() {
 
 function AfterContent() {
   return (
-    <div className="relative h-72 overflow-hidden rounded-2xl bg-white border border-ink-300 p-4">
+    <div className="relative h-72 sm:h-80 overflow-hidden rounded-2xl bg-white border border-ink-300 p-4">
       <div className="h-full flex flex-col gap-3">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -124,7 +124,7 @@ export function BeforeAfterToggle() {
   return (
     <section className="py-24 px-6 bg-white">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 sm:mb-12">
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">The difference</p>
           </Reveal>
