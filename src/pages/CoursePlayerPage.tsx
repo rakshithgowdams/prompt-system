@@ -630,7 +630,7 @@ export function CoursePlayerPage() {
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
-      <div className="flex min-h-0" style={{ flex: '1 1 0', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: '1 1 0px', minHeight: 0, overflow: 'hidden' }}>
 
         {/* Desktop sidebar */}
         <AnimatePresence initial={false}>
@@ -676,7 +676,7 @@ export function CoursePlayerPage() {
         </AnimatePresence>
 
         {/* ── Main content ──────────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 flex flex-col bg-ink-50" style={{ minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ flex: '1 1 0px', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8f8f8' }}>
 
           {/* Enrollment banner */}
           {!enrollment && !isOwner && (
@@ -690,10 +690,10 @@ export function CoursePlayerPage() {
           )}
 
           {activeLesson && canAccess ? (
-            <div className="flex" style={{ flex: '1 1 0', minHeight: 0 }}>
+            <div style={{ display: 'flex', flex: '1 1 0px', minHeight: 0, height: '100%' }}>
 
               {/* Scrollable lesson column */}
-              <div className="flex-1 min-w-0" style={{ overflowY: 'auto', overscrollBehavior: 'contain' }}>
+              <div style={{ flex: '1 1 0px', minWidth: 0, overflowY: 'auto', overflowX: 'hidden', height: '100%' }}>
 
                 {/* ── Video / media ── */}
                 <div className="flex-shrink-0 bg-gray-950">
