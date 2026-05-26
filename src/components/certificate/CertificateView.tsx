@@ -79,7 +79,6 @@ export function CertificateView({ cert, forExport = false }: Props) {
         <img
           src={ASSETS.logo}
           alt="MyDesignNexus"
-          crossOrigin="anonymous"
           style={{
             width: forExport ? '220px' : `${(220 / W) * 100}%`,
             height: 'auto',
@@ -124,10 +123,10 @@ export function CertificateView({ cert, forExport = false }: Props) {
         textAlign: 'center' as const,
       }}>
         <div style={{
-          fontSize: fs(50),
+          fontSize: fs(38),
           fontWeight: 900,
           color: '#0d1120',
-          letterSpacing: '0.07em',
+          letterSpacing: '0.06em',
           textTransform: 'uppercase' as const,
           lineHeight: 1,
         }}>Certificate of Course Completion</div>
@@ -283,7 +282,6 @@ export function CertificateView({ cert, forExport = false }: Props) {
         <img
           src={ASSETS.seal}
           alt="Seal"
-          crossOrigin="anonymous"
           style={{
             width: forExport ? '80px' : `${(80 / W) * 100}%`,
             height: 'auto',
@@ -315,7 +313,6 @@ export function CertificateView({ cert, forExport = false }: Props) {
         <img
           src={ASSETS.signature}
           alt="Authorized Signature"
-          crossOrigin="anonymous"
           style={{
             width: forExport ? '130px' : `${(130 / W) * 100}%`,
             height: 'auto',
