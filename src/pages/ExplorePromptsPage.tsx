@@ -360,8 +360,8 @@ function DetailModal({
         )}
       </div>
 
-      {/* ── Scrollable content below image ── */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-50" style={{ scrollbarWidth: 'none' }}>
+      {/* ── Scrollable content below image (vertical scroll + horizontal scroll supported) ── */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto bg-neutral-50" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {/* User info row */}
         <div className="bg-white px-4 sm:px-6 pt-5 pb-4">
           <div className="flex items-center justify-between gap-3">
@@ -410,7 +410,7 @@ function DetailModal({
                 IMAGE · {images.length > 0 ? images.length : 1}
               </span>
             </div>
-            <div className="px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
+            <div className="px-4 pb-4">
               <p className="text-[14px] text-ink-800 leading-[1.7] whitespace-pre-wrap break-words">
                 {prompt.prompt_text}
               </p>
