@@ -471,7 +471,7 @@ export function PasswordVaultPage() {
               <div className="w-9 h-9 rounded-md bg-brand-50 border border-brand-100 flex items-center justify-center flex-shrink-0">
                 <Icon name="shield" size={18} className="text-brand-400" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-ink-900 leading-tight">
+              <h1 className="text-xl sm:text-2xl font-display font-bold text-ink-900 tracking-tight leading-tight">
                 Password Vault
               </h1>
             </div>

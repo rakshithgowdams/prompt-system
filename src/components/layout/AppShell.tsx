@@ -288,7 +288,7 @@ function SidebarNav({
           <div className="w-7 h-7 bg-brand-400 rounded-md flex items-center justify-center flex-shrink-0">
             <Icon name="bolt" size={15} className="text-white" fill />
           </div>
-          <span className="font-extrabold text-ink-900 text-base tracking-tight">aiwithrakshith.tech</span>
+          <span className="font-display font-extrabold text-ink-900 text-base tracking-tight">aiwithrakshith.tech</span>
         </Link>
         {onClose && (
           <button
@@ -471,7 +471,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="w-6 h-6 bg-brand-400 rounded-md flex items-center justify-center">
               <Icon name="bolt" size={13} className="text-white" fill />
             </div>
-            <span className="font-extrabold text-ink-900 text-sm">aiwithrakshith.tech</span>
+            <span className="font-display font-extrabold text-ink-900 text-sm tracking-tight">aiwithrakshith.tech</span>
           </Link>
           <div className="w-9" />
         </header>

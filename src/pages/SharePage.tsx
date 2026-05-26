@@ -175,7 +175,7 @@ function AuthModal({
               <div className="w-16 h-16 bg-brand-50 border-2 border-brand-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Icon name="mark_email_unread" size={30} className="text-brand-400" />
               </div>
-              <h2 className="text-xl font-bold text-ink-900 mb-2">Check your inbox</h2>
+              <h2 className="text-xl font-display font-bold text-ink-900 tracking-tight mb-2">Check your inbox</h2>
               <p className="text-sm text-ink-500 mb-3">We sent an activation link to</p>
               <div className="inline-flex items-center gap-2 px-3 py-2 bg-ink-100 border border-ink-300 rounded-md mb-5">
                 <Icon name="email" size={13} className="text-brand-400 flex-shrink-0" />
@@ -218,7 +218,7 @@ function AuthModal({
                       </div>
                       <span className="text-xs font-semibold text-brand-400 uppercase tracking-wide">aiwithrakshith.tech</span>
                     </div>
-                    <h2 className="text-lg font-bold text-ink-900">
+                    <h2 className="text-lg font-display font-bold text-ink-900 tracking-tight">
                       {tab === 'login' ? 'Sign in to continue' : 'Create a free account'}
                     </h2>
                     <p className="text-sm text-ink-500 mt-0.5">{reasonText}</p>
@@ -670,7 +670,7 @@ export function SharePage() {
             <Icon name="link_off" size={28} className="text-ink-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-ink-900">Link not found</h1>
+            <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight">Link not found</h1>
             <p className="text-ink-500 text-sm mt-1">This share link doesn't exist or has been removed.</p>
           </div>
           <div className="pt-2">
@@ -694,7 +694,7 @@ export function SharePage() {
             <Icon name="schedule" size={28} className="text-ink-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-ink-900">Link expired</h1>
+            <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight">Link expired</h1>
             <p className="text-ink-500 text-sm mt-1">The owner of this link set an expiry date and it has passed.</p>
           </div>
           <div className="pt-2">
@@ -716,7 +716,7 @@ export function SharePage() {
           <div className="w-16 h-16 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center mx-auto">
             <Icon name="error" size={28} className="text-danger" />
           </div>
-          <h1 className="text-xl font-bold text-ink-900">Something went wrong</h1>
+          <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight">Something went wrong</h1>
           <p className="text-ink-500 text-sm">Unable to load this share. Please try again.</p>
           <button onClick={() => { setStatus('loading'); callEdgeFn().then(applyResponse).catch(() => setStatus('error')); }} className="text-sm text-brand-400 hover:text-brand-500 underline">
             Retry
@@ -738,7 +738,7 @@ export function SharePage() {
               <div className="w-14 h-14 rounded-md bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-4">
                 <Icon name="lock" size={26} className="text-amber-400" />
               </div>
-              <h1 className="text-xl font-bold text-ink-900 text-center mb-1">
+              <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight text-center mb-1">
                 {share?.share_name || 'Protected Content'}
               </h1>
               <p className="text-sm text-ink-500 text-center mb-6">Enter the password to view this content</p>

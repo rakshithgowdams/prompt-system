@@ -24,14 +24,14 @@ export function PrivacyPolicyPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
               <Icon name="shield" size={22} className="text-white" />
             </div>
-            <h1 className="text-3xl font-extrabold text-ink-900 mb-2">Privacy Policy</h1>
+            <h1 className="text-3xl font-display font-extrabold text-ink-900 tracking-tight mb-2">Privacy Policy</h1>
             <p className="text-ink-500 text-sm">Last updated: May 26, 2026</p>
           </div>
 
           <div className="space-y-8 text-ink-700 text-sm leading-relaxed">
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
                 Information We Collect
               </h2>
@@ -53,7 +53,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
                 How We Use Your Information
               </h2>
@@ -75,7 +75,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
                 Data Storage &amp; Security
               </h2>
@@ -88,7 +88,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
                 Data Sharing
               </h2>
@@ -107,7 +107,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
                 Cookies &amp; Tracking
               </h2>
@@ -117,7 +117,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">6</span>
                 Your Rights
               </h2>
@@ -150,7 +150,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">7</span>
                 Data Retention
               </h2>
@@ -160,7 +160,7 @@ export function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">8</span>
                 Changes to This Policy
               </h2>

@@ -369,7 +369,7 @@ export function TodoPage() {
         className="flex items-start justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">Todos</h1>
+          <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">Todos</h1>
           <p className="text-ink-500 text-sm mt-0.5">
             {activeTodos.length} remaining
             {overdueTodos.length > 0 && (
@@ -398,7 +398,7 @@ export function TodoPage() {
           <div key={stat.label} className={cn('flex flex-col xs:flex-row items-center xs:items-start gap-1 xs:gap-3 px-2 xs:px-4 py-3 rounded-lg border text-center xs:text-left', stat.color)}>
             <Icon name={stat.icon} size={18} fill={stat.icon !== 'radio_button_unchecked'} className="flex-shrink-0" />
             <div>
-              <p className="text-xl font-bold leading-none">{stat.value}</p>
+              <p className="text-xl font-display font-bold leading-none">{stat.value}</p>
               <p className="text-xs opacity-70 mt-0.5">{stat.label}</p>
             </div>
           </div>

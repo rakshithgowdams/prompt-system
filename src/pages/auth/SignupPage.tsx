@@ -189,7 +189,7 @@ function OtpScreen({
         </div>
 
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-extrabold text-ink-900 mb-2">Check your inbox</h1>
+          <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight mb-2">Check your inbox</h1>
           <p className="text-ink-500 text-sm">We sent a 6-digit code to</p>
           <div className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-ink-100 border border-ink-300 rounded-md">
             <Icon name="email" size={14} className="text-brand-400 flex-shrink-0" />
@@ -317,7 +317,7 @@ export function SignupPage() {
                   <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
                     <Icon name="bolt" size={24} className="text-white" fill />
                   </div>
-                  <h1 className="text-2xl font-extrabold text-ink-900">Create Account</h1>
+                  <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">Create Account</h1>
                   <p className="text-ink-500 text-sm mt-1">Start managing your AI prompts</p>
                 </div>
 

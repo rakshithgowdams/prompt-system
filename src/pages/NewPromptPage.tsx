@@ -67,7 +67,7 @@ export function NewPromptPage() {
           <Icon name="arrow_back" size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-extrabold text-ink-900">New Prompt</h1>
+          <h1 className="text-xl font-display font-extrabold text-ink-900 tracking-tight">New Prompt</h1>
           {project && <p className="text-sm text-ink-500">in @{project.name}</p>}
         </div>
       </div>

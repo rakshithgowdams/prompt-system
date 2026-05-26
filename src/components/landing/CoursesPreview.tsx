@@ -125,33 +125,36 @@ export function CoursesPreview() {
         </div>
       </div>
 
-      <div
-        ref={stripRef}
-        className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 px-4 sm:px-6 lg:px-8 snap-x snap-mandatory"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {COURSES.map((course, i) => (
-          <CourseCard key={course.title} course={course} index={i} />
-        ))}
-        {/* CTA card */}
-        <motion.div
-          className="flex-shrink-0 w-56 sm:w-64 bg-ink-900 rounded-2xl overflow-hidden flex items-center justify-center snap-start"
-          whileHover={{ scale: 1.03, backgroundColor: '#A435F0' }}
-          transition={{ duration: 0.3 }}
+      {/* Outer wrapper constrains left edge to match the header, overflow visible right */}
+      <div className="max-w-7xl mx-auto">
+        <div
+          ref={stripRef}
+          className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <Link
-            to="/signup"
-            className="flex flex-col items-center gap-3 p-8 text-center text-white"
+          {COURSES.map((course, i) => (
+            <CourseCard key={course.title} course={course} index={i} />
+          ))}
+          {/* CTA card */}
+          <motion.div
+            className="flex-shrink-0 w-56 sm:w-64 bg-ink-900 rounded-2xl overflow-hidden flex items-center justify-center snap-start"
+            whileHover={{ scale: 1.03, backgroundColor: '#A435F0' }}
+            transition={{ duration: 0.3 }}
           >
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            <Link
+              to="/signup"
+              className="flex flex-col items-center gap-3 p-8 text-center text-white"
             >
-              <ArrowRight className="w-8 h-8" />
-            </motion.div>
-            <span className="font-display font-bold text-sm">Build your own course</span>
-          </Link>
-        </motion.div>
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <ArrowRight className="w-8 h-8" />
+              </motion.div>
+              <span className="font-display font-bold text-sm">Build your own course</span>
+            </Link>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

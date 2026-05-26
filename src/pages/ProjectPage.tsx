@@ -115,7 +115,7 @@ export function ProjectPage() {
             <div className="flex items-center gap-3">
               <span className="text-2xl sm:text-3xl">{project.icon}</span>
               <div>
-                <h1 className="text-lg sm:text-xl font-extrabold">@{project.name}</h1>
+                <h1 className="text-lg sm:text-xl font-display font-extrabold tracking-tight">@{project.name}</h1>
                 <p className="text-white/70 text-xs sm:text-sm">
                   {allPrompts?.length ?? 0} prompt{(allPrompts?.length ?? 0) !== 1 ? 's' : ''} · {pages.length} page{pages.length !== 1 ? 's' : ''}
                 </p>

@@ -135,7 +135,7 @@ export function PromptDetailPage() {
           <Icon name="arrow_back" size={20} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl lg:text-2xl font-extrabold text-ink-900">{prompt.title}</h1>
+          <h1 className="text-xl lg:text-2xl font-display font-extrabold text-ink-900 tracking-tight">{prompt.title}</h1>
           <p className="text-sm text-ink-500 mt-1">
             Created {formatDate(prompt.created_at)} · Updated {formatDate(prompt.updated_at)}
           </p>

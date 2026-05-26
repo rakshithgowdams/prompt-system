@@ -117,7 +117,7 @@ export function DashboardPage() {
     <>
       <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-8">
         <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-          <h1 className="text-2xl lg:text-3xl font-extrabold text-ink-900">
+          <h1 className="text-2xl lg:text-3xl font-display font-extrabold text-ink-900 tracking-tight">
             {greeting()}, <span className="text-brand-400">{userName}</span>
           </h1>
           <p className="text-ink-500 mt-1 text-sm">Manage your AI prompts across your channels</p>
@@ -126,7 +126,7 @@ export function DashboardPage() {
         {/* Projects */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-ink-900">Projects</h2>
+            <h2 className="text-base font-display font-bold text-ink-900">Projects</h2>
             <button
               onClick={() => navigate('/settings')}
               className="text-sm text-brand-400 hover:text-brand-500 transition-colors flex items-center gap-1.5 font-medium"
@@ -176,7 +176,7 @@ export function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-ink-900">Recent Prompts</h2>
+              <h2 className="text-base font-display font-bold text-ink-900">Recent Prompts</h2>
               {recentPrompts && recentPrompts.length > 0 && (
                 <span className="text-xs text-ink-500 bg-ink-100 border border-ink-300 px-2 py-0.5 rounded-full">
                   {recentPrompts.length}

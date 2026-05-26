@@ -88,7 +88,7 @@ export function ResetPasswordPage() {
         <Icon name="link_off" size={28} className="text-danger" />
       </div>
       <div>
-        <p className="text-ink-900 font-extrabold text-lg">Link invalid or expired</p>
+        <p className="text-lg font-display font-extrabold text-ink-900 tracking-tight">Link invalid or expired</p>
         <p className="text-ink-500 text-sm mt-1">
           This reset link has already been used or has expired. Please request a new one.
         </p>
@@ -105,7 +105,7 @@ export function ResetPasswordPage() {
       <div className="w-14 h-14 mx-auto bg-green-50 border border-green-200 rounded-md flex items-center justify-center">
         <Icon name="check_circle" size={28} className="text-success" />
       </div>
-      <p className="text-ink-900 font-extrabold">Password updated!</p>
+      <p className="font-display font-extrabold text-ink-900 tracking-tight">Password updated!</p>
       <p className="text-ink-500 text-sm">Redirecting you to login…</p>
     </div>
   );
@@ -118,7 +118,7 @@ export function ResetPasswordPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
               <Icon name="lock_reset" size={24} className="text-white" />
             </div>
-            <h1 className="text-2xl font-extrabold text-ink-900">Set New Password</h1>
+            <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">Set New Password</h1>
             <p className="text-ink-500 text-sm mt-1">Choose a strong password for your account</p>
           </div>
 

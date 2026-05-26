@@ -113,7 +113,7 @@ export function VerifyEmailPage() {
               </div>
 
               <div className="text-center mb-6">
-                <h1 className="text-2xl font-extrabold text-ink-900 mb-2">Activate your account</h1>
+                <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight mb-2">Activate your account</h1>
                 <p className="text-ink-500 text-sm">We sent an activation link to</p>
                 {emailParam && (
                   <div className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-ink-100 border border-ink-300 rounded-md">
@@ -195,7 +195,7 @@ export function VerifyEmailPage() {
               <div className="absolute inset-0 w-16 h-16 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
             </div>
             <div>
-              <p className="text-ink-900 font-extrabold text-lg">Activating your account…</p>
+              <p className="text-lg font-display font-extrabold text-ink-900 tracking-tight">Activating your account…</p>
               <p className="text-ink-500 text-sm mt-1">Just a moment, verifying your email</p>
             </div>
           </motion.div>
@@ -220,7 +220,7 @@ export function VerifyEmailPage() {
                 </motion.div>
               </div>
 
-              <h1 className="text-2xl font-extrabold text-ink-900 mb-2">Account Activated!</h1>
+              <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight mb-2">Account Activated!</h1>
               <p className="text-ink-500 text-sm leading-relaxed mb-6">
                 Your email is verified. Welcome to aiwithrakshith.tech!
               </p>
@@ -260,7 +260,7 @@ export function VerifyEmailPage() {
                 <Icon name="error" size={28} className="text-danger" />
               </div>
 
-              <h1 className="text-2xl font-extrabold text-ink-900 mb-2">Link Expired</h1>
+              <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight mb-2">Link Expired</h1>
               <p className="text-ink-500 text-sm leading-relaxed mb-2">
                 {errorMsg || 'This activation link is invalid or has expired.'}
               </p>

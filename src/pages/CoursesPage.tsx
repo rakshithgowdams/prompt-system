@@ -264,7 +264,7 @@ function NewCourseModal({ open, onClose, onCreate }: {
             <Icon name="school" size={20} className="text-brand-400" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-ink-900">New Course</h2>
+            <h2 className="text-base font-display font-bold text-ink-900">New Course</h2>
             <p className="text-xs text-ink-500">You'll be taken to the editor</p>
           </div>
         </div>
@@ -388,7 +388,7 @@ export function CoursesPage() {
                 </div>
                 <span className="text-xs font-bold text-brand-300 uppercase tracking-widest">Learning Hub</span>
               </div>
-              <h1 className="text-2xl lg:text-3xl font-extrabold text-white mb-1">Courses</h1>
+              <h1 className="text-2xl lg:text-3xl font-display font-extrabold text-white tracking-tight mb-1">Courses</h1>
               <p className="text-ink-300 text-sm">Discover, enroll, and learn from free courses.</p>
             </div>
             <Button variant="primary" onClick={() => setNewCourseOpen(true)} size="lg">
@@ -492,7 +492,7 @@ export function CoursesPage() {
             <div className="w-16 h-16 bg-ink-100 border border-ink-300 rounded-lg flex items-center justify-center mb-4">
               <Icon name={tab === 'explore' ? 'explore' : tab === 'my' ? 'school' : 'check_circle'} size={28} className="text-ink-300" />
             </div>
-            <h3 className="text-lg font-bold text-ink-900 mb-2">
+            <h3 className="text-lg font-display font-bold text-ink-900 tracking-tight mb-2">
               {tab === 'my' ? 'No courses created yet'
                 : tab === 'enrolled' ? 'Not enrolled in any courses'
                 : search || category !== 'All' || level !== 'All' ? 'No courses match your filters'

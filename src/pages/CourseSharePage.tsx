@@ -106,7 +106,7 @@ function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; share
             <div className="w-14 h-14 bg-amber-50 rounded-md flex items-center justify-center mx-auto mb-4">
               <Icon name="lock" size={26} className="text-amber-400" />
             </div>
-            <h1 className="text-xl font-bold text-ink-900 mb-1">{shareName || 'Protected Course'}</h1>
+            <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight mb-1">{shareName || 'Protected Course'}</h1>
             <p className="text-ink-500 text-sm mb-6">This course is password protected. Enter the password to access it.</p>
 
             <form onSubmit={handleSubmit} className="space-y-3 text-left">
@@ -292,7 +292,7 @@ export function CourseSharePage() {
           <div className="w-16 h-16 bg-ink-100 rounded-lg flex items-center justify-center mx-auto mb-4">
             <Icon name="link_off" size={28} className="text-ink-500" />
           </div>
-          <h1 className="text-xl font-bold text-ink-900 mb-2">Link Unavailable</h1>
+          <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight mb-2">Link Unavailable</h1>
           <p className="text-ink-500 text-sm mb-6">{state.message}</p>
           <button onClick={() => navigate('/')} className="px-5 py-2.5 rounded-md bg-ink-100 hover:bg-ink-200 text-ink-900 text-sm font-medium transition-colors">
             Go to aiwithrakshith.tech
@@ -371,7 +371,7 @@ export function CourseSharePage() {
 
             {/* Title & description */}
             <div>
-              <h1 className="text-xl font-bold text-ink-900 leading-snug mb-2">{course.title}</h1>
+              <h1 className="text-xl font-display font-bold text-ink-900 tracking-tight leading-snug mb-2">{course.title}</h1>
               <p className="text-ink-500 text-sm leading-relaxed">{course.short_description || course.description}</p>
             </div>
 
@@ -554,7 +554,7 @@ export function CourseSharePage() {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs text-teal-600 bg-teal-50 px-2 py-0.5 rounded font-medium">Free Preview</span>
                   </div>
-                  <h2 className="text-xl font-bold text-ink-900">{activeLesson.title}</h2>
+                  <h2 className="text-xl font-display font-bold text-ink-900 tracking-tight">{activeLesson.title}</h2>
                   {activeLesson.description && (
                     <p className="text-ink-500 text-sm mt-1">{activeLesson.description}</p>
                   )}

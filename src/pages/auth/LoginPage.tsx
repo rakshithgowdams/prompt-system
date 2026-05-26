@@ -81,8 +81,8 @@ export function LoginPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
               <Icon name="bolt" size={24} className="text-white" fill />
             </div>
-            <h1 className="text-2xl font-extrabold text-ink-900">aiwithrakshith.tech</h1>
-            <p className="text-ink-500 text-sm mt-1">Sign in to your account</p>
+            <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">aiwithrakshith.tech</h1>
+            <p className="text-sm text-ink-500 mt-1 font-sans">Sign in to your account</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

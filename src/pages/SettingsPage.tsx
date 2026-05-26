@@ -384,7 +384,7 @@ export function SettingsPage() {
         <motion.h1
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-extrabold text-ink-900"
+          className="text-2xl font-display font-extrabold text-ink-900 tracking-tight"
         >
           Settings
         </motion.h1>
@@ -393,7 +393,7 @@ export function SettingsPage() {
         <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-ink-300">
             <Icon name="person" size={18} className="text-brand-400 flex-shrink-0" fill />
-            <h2 className="font-semibold text-ink-900">Profile</h2>
+            <h2 className="font-display font-semibold text-ink-900">Profile</h2>
           </div>
 
           <div className="flex items-start gap-4">
@@ -543,7 +543,7 @@ export function SettingsPage() {
         <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-ink-300">
             <Icon name="key" size={18} className="text-brand-400 flex-shrink-0" />
-            <h2 className="font-semibold text-ink-900">Change Password</h2>
+            <h2 className="font-display font-semibold text-ink-900">Change Password</h2>
           </div>
           <form onSubmit={pwForm.handleSubmit(handlePasswordChange)} className="space-y-4">
             <div className="relative">
@@ -579,7 +579,7 @@ export function SettingsPage() {
         {/* ── Projects ────────────────────────────────────────────── */}
         <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between gap-3 pb-3 border-b border-ink-300">
-            <h2 className="font-semibold text-ink-900">Projects</h2>
+            <h2 className="font-display font-semibold text-ink-900">Projects</h2>
             <Button variant="outline" size="sm" onClick={() => setNewProjectOpen(true)}>
               <Icon name="add" size={14} />
               New Project

@@ -463,7 +463,7 @@ export function CoursePlayerPage() {
                 <div className="p-4 lg:p-6 border-b border-gray-800 flex-shrink-0">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-lg font-bold text-white mb-1">{activeLesson.title}</h2>
+                      <h2 className="text-lg font-display font-bold text-white tracking-tight mb-1">{activeLesson.title}</h2>
                       {activeLesson.description && (
                         <p className="text-sm text-gray-400 leading-relaxed">{activeLesson.description}</p>
                       )}

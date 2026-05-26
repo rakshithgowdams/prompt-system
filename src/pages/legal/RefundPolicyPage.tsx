@@ -24,7 +24,7 @@ export function RefundPolicyPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
               <Icon name="currency_rupee" size={22} className="text-white" />
             </div>
-            <h1 className="text-3xl font-extrabold text-ink-900 mb-2">Refund Policy</h1>
+            <h1 className="text-3xl font-display font-extrabold text-ink-900 tracking-tight mb-2">Refund Policy</h1>
             <p className="text-ink-500 text-sm">Last updated: May 26, 2026</p>
           </div>
 
@@ -38,7 +38,7 @@ export function RefundPolicyPage() {
             </div>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
                 Free Tier
               </h2>
@@ -48,7 +48,7 @@ export function RefundPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">2</span>
                 Paid Plans &amp; Subscriptions
               </h2>
@@ -87,7 +87,7 @@ export function RefundPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">3</span>
                 Course Purchases
               </h2>
@@ -109,7 +109,7 @@ export function RefundPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">4</span>
                 Non-Refundable Situations
               </h2>
@@ -130,7 +130,7 @@ export function RefundPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-base font-bold text-ink-900 mb-3 flex items-center gap-2">
+              <h2 className="text-base font-display font-bold text-ink-900 mb-3 flex items-center gap-2">
                 <span className="w-6 h-6 rounded bg-brand-400 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">5</span>
                 How to Request a Refund
               </h2>

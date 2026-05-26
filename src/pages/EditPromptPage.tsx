@@ -130,7 +130,7 @@ export function EditPromptPage() {
         >
           <Icon name="arrow_back" size={20} />
         </button>
-        <h1 className="text-xl font-extrabold text-ink-900">Edit Prompt</h1>
+        <h1 className="text-xl font-display font-extrabold text-ink-900 tracking-tight">Edit Prompt</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
