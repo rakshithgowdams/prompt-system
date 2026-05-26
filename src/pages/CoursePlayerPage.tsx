@@ -206,12 +206,148 @@ function NotesPanel({ courseId, lessonId }: { courseId: string; lessonId: string
   );
 }
 
+// ── Resource preview helpers ──────────────────────────────────────────────────
+
+function getResourceType(res: { name: string; mime_type?: string }): 'image' | 'video' | 'pdf' | 'text' | 'other' {
+  const mime = res.mime_type ?? '';
+  const ext = res.name.split('.').pop()?.toLowerCase() ?? '';
+  if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp','ico'].includes(ext)) return 'image';
+  if (mime.startsWith('video/') || ['mp4','webm','mov','avi','mkv'].includes(ext)) return 'video';
+  if (mime === 'application/pdf' || ext === 'pdf') return 'pdf';
+  if (mime.startsWith('text/') || ['txt','md','csv','json','xml','html','css','js','ts'].includes(ext)) return 'text';
+  return 'other';
+}
+
+function resourceIcon(type: ReturnType<typeof getResourceType>) {
+  switch (type) {
+    case 'image': return 'image';
+    case 'video': return 'play_circle';
+    case 'pdf': return 'picture_as_pdf';
+    case 'text': return 'article';
+    default: return 'attach_file';
+  }
+}
+
+interface ResourcePreviewProps {
+  name: string;
+  url: string;
+  type: ReturnType<typeof getResourceType>;
+  onClose: () => void;
+  onDownload: () => void;
+}
+
+function ResourcePreviewModal({ name, url, type, onClose, onDownload }: ResourcePreviewProps) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ type: 'spring', stiffness: 340, damping: 30 }}
+          className="relative bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-w-4xl w-full max-h-[90dvh]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-ink-200 bg-ink-50 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-white border border-ink-200 flex items-center justify-center flex-shrink-0">
+              <Icon name={resourceIcon(type)} size={16} className="text-ink-600" />
+            </div>
+            <p className="flex-1 text-sm font-semibold text-ink-900 truncate min-w-0">{name}</p>
+            <button
+              onClick={onDownload}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-ink-200 bg-white text-ink-700 hover:bg-ink-100 text-xs font-semibold transition-colors flex-shrink-0"
+            >
+              <Icon name="download" size={14} />
+              Download
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-ink-200 transition-colors flex-shrink-0"
+            >
+              <Icon name="close" size={18} className="text-ink-600" />
+            </button>
+          </div>
+
+          {/* Preview body */}
+          <div className="flex-1 overflow-auto min-h-0 bg-ink-100 flex items-center justify-center">
+            {type === 'image' && (
+              <img
+                src={url}
+                alt={name}
+                className="max-w-full max-h-full object-contain p-2"
+                draggable={false}
+              />
+            )}
+            {type === 'video' && (
+              <video
+                src={url}
+                controls
+                autoPlay
+                className="max-w-full max-h-full w-full"
+                style={{ background: '#000' }}
+              />
+            )}
+            {type === 'pdf' && (
+              <iframe
+                src={url}
+                title={name}
+                className="w-full h-full border-none"
+                style={{ minHeight: '70dvh' }}
+              />
+            )}
+            {(type === 'text' || type === 'other') && (
+              <div className="flex flex-col items-center justify-center gap-4 py-12 px-6 text-center">
+                <div className="w-16 h-16 bg-white border border-ink-200 rounded-2xl flex items-center justify-center">
+                  <Icon name={resourceIcon(type)} size={32} className="text-ink-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold text-ink-900">{name}</p>
+                  <p className="text-sm text-ink-500">Preview not available for this file type.</p>
+                </div>
+                <button
+                  onClick={onDownload}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink-900 text-white text-sm font-bold hover:bg-ink-700 transition-colors"
+                >
+                  <Icon name="download" size={16} />
+                  Download to view
+                </button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function ResourceList({ lesson }: { lesson: CourseLesson }) {
+  const [preview, setPreview] = useState<{ name: string; url: string; type: ReturnType<typeof getResourceType> } | null>(null);
+
+  const getSignedUrl = async (path: string): Promise<string> => {
+    const { data } = await supabase.storage.from('prompt-media').createSignedUrl(path, 300);
+    if (!data?.signedUrl) throw new Error('Could not generate URL');
+    return data.signedUrl;
+  };
+
+  const handlePreview = async (res: { name: string; path: string; mime_type?: string }) => {
+    try {
+      const url = await getSignedUrl(res.path);
+      const type = getResourceType(res);
+      setPreview({ name: res.name, url, type });
+    } catch { toast.error('Could not load preview'); }
+  };
+
   const handleDownload = async (res: { name: string; path: string }) => {
     try {
-      const { data } = await supabase.storage.from('prompt-media').createSignedUrl(res.path, 60);
-      if (!data?.signedUrl) throw new Error();
-      const a = document.createElement('a'); a.href = data.signedUrl; a.download = res.name; a.click();
+      const url = await getSignedUrl(res.path);
+      const a = document.createElement('a'); a.href = url; a.download = res.name; a.click();
     } catch { toast.error('Download failed'); }
   };
 
@@ -223,21 +359,41 @@ function ResourceList({ lesson }: { lesson: CourseLesson }) {
   );
 
   return (
-    <div className="space-y-2">
-      {lesson.resources.map((res, i) => (
-        <button key={i} onClick={() => handleDownload(res)}
-          className="w-full flex items-center gap-3 p-3.5 bg-ink-50 hover:bg-ink-100 border border-ink-200 rounded-xl transition-colors text-left group">
-          <div className="w-9 h-9 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Icon name="download" size={16} className="text-blue-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-ink-900 truncate group-hover:text-blue-600">{res.name}</p>
-            {res.size && <p className="text-xs text-ink-500">{(res.size / 1024 / 1024).toFixed(1)} MB</p>}
-          </div>
-          <Icon name="download" size={14} className="text-ink-400 group-hover:text-blue-500 flex-shrink-0" />
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="space-y-2">
+        {lesson.resources.map((res, i) => {
+          const type = getResourceType(res);
+          return (
+            <button key={i} onClick={() => handlePreview(res)}
+              className="w-full flex items-center gap-3 p-3.5 bg-ink-50 hover:bg-ink-100 border border-ink-200 rounded-xl transition-colors text-left group">
+              <div className="w-9 h-9 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon name={resourceIcon(type)} size={16} className="text-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink-900 truncate group-hover:text-blue-600">{res.name}</p>
+                {res.size && <p className="text-xs text-ink-500">{(res.size / 1024 / 1024).toFixed(1)} MB</p>}
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="text-[11px] text-ink-400 group-hover:text-blue-500 hidden sm:block">Preview</span>
+                <Icon name="open_in_new" size={14} className="text-ink-400 group-hover:text-blue-500" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {preview && (
+        <ResourcePreviewModal
+          name={preview.name}
+          url={preview.url}
+          type={preview.type}
+          onClose={() => setPreview(null)}
+          onDownload={() => {
+            const a = document.createElement('a'); a.href = preview.url; a.download = preview.name; a.click();
+          }}
+        />
+      )}
+    </>
   );
 }
 
