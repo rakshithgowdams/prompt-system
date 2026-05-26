@@ -256,7 +256,7 @@ function DetailModal({
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
-          className="pointer-events-auto w-full max-w-lg flex flex-col bg-white rounded-t-3xl shadow-2xl"
+          className="pointer-events-auto w-full max-w-[100vw] sm:max-w-md md:max-w-lg lg:max-w-xl flex flex-col bg-white rounded-t-3xl shadow-2xl"
           style={{ maxHeight: '92dvh' }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -525,7 +525,7 @@ function DetailModal({
 
         {/* ── Sticky footer ── */}
         <div
-          className="flex-shrink-0 border-t border-ink-100 bg-white px-4 pt-3 pb-4 space-y-2.5"
+          className="flex-shrink-0 border-t border-ink-100 bg-white px-4 sm:px-5 pt-3 pb-4 space-y-2.5 rounded-b-none"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
           {/* Comment input */}
