@@ -90,7 +90,7 @@ export function useAllMyCertificates() {
     queryKey: ['all-certificates', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('certificates')
+        .from('course_certificates')
         .select('*, courses(title, cover_image, description)')
         .eq('user_id', user!.id)
         .order('issued_at', { ascending: false });
@@ -108,7 +108,7 @@ export function useAllMyCertificates() {
         internship_from: string;
         internship_to: string;
         issued_at: string;
-        public_slug: string | null;
+        share_slug: string | null;
         instructor_name: string | null;
         courses: { title: string; cover_image: string | null; description: string | null } | null;
       }>;

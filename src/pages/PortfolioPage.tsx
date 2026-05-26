@@ -105,7 +105,7 @@ function CertCard({
 }: {
   cert: {
     id: string; course_id: string; serial_number: string; student_name: string;
-    course_title: string; course_category: string; issued_at: string; public_slug: string | null;
+    course_title: string; course_category: string; issued_at: string; share_slug: string | null;
     instructor_name: string | null;
     courses: { title: string; cover_image: string | null } | null;
   };

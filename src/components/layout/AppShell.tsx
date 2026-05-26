@@ -262,7 +262,7 @@ const mainNav: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { label: 'Explore Prompts', href: '/explore', icon: 'explore' },
   { label: 'Courses', href: '/courses', icon: 'school' },
-  { label: 'Certificates', href: '/portfolio', icon: 'workspace_premium' },
+  { label: 'Certificates / Portfolio', href: '/portfolio', icon: 'workspace_premium' },
   { label: 'Todos', href: '/todos', icon: 'checklist' },
   { label: 'Password Vault', href: '/vault', icon: 'shield' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
