@@ -76,37 +76,45 @@ Deno.serve(async (req: Request) => {
       .eq("id", share.project_id)
       .maybeSingle();
 
-    // 6. Fetch files
+    // 6. Fetch files based on share scope
     let rawFiles: Record<string, unknown>[] = [];
     let folderName = "";
 
     if (share.file_id) {
+      // ── Single file share ──────────────────────────────────────────────────
       const { data } = await admin
         .from("project_files")
         .select("*")
         .eq("id", share.file_id)
         .maybeSingle();
       if (data) rawFiles = [data];
+
     } else if (share.folder_id) {
+      // ── Folder share — include ALL files in this folder AND its sub-folders ─
       const { data: folder } = await admin
         .from("folders")
         .select("name")
         .eq("id", share.folder_id)
         .maybeSingle();
       folderName = folder?.name ?? "";
+
+      // Recursively collect all descendant folder IDs
+      const allFolderIds = await collectFolderIds(admin, share.folder_id);
+
+      // Fetch files from all those folders
       const { data } = await admin
         .from("project_files")
         .select("*")
-        .eq("folder_id", share.folder_id)
+        .in("folder_id", allFolderIds)
         .order("created_at", { ascending: true });
       rawFiles = data ?? [];
+
     } else {
-      // Whole project — top-level files only
+      // ── Whole project share — include ALL files across all folders ─────────
       const { data } = await admin
         .from("project_files")
         .select("*")
         .eq("project_id", share.project_id)
-        .is("folder_id", null)
         .order("created_at", { ascending: true });
       rawFiles = data ?? [];
     }
@@ -114,12 +122,18 @@ Deno.serve(async (req: Request) => {
     // 7. Generate signed URLs for all files (60-minute expiry)
     const files = await Promise.all(
       rawFiles.map(async (f) => {
+        const filePath = f.file_path as string;
+        if (!filePath) return { ...f, signedUrl: "" };
         try {
-          const { data: signed } = await admin.storage
+          const { data: signed, error: signErr } = await admin.storage
             .from("prompt-media")
-            .createSignedUrl(f.file_path as string, 3600);
+            .createSignedUrl(filePath, 3600);
+          if (signErr) {
+            console.error(`Failed to sign URL for ${filePath}:`, signErr.message);
+          }
           return { ...f, signedUrl: signed?.signedUrl ?? "" };
-        } catch {
+        } catch (e) {
+          console.error(`Exception signing URL for ${filePath}:`, e);
           return { ...f, signedUrl: "" };
         }
       })
@@ -146,3 +160,28 @@ Deno.serve(async (req: Request) => {
     return json({ error: "internal_error" }, 500);
   }
 });
+
+// ── Helper: collect folder ID and all descendant folder IDs ───────────────────
+async function collectFolderIds(
+  admin: ReturnType<typeof createClient>,
+  rootFolderId: string
+): Promise<string[]> {
+  const ids: string[] = [rootFolderId];
+  const queue: string[] = [rootFolderId];
+
+  while (queue.length > 0) {
+    const parentId = queue.shift()!;
+    const { data: children } = await admin
+      .from("folders")
+      .select("id")
+      .eq("parent_folder_id", parentId);
+    if (children) {
+      for (const child of children) {
+        ids.push(child.id);
+        queue.push(child.id);
+      }
+    }
+  }
+
+  return ids;
+}
