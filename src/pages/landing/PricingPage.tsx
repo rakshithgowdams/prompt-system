@@ -6,7 +6,7 @@ import { MarketingShell } from '../../components/landing/MarketingShell';
 import { FAQ } from '../../components/landing/FAQ';
 import { FinalCTA } from '../../components/landing/FinalCTA';
 import { NotifyMeModal } from '../../components/landing/NotifyMeModal';
-import { Reveal } from '../../components/landing/motion';
+import { Reveal, TiltCard, MagneticButton } from '../../components/landing/motion';
 
 type Billing = 'monthly' | 'half-yearly' | 'yearly';
 
@@ -252,11 +252,22 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
 
           {/* Free */}
-          <Reveal delay={0.1}>
-            <div className="bg-white border border-ink-300 rounded-2xl p-8 flex flex-col h-full">
-              <span className="inline-block text-xs font-bold uppercase tracking-wide text-success bg-success/10 px-3 py-1 rounded-full mb-5 w-fit">
+          <TiltCard>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ boxShadow: '0 24px 60px -12px rgba(0,0,0,0.12)' }}
+              className="bg-white border border-ink-300 rounded-2xl p-8 flex flex-col h-full"
+            >
+              <motion.span
+                animate={{ scale: [1, 1.04, 1] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="inline-block text-xs font-bold uppercase tracking-wide text-success bg-success/10 px-3 py-1 rounded-full mb-5 w-fit"
+              >
                 Available now
-              </span>
+              </motion.span>
               <h2 className="font-display font-extrabold text-2xl text-ink-900 mb-1">Free</h2>
               <p className="text-sm text-ink-500 mb-6">For students getting started.</p>
               <div className="mb-1">
@@ -266,16 +277,19 @@ export default function PricingPage() {
               </div>
               <span className="text-sm text-ink-500 mb-8 block">forever</span>
 
-              <Link
-                to="/signup"
-                className="w-full bg-ink-900 text-white text-sm font-bold py-3.5 rounded-xl text-center hover:bg-brand-400 transition-colors mb-6 block"
-              >
+              <MagneticButton as="a" href="/signup" className="w-full bg-ink-900 text-white text-sm font-bold py-3.5 rounded-xl text-center hover:bg-brand-400 transition-colors mb-6 block cursor-pointer">
                 Get started free
-              </Link>
+              </MagneticButton>
 
               <hr className="border-ink-300 mb-6" />
 
-              <ul className="space-y-3 flex-1">
+              <motion.ul
+                className="space-y-3 flex-1"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.2 } }, hidden: {} }}
+              >
                 {[
                   'Unlimited prompts',
                   'Up to 3 projects',
@@ -285,112 +299,137 @@ export default function PricingPage() {
                   'Community support',
                   '500 MB file storage',
                 ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-ink-700">
+                  <motion.li
+                    key={f}
+                    variants={{ hidden: { opacity: 0, x: -12 }, visible: { opacity: 1, x: 0 } }}
+                    className="flex items-start gap-2.5 text-sm text-ink-700"
+                  >
                     <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
                     {f}
-                  </li>
+                  </motion.li>
                 ))}
-              </ul>
+              </motion.ul>
               <p className="mt-5 text-xs text-ink-500">No credit card required.</p>
-            </div>
-          </Reveal>
+            </motion.div>
+          </TiltCard>
 
           {/* Standard */}
-          <Reveal delay={0.2}>
-            <div className="bg-white border border-ink-300 rounded-2xl p-8 flex flex-col h-full">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-3 py-1 rounded-full mb-5 w-fit">
+          <TiltCard>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ boxShadow: '0 24px 60px -12px rgba(0,0,0,0.10)' }}
+              className="bg-white border border-ink-300 rounded-2xl p-8 flex flex-col h-full"
+            >
+              <motion.span
+                animate={{ opacity: [1, 0.6, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-3 py-1 rounded-full mb-5 w-fit"
+              >
                 <Clock className="w-3 h-3" /> Coming Soon
-              </span>
+              </motion.span>
               <h2 className="font-display font-extrabold text-2xl text-ink-900 mb-1">Standard</h2>
               <p className="text-sm text-ink-500 mb-6">For serious creators and freelancers.</p>
-              <div className="mb-1">
-                <AnimatedPrice value={standardPricing[billing].perMo} />
-              </div>
+              <div className="mb-1"><AnimatedPrice value={standardPricing[billing].perMo} /></div>
               <AnimatedBilled value={standardPricing[billing].billed} />
               <div className="my-6 h-px bg-transparent" />
 
-              <button
+              <motion.button
                 onClick={() => setNotifyTier('standard')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
                 className="w-full bg-ink-100 text-ink-700 text-sm font-bold py-3.5 rounded-xl hover:bg-ink-200 transition-colors mb-6"
               >
                 Notify me when it launches
-              </button>
+              </motion.button>
 
               <hr className="border-ink-300 mb-6" />
 
               <p className="text-xs font-bold uppercase tracking-wider text-ink-500 mb-3">Everything in Free, plus:</p>
-              <ul className="space-y-3 flex-1">
-                {[
-                  'Unlimited projects',
-                  'Up to 10 courses',
-                  'Encrypted vault (unlimited items)',
-                  'Custom domain for share pages',
-                  'Remove "PromptVault" branding',
-                  'Priority email support',
-                  '10 GB file storage',
-                  'Advanced analytics',
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-ink-700">
+              <motion.ul
+                className="space-y-3 flex-1"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.3 } }, hidden: {} }}
+              >
+                {['Unlimited projects', 'Up to 10 courses', 'Encrypted vault (unlimited items)', 'Custom domain for share pages', 'Remove "PromptVault" branding', 'Priority email support', '10 GB file storage', 'Advanced analytics'].map((f) => (
+                  <motion.li
+                    key={f}
+                    variants={{ hidden: { opacity: 0, x: -12 }, visible: { opacity: 1, x: 0 } }}
+                    className="flex items-start gap-2.5 text-sm text-ink-700"
+                  >
                     <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
                     {f}
-                  </li>
+                  </motion.li>
                 ))}
-              </ul>
-            </div>
-          </Reveal>
+              </motion.ul>
+            </motion.div>
+          </TiltCard>
 
           {/* Premium */}
-          <Reveal delay={0.3}>
-            <div className="relative bg-white border-2 border-brand-400 rounded-2xl p-8 flex flex-col h-full shadow-2xl shadow-brand-200/40 lg:scale-[1.02] overflow-hidden">
-              {/* Ribbon */}
+          <TiltCard>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ boxShadow: '0 32px 80px -12px rgba(164,53,240,0.25)' }}
+              className="relative bg-white border-2 border-brand-400 rounded-2xl p-8 flex flex-col h-full shadow-2xl shadow-brand-200/40 lg:scale-[1.02] overflow-hidden"
+            >
               <div
                 className="absolute top-5 right-[-28px] bg-brand-400 text-white text-xs font-bold px-10 py-1"
                 style={{ transform: 'rotate(35deg)', transformOrigin: 'right' }}
               >
                 Most Popular
               </div>
-
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-3 py-1 rounded-full mb-5 w-fit">
+              <motion.span
+                animate={{ opacity: [1, 0.6, 1] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-3 py-1 rounded-full mb-5 w-fit"
+              >
                 <Clock className="w-3 h-3" /> Coming Soon
-              </span>
+              </motion.span>
               <h2 className="font-display font-extrabold text-2xl text-ink-900 mb-1">Premium</h2>
               <p className="text-sm text-ink-500 mb-6">For teams and power users.</p>
-              <div className="mb-1">
-                <AnimatedPrice value={premiumPricing[billing].perMo} />
-              </div>
+              <div className="mb-1"><AnimatedPrice value={premiumPricing[billing].perMo} /></div>
               <AnimatedBilled value={premiumPricing[billing].billed} />
               <div className="my-6 h-px bg-transparent" />
 
-              <button
+              <motion.button
                 onClick={() => setNotifyTier('premium')}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
                 className="w-full bg-brand-400 text-white text-sm font-bold py-3.5 rounded-xl hover:bg-brand-500 transition-colors mb-6"
               >
                 Notify me when it launches
-              </button>
+              </motion.button>
 
-              <hr className="border-ink-300 mb-6" />
+              <hr className="border-brand-200 mb-6" />
 
               <p className="text-xs font-bold uppercase tracking-wider text-ink-500 mb-3">Everything in Standard, plus:</p>
-              <ul className="space-y-3 flex-1">
-                {[
-                  'Team workspaces (up to 10 seats)',
-                  'Unlimited courses',
-                  'AI prompt suggestions',
-                  'White-label certificates',
-                  'Webhooks and API access',
-                  'Dedicated account manager',
-                  '100 GB file storage',
-                  'SSO & SAML',
-                  'SLA-backed uptime',
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-ink-700">
+              <motion.ul
+                className="space-y-3 flex-1"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.3 } }, hidden: {} }}
+              >
+                {['Team workspaces (up to 10 seats)', 'Unlimited courses', 'AI prompt suggestions', 'White-label certificates', 'Webhooks and API access', 'Dedicated account manager', '100 GB file storage', 'SSO & SAML', 'SLA-backed uptime'].map((f) => (
+                  <motion.li
+                    key={f}
+                    variants={{ hidden: { opacity: 0, x: -12 }, visible: { opacity: 1, x: 0 } }}
+                    className="flex items-start gap-2.5 text-sm text-ink-700"
+                  >
                     <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
                     {f}
-                  </li>
+                  </motion.li>
                 ))}
-              </ul>
-            </div>
-          </Reveal>
+              </motion.ul>
+            </motion.div>
+          </TiltCard>
         </div>
       </section>
 

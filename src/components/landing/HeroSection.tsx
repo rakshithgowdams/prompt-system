@@ -4,20 +4,107 @@ import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight, Sparkles, BookOpen, Folder, Lock, Share2, ChevronDown } from 'lucide-react';
+import { MagneticButton, Reveal } from './motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
-function HeroBadge() {
+const PILL_FEATURES = [
+  { icon: Sparkles, label: 'AI Prompts' },
+  { icon: BookOpen, label: 'Courses' },
+  { icon: Folder, label: 'Projects' },
+  { icon: Lock, label: 'Vault' },
+  { icon: Share2, label: 'Sharing' },
+];
+
+const charVariants = {
+  hidden: { opacity: 0, y: 80, rotateX: -60 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    transition: { duration: 0.7, delay: i * 0.018, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
+function SplitHeadline() {
+  const lines = [
+    { text: 'Your prompts, projects,', serif: false },
+    { text: 'and ', serif: false, serifPart: 'learning', rest: ' —' },
+    { text: 'all in one vault.', serif: false },
+  ];
+
+  let charIndex = 0;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="inline-flex items-center gap-2 bg-white border border-ink-300 rounded-full px-4 py-1.5 text-xs font-semibold text-ink-700 shadow-sm mb-8"
+    <motion.h1
+      className="font-display font-extrabold tracking-tight text-ink-900 leading-[1.05] text-5xl sm:text-6xl md:text-7xl xl:text-8xl"
+      style={{ perspective: '800px' }}
+      aria-label="Your prompts, projects, and learning — all in one vault."
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-      Now in public beta — Join 10,000+ early users
-    </motion.div>
+      {lines.map((line, li) => (
+        <span key={li} className="block">
+          {line.serifPart ? (
+            <>
+              {line.text.split('').map((ch) => {
+                const i = charIndex++;
+                return (
+                  <motion.span
+                    key={i}
+                    custom={i}
+                    variants={charVariants}
+                    initial="hidden"
+                    animate="visible"
+                    style={{ display: 'inline-block', whiteSpace: ch === ' ' ? 'pre' : undefined }}
+                  >
+                    {ch === ' ' ? '\u00a0' : ch}
+                  </motion.span>
+                );
+              })}
+              <motion.em
+                className="font-serif italic font-medium text-brand-400 not-italic"
+                style={{ fontStyle: 'italic' }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: charIndex * 0.018, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {line.serifPart}
+              </motion.em>
+              {line.rest?.split('').map((ch) => {
+                const i = charIndex++;
+                return (
+                  <motion.span
+                    key={`r${i}`}
+                    custom={i}
+                    variants={charVariants}
+                    initial="hidden"
+                    animate="visible"
+                    style={{ display: 'inline-block' }}
+                  >
+                    {ch}
+                  </motion.span>
+                );
+              })}
+            </>
+          ) : (
+            line.text.split('').map((ch) => {
+              const i = charIndex++;
+              return (
+                <motion.span
+                  key={i}
+                  custom={i}
+                  variants={charVariants}
+                  initial="hidden"
+                  animate="visible"
+                  style={{ display: 'inline-block', whiteSpace: ch === ' ' ? 'pre' : undefined }}
+                >
+                  {ch === ' ' ? '\u00a0' : ch}
+                </motion.span>
+              );
+            })
+          )}
+        </span>
+      ))}
+    </motion.h1>
   );
 }
 
@@ -32,9 +119,7 @@ function DeviceMockup() {
         deviceRef.current,
         { rotateX: 18, scale: 0.94, y: 60 },
         {
-          rotateX: 0,
-          scale: 1,
-          y: 0,
+          rotateX: 0, scale: 1, y: 0,
           scrollTrigger: {
             trigger: deviceRef.current,
             start: 'top 85%',
@@ -52,12 +137,11 @@ function DeviceMockup() {
       ref={deviceRef}
       initial={{ opacity: 0, y: 60 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.9, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="relative mx-auto mt-16 max-w-4xl"
       style={{ perspective: '1200px' }}
     >
-      {/* Browser chrome */}
-      <div className="rounded-2xl border border-ink-300 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.18)] overflow-hidden">
+      <div className="rounded-2xl border border-ink-300 shadow-[0_32px_80px_-12px_rgba(0,0,0,0.22)] overflow-hidden">
         {/* Tab bar */}
         <div className="bg-ink-100 border-b border-ink-300 px-4 py-3 flex items-center gap-2">
           <div className="flex gap-1.5">
@@ -72,27 +156,38 @@ function DeviceMockup() {
             </div>
           </div>
         </div>
-        {/* Dashboard content */}
+        {/* Dashboard */}
         <div className="bg-white p-6 grid grid-cols-3 gap-4 min-h-[340px]">
-          {/* Sidebar */}
           <div className="col-span-1 border-r border-ink-300 pr-4 space-y-2">
-            <div className="h-7 bg-brand-50 rounded-lg flex items-center px-2 gap-2">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.0 }}
+              className="h-7 bg-brand-50 rounded-lg flex items-center px-2 gap-2"
+            >
               <div className="w-4 h-4 rounded bg-brand-400" />
               <div className="h-2 bg-brand-200 rounded flex-1" />
-            </div>
+            </motion.div>
             {['bg-ink-100', 'bg-ink-100', 'bg-ink-100', 'bg-ink-100'].map((bg, i) => (
-              <div key={i} className={`h-7 ${bg} rounded-lg flex items-center px-2 gap-2`}>
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.05 + i * 0.07 }}
+                className={`h-7 ${bg} rounded-lg flex items-center px-2 gap-2`}
+              >
                 <div className="w-4 h-4 rounded bg-ink-300" />
                 <div className="h-2 bg-ink-300 rounded flex-1" />
-              </div>
+              </motion.div>
             ))}
           </div>
-          {/* Main content */}
           <div className="col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              className="flex items-center justify-between"
+            >
               <div className="h-4 w-32 bg-ink-900 rounded-full" />
               <div className="h-7 w-24 bg-brand-400 rounded-lg" />
-            </div>
+            </motion.div>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { color: 'bg-blue-50', border: 'border-blue-200', accent: 'bg-blue-400' },
@@ -100,20 +195,18 @@ function DeviceMockup() {
                 { color: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-400' },
                 { color: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-400' },
               ].map((card, i) => (
-                <div key={i} className={`${card.color} border ${card.border} rounded-xl p-3 space-y-2`}>
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.15 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                  className={`${card.color} border ${card.border} rounded-xl p-3 space-y-2`}
+                >
                   <div className={`w-8 h-8 ${card.accent} rounded-lg`} />
                   <div className="h-2.5 bg-ink-300 rounded w-3/4" />
                   <div className="h-2 bg-ink-200 rounded w-1/2" />
-                </div>
+                </motion.div>
               ))}
-            </div>
-            <div className="bg-ink-100 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-400 rounded-xl flex-shrink-0" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-2.5 bg-ink-300 rounded w-2/3" />
-                <div className="h-2 bg-ink-200 rounded w-1/2" />
-              </div>
-              <div className="h-6 w-16 bg-success/20 rounded-full" />
             </div>
           </div>
         </div>
@@ -123,7 +216,8 @@ function DeviceMockup() {
       <motion.div
         animate={{ y: [0, -14, 0] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -left-8 top-1/4 bg-white border border-ink-300 rounded-xl shadow-card p-3 flex items-center gap-2 text-xs font-semibold text-ink-900"
+        whileHover={{ scale: 1.05 }}
+        className="absolute -left-8 top-1/4 bg-white border border-ink-300 rounded-xl shadow-card px-3 py-2.5 flex items-center gap-2 text-xs font-semibold text-ink-900 cursor-default"
       >
         <Sparkles className="w-4 h-4 text-brand-400" />
         42 prompts saved
@@ -132,7 +226,8 @@ function DeviceMockup() {
       <motion.div
         animate={{ y: [0, -10, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        className="absolute -right-6 top-1/3 bg-white border border-ink-300 rounded-xl shadow-card p-3 flex items-center gap-2 text-xs font-semibold text-ink-900"
+        whileHover={{ scale: 1.05 }}
+        className="absolute -right-6 top-1/3 bg-white border border-ink-300 rounded-xl shadow-card px-3 py-2.5 flex items-center gap-2 text-xs font-semibold text-ink-900 cursor-default"
       >
         <BookOpen className="w-4 h-4 text-blue-500" />
         Course published
@@ -141,7 +236,8 @@ function DeviceMockup() {
       <motion.div
         animate={{ y: [0, -12, 0] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute -left-4 bottom-8 bg-white border border-ink-300 rounded-xl shadow-card p-3 flex items-center gap-2 text-xs font-semibold text-ink-900"
+        whileHover={{ scale: 1.05 }}
+        className="absolute -left-4 bottom-8 bg-white border border-ink-300 rounded-xl shadow-card px-3 py-2.5 flex items-center gap-2 text-xs font-semibold text-ink-900 cursor-default"
       >
         <Share2 className="w-4 h-4 text-emerald-500" />
         Link shared with 50+
@@ -151,12 +247,32 @@ function DeviceMockup() {
 }
 
 export function HeroSection() {
+  const blobRef1 = useRef<HTMLDivElement>(null);
+  const blobRef2 = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mm = gsap.matchMedia();
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      if (blobRef1.current) {
+        gsap.to(blobRef1.current, {
+          y: -60, x: 30, scrollTrigger: { trigger: 'body', start: 'top top', end: '+=600', scrub: 2 },
+        });
+      }
+      if (blobRef2.current) {
+        gsap.to(blobRef2.current, {
+          y: 40, x: -40, scrollTrigger: { trigger: 'body', start: 'top top', end: '+=600', scrub: 2 },
+        });
+      }
+    });
+    return () => mm.revert();
+  }, []);
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-24 pb-16 px-6">
-      {/* Blob background */}
+      {/* Blobs with parallax refs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-brand-200/30 rounded-full blur-3xl animate-blob" />
-        <div className="absolute top-20 -right-20 w-[600px] h-[600px] bg-pink-200/25 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }} />
+        <div ref={blobRef1} className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-brand-200/30 rounded-full blur-3xl animate-blob" />
+        <div ref={blobRef2} className="absolute top-20 -right-20 w-[600px] h-[600px] bg-pink-200/25 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }} />
         <div className="absolute bottom-0 left-1/3 w-[400px] h-[400px] bg-blue-200/25 rounded-full blur-3xl animate-blob" style={{ animationDelay: '4s' }} />
       </div>
 
@@ -170,87 +286,88 @@ export function HeroSection() {
       />
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-5xl mx-auto">
-        <HeroBadge />
-
-        {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className="font-display font-extrabold tracking-tight text-ink-900 leading-[1.05] text-5xl sm:text-6xl md:text-7xl xl:text-8xl"
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="inline-flex items-center gap-2 bg-white border border-ink-300 rounded-full px-4 py-1.5 text-xs font-semibold text-ink-700 shadow-sm mb-8"
         >
-          Your prompts, projects,
-          <br />
-          and{' '}
-          <em className="font-serif font-medium italic text-brand-400 not-italic" style={{ fontStyle: 'italic' }}>
-            learning
-          </em>{' '}
-          —
-          <br />
-          all in one vault.
-        </motion.h1>
+          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          Now in public beta — Join 10,000+ early users
+        </motion.div>
+
+        {/* Split-character headline */}
+        <SplitHeadline />
 
         {/* Subhead */}
         <motion.p
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.7, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
           className="mt-7 text-lg md:text-xl text-ink-500 max-w-2xl mx-auto leading-relaxed"
         >
           PromptVault is the home for every prompt you've written, every course you've built,
           and every file you'll ever share. Free, forever, for students.
         </motion.p>
 
-        {/* CTAs */}
+        {/* CTAs — staggered + Magnetic */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
           className="flex flex-col sm:flex-row items-center gap-4 mt-10"
         >
-          <Link
-            to="/signup"
-            className="group flex items-center gap-2 bg-ink-900 text-white font-bold text-base h-14 px-8 rounded-xl hover:bg-brand-400 transition-all duration-300 shadow-lg hover:shadow-brand-400/30"
+          <MagneticButton
+            className="group flex items-center gap-2 bg-ink-900 text-white font-bold text-base h-14 px-8 rounded-xl hover:bg-brand-400 transition-all duration-300 shadow-lg hover:shadow-brand-400/30 cursor-pointer"
+            as="button"
+            onClick={() => { window.location.href = '/signup'; }}
           >
             Start free
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <a
+          </MagneticButton>
+
+          <motion.a
             href="#features"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             className="flex items-center gap-2 text-sm font-semibold text-ink-700 border border-ink-300 h-14 px-8 rounded-xl hover:border-ink-700 hover:text-ink-900 transition-all"
           >
             <ChevronDown className="w-4 h-4" />
             See how it works
-          </a>
+          </motion.a>
         </motion.div>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.65 }}
+          transition={{ delay: 1.0 }}
           className="mt-4 text-xs text-ink-500"
         >
           No credit card &middot; Forever free for students
         </motion.p>
 
-        {/* Feature pill strip */}
+        {/* Staggered pill strip */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
           className="flex flex-wrap items-center justify-center gap-3 mt-8"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.08, delayChildren: 1.05 } },
+            hidden: {},
+          }}
         >
-          {[
-            { icon: Sparkles, label: 'AI Prompts' },
-            { icon: BookOpen, label: 'Courses' },
-            { icon: Folder, label: 'Projects' },
-            { icon: Lock, label: 'Vault' },
-            { icon: Share2, label: 'Sharing' },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 bg-white border border-ink-300 rounded-full px-3 py-1.5 text-xs font-semibold text-ink-700 shadow-sm">
+          {PILL_FEATURES.map(({ icon: Icon, label }) => (
+            <motion.div
+              key={label}
+              variants={{ hidden: { opacity: 0, y: 12, scale: 0.85 }, visible: { opacity: 1, y: 0, scale: 1 } }}
+              transition={{ ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ scale: 1.08, y: -2 }}
+              className="flex items-center gap-1.5 bg-white border border-ink-300 rounded-full px-3 py-1.5 text-xs font-semibold text-ink-700 shadow-sm cursor-default"
+            >
               <Icon className="w-3.5 h-3.5 text-brand-400" />
               {label}
-            </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
