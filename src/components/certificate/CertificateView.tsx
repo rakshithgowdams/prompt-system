@@ -1,3 +1,4 @@
+import { useRef, useEffect, useState } from 'react';
 import type { CourseCertificate } from '../../hooks/useCourses';
 
 interface Props {
@@ -5,7 +6,7 @@ interface Props {
   forExport?: boolean;
 }
 
-// A4 landscape: 1414 × 1000 px at ~120 ppi
+// Fixed canvas size — all positioning is relative to this
 const W = 1414;
 const H = 1000;
 
@@ -22,7 +23,6 @@ function LogoSVG({ style }: { style?: React.CSSProperties }) {
 function SealSVG({ style }: { style?: React.CSSProperties }) {
   return (
     <svg viewBox="0 0 100 100" style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Outer gear ring */}
       {Array.from({ length: 16 }).map((_, i) => {
         const angle = (i * 360) / 16;
         const rad = (angle * Math.PI) / 180;
@@ -30,11 +30,10 @@ function SealSVG({ style }: { style?: React.CSSProperties }) {
         const y1 = 50 + 44 * Math.sin(rad);
         const x2 = 50 + 38 * Math.cos(rad);
         const y2 = 50 + 38 * Math.sin(rad);
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1a2744" strokeWidth="3.5" strokeLinecap="round"/>;
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1a2744" strokeWidth="3.5" strokeLinecap="round" />;
       })}
-      <circle cx="50" cy="50" r="36" fill="#1a2744"/>
-      <circle cx="50" cy="50" r="30" fill="none" stroke="#c8a84b" strokeWidth="1.5"/>
-      {/* MD text */}
+      <circle cx="50" cy="50" r="36" fill="#1a2744" />
+      <circle cx="50" cy="50" r="30" fill="none" stroke="#c8a84b" strokeWidth="1.5" />
       <text x="50" y="46" textAnchor="middle" fill="white" fontWeight="900" fontSize="14" fontFamily="Inter,sans-serif" letterSpacing="1">MD</text>
       <text x="50" y="60" textAnchor="middle" fill="#c8a84b" fontWeight="700" fontSize="7" fontFamily="Inter,sans-serif" letterSpacing="1.5">NEXUS</text>
       <text x="50" y="70" textAnchor="middle" fill="#c8a84b" fontWeight="400" fontSize="5.5" fontFamily="Inter,sans-serif" letterSpacing="1">EST 2025</text>
@@ -55,346 +54,290 @@ function SignatureSVG({ style }: { style?: React.CSSProperties }) {
 const FOOTER_TEXT =
   'mydesignnexus.in  |  Hassan, Karnataka, India  |  AI Automation • AI Call Agents • Web Development  |  Film Making  |  Digital Marketing  |  AI Advertising';
 
-export function CertificateView({ cert, forExport = false }: Props) {
+// The actual certificate canvas — always rendered at W×H pixels
+function CertificateCanvas({ cert }: { cert: CourseCertificate }) {
   const fmt = (d: string | null) =>
     d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
 
   const issueDate = fmt(cert.issued_at);
-  const fromDate  = fmt(cert.internship_from);
-  const toDate    = fmt(cert.internship_to);
-
-  const px = (n: number) => forExport ? `${n}px` : `${(n / W) * 100}%`;
-  const py = (n: number) => forExport ? `${n}px` : `${(n / H) * 100}%`;
-  const fs = (n: number) =>
-    forExport ? `${n}px` : `clamp(${Math.round(n * 0.35)}px, ${(n / W) * 100}vw, ${n}px)`;
+  const fromDate = fmt(cert.internship_from);
+  const toDate = fmt(cert.internship_to);
 
   return (
     <div
       id="certificate-canvas"
       style={{
         position: 'relative',
-        width:       forExport ? `${W}px` : '100%',
-        height:      forExport ? `${H}px` : undefined,
-        aspectRatio: forExport ? undefined : `${W} / ${H}`,
+        width: `${W}px`,
+        height: `${H}px`,
         background: '#f5f0ec',
         overflow: 'hidden',
         fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+        flexShrink: 0,
       }}
     >
-      {/* ── Diagonal watermark grid ── */}
-      <DiagonalGrid forExport={forExport} />
+      {/* Diagonal watermark grid */}
+      <DiagonalGrid />
 
-      {/* ── Left silver swoosh ── */}
+      {/* Left silver swoosh */}
       <div style={{
-        position: 'absolute', left: 0, top: py(560),
-        width: px(88), height: py(340),
+        position: 'absolute', left: 0, top: 560,
+        width: 88, height: 340,
         background: 'linear-gradient(135deg, #b0b0b0 0%, #e0e0e0 50%, #909090 100%)',
-        borderRadius: `0 ${px(60)} ${px(60)} 0`,
+        borderRadius: '0 60px 60px 0',
         opacity: 0.5,
       }} />
 
-      {/* ── Right silver swoosh ── */}
+      {/* Right silver swoosh */}
       <div style={{
-        position: 'absolute', right: 0, top: py(100),
-        width: px(88), height: py(340),
+        position: 'absolute', right: 0, top: 100,
+        width: 88, height: 340,
         background: 'linear-gradient(225deg, #b0b0b0 0%, #e0e0e0 50%, #909090 100%)',
-        borderRadius: `${px(60)} 0 0 ${px(60)}`,
+        borderRadius: '60px 0 0 60px',
         opacity: 0.5,
       }} />
 
-      {/* ── Top-left: Company logo image ── */}
-      <div style={{
-        position: 'absolute',
-        top: py(36),
-        left: px(64),
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: py(4),
-      }}>
-        <LogoSVG style={{
-          width: forExport ? '900px' : `${(900 / W) * 100}%`,
-          height: forExport ? '170px' : `${(170 / H) * 100}%`,
-        }} />
+      {/* Top-left: Company logo */}
+      <div style={{ position: 'absolute', top: 36, left: 64 }}>
+        <LogoSVG style={{ width: 300, height: 80 }} />
       </div>
 
-      {/* ── Top-right: EST 2025 badge ── */}
-      <svg
-        viewBox="0 0 90 104"
-        style={{
-          position: 'absolute',
-          top: py(28),
-          right: px(60),
-          width: forExport ? '78px' : `${(78 / W) * 100}%`,
-          height: 'auto',
-        }}
-      >
+      {/* Top-right: EST 2025 badge */}
+      <svg viewBox="0 0 90 104" style={{ position: 'absolute', top: 28, right: 60, width: 78, height: 'auto' }}>
         <polygon points="45,2 88,22 88,82 45,102 2,82 2,22" fill="#1a2744" />
         <polygon points="45,8 82,26 82,78 45,96 8,78 8,26" fill="none" stroke="#c8a84b" strokeWidth="1.5" />
         <text x="45" y="48" textAnchor="middle" fill="white" fontWeight="700" fontSize="14" fontFamily="Inter,sans-serif" letterSpacing="2">EST</text>
         <text x="45" y="70" textAnchor="middle" fill="#c8a84b" fontWeight="900" fontSize="17" fontFamily="Inter,sans-serif">2025</text>
       </svg>
 
-      {/* ── Top decorative rule ── */}
+      {/* Top decorative rule */}
       <div style={{
-        position: 'absolute',
-        top: py(154),
-        left: px(64), right: px(64),
-        height: forExport ? '1.5px' : '0.15%',
+        position: 'absolute', top: 154, left: 64, right: 64,
+        height: 1.5,
         background: 'linear-gradient(90deg, transparent 0%, #999 15%, #444 50%, #999 85%, transparent 100%)',
       }} />
 
-      {/* ── CERTIFICATE OF COURSE COMPLETION ── */}
+      {/* CERTIFICATE OF COURSE COMPLETION */}
       <div style={{
-        position: 'absolute',
-        top: py(172),
-        left: '50%',
+        position: 'absolute', top: 172, left: '50%',
         transform: 'translateX(-50%)',
-        whiteSpace: 'nowrap' as const,
-        textAlign: 'center' as const,
+        whiteSpace: 'nowrap',
+        textAlign: 'center',
+        fontSize: 38,
+        fontWeight: 900,
+        color: '#0d1120',
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        lineHeight: 1,
       }}>
-        <div style={{
-          fontSize: fs(38),
-          fontWeight: 900,
-          color: '#0d1120',
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase' as const,
-          lineHeight: 1,
-        }}>Certificate of Course Completion</div>
+        Certificate of Course Completion
       </div>
 
-      {/* ── Ornamental divider ── */}
+      {/* Ornamental divider */}
       <div style={{
-        position: 'absolute',
-        top: py(256),
-        left: '50%',
+        position: 'absolute', top: 256, left: '50%',
         transform: 'translateX(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: px(14),
-        whiteSpace: 'nowrap' as const,
+        display: 'flex', alignItems: 'center', gap: 14,
+        whiteSpace: 'nowrap',
       }}>
-        <div style={{ width: px(180), height: forExport ? '2px' : '0.2%', background: '#333' }} />
-        <svg viewBox="0 0 32 14" width={forExport ? '32' : `${(32 / W) * 100}%`} height={forExport ? '14' : `${(14 / H) * 100}%`}>
+        <div style={{ width: 180, height: 2, background: '#333' }} />
+        <svg viewBox="0 0 32 14" width="32" height="14">
           <polygon points="4,7 10,1 16,7 22,1 28,7 22,13 16,7 10,13" fill="#333" />
         </svg>
-        <div style={{ width: px(180), height: forExport ? '2px' : '0.2%', background: '#333' }} />
+        <div style={{ width: 180, height: 2, background: '#333' }} />
       </div>
 
-      {/* ── "This is to certify that" ── */}
+      {/* "This is to certify that" */}
       <div style={{
-        position: 'absolute',
-        top: py(294),
-        left: '50%',
+        position: 'absolute', top: 294, left: '50%',
         transform: 'translateX(-50%)',
-        fontSize: fs(21),
-        color: '#555',
-        fontStyle: 'italic' as const,
+        fontSize: 21, color: '#555',
+        fontStyle: 'italic',
         fontFamily: "'Georgia', 'Times New Roman', serif",
-        whiteSpace: 'nowrap' as const,
+        whiteSpace: 'nowrap',
         letterSpacing: '0.02em',
-      }}>This is to certify that</div>
+      }}>
+        This is to certify that
+      </div>
 
-      {/* ── Student name ── */}
+      {/* Student name */}
       <div style={{
-        position: 'absolute',
-        top: py(332),
-        left: '50%',
+        position: 'absolute', top: 332, left: '50%',
         transform: 'translateX(-50%)',
-        textAlign: 'center' as const,
-        width: forExport ? '900px' : '63.6%',
+        textAlign: 'center',
+        width: 900,
       }}>
         <div style={{
-          fontSize: fs(60),
-          fontWeight: 900,
-          color: '#0d1120',
-          letterSpacing: '0.01em',
-          lineHeight: 1.05,
-          whiteSpace: 'nowrap' as const,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>{cert.student_name}</div>
-        <div style={{
-          marginTop: py(8),
-          height: forExport ? '4px' : '0.4%',
-          background: '#111',
-          borderRadius: px(2),
-        }} />
+          fontSize: 60, fontWeight: 900, color: '#0d1120',
+          letterSpacing: '0.01em', lineHeight: 1.05,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {cert.student_name}
+        </div>
+        <div style={{ marginTop: 8, height: 4, background: '#111', borderRadius: 2 }} />
       </div>
 
-      {/* ── Body paragraph ── */}
+      {/* Body paragraph */}
       <div style={{
-        position: 'absolute',
-        top: py(452),
-        left: px(80), right: px(80),
-        fontSize: fs(18),
-        color: '#222',
-        lineHeight: 1.8,
-        fontWeight: 400,
-        textAlign: 'justify' as const,
+        position: 'absolute', top: 452, left: 80, right: 80,
+        fontSize: 18, color: '#222', lineHeight: 1.8,
+        fontWeight: 400, textAlign: 'justify',
       }}>
         Has successfully completed the course{' '}
         <strong style={{ fontWeight: 700 }}>"{cert.course_title}"</strong>{' '}
         at <strong style={{ fontWeight: 700 }}>MyDesignNexus</strong>
         {cert.internship_from && cert.internship_to ? (
           <>, from <strong style={{ fontWeight: 700 }}>{fromDate}</strong> to{' '}
-          <strong style={{ fontWeight: 700 }}>{toDate}</strong></>
+            <strong style={{ fontWeight: 700 }}>{toDate}</strong></>
         ) : null}
         . During this period, the student demonstrated exceptional dedication and professional growth in{' '}
         <strong style={{ fontWeight: 700 }}>{cert.growth_area || cert.course_category || '—'}</strong>
         . We wish them continued success in their career.
       </div>
 
-      {/* ── Certificate ID ── */}
-      <div style={{
-        position: 'absolute',
-        top: py(652),
-        left: px(80),
-        fontSize: fs(15),
-        color: '#333',
-      }}>
+      {/* Certificate ID */}
+      <div style={{ position: 'absolute', top: 652, left: 80, fontSize: 15, color: '#333' }}>
         <strong>Certificate ID:</strong>{' '}
         <span style={{ fontFamily: "'Courier New', monospace", letterSpacing: '0.04em' }}>
           {cert.serial_number}
         </span>
       </div>
 
-      {/* ── Horizontal rule above bottom section ── */}
+      {/* Horizontal rule above bottom section */}
       <div style={{
-        position: 'absolute',
-        top: py(700),
-        left: px(64), right: px(64),
-        height: forExport ? '1.5px' : '0.15%',
-        background: '#aaa',
+        position: 'absolute', top: 700, left: 64, right: 64,
+        height: 1.5, background: '#aaa',
       }} />
-
-      {/* ── Bottom trio: Date | Seal | Signature ── */}
 
       {/* Date + Instructor (bottom-left) */}
       <div style={{
-        position: 'absolute',
-        bottom: py(54),
-        left: px(80),
-        display: 'flex',
-        flexDirection: 'column',
-        gap: py(18),
+        position: 'absolute', bottom: 54, left: 80,
+        display: 'flex', flexDirection: 'column', gap: 18,
       }}>
-        {/* Date */}
         <div>
-          <div style={{ fontSize: fs(16), fontWeight: 700, color: '#222', marginBottom: py(6) }}>Date:</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#222', marginBottom: 6 }}>Date:</div>
           <div style={{
-            fontSize: fs(14),
-            color: '#444',
+            fontSize: 14, color: '#444',
             fontFamily: "'Courier New', monospace",
             letterSpacing: '0.1em',
-            borderBottom: `${forExport ? '2px' : '0.2%'} dotted #555`,
-            paddingBottom: py(4),
-            minWidth: px(180),
-          }}>{issueDate}</div>
+            borderBottom: '2px dotted #555',
+            paddingBottom: 4,
+            minWidth: 180,
+          }}>
+            {issueDate}
+          </div>
         </div>
-        {/* Instructor */}
         <div>
-          <div style={{ fontSize: fs(11), color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 600, marginBottom: py(4) }}>Course Instructor</div>
-          <div style={{
-            fontSize: fs(16),
-            fontWeight: 800,
-            color: '#111',
-            letterSpacing: '0.01em',
-          }}>{cert.instructor_name || 'Rakshith'}</div>
-          <div style={{ width: px(160), height: forExport ? '1.5px' : '0.15%', background: '#aaa', marginTop: py(4) }} />
+          <div style={{ fontSize: 11, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>Course Instructor</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#111', letterSpacing: '0.01em' }}>
+            {cert.instructor_name || 'Rakshith'}
+          </div>
+          <div style={{ width: 160, height: 1.5, background: '#aaa', marginTop: 4 }} />
         </div>
       </div>
 
       {/* Vertical separator left */}
       <div style={{
-        position: 'absolute',
-        bottom: py(52),
-        left: px(420),
-        width: forExport ? '1.5px' : '0.1%',
-        height: py(130),
-        background: '#bbb',
+        position: 'absolute', bottom: 52, left: 420,
+        width: 1.5, height: 130, background: '#bbb',
       }} />
 
-      {/* Seal (center) — real image */}
+      {/* Seal (center) */}
       <div style={{
-        position: 'absolute',
-        bottom: py(54),
-        left: '50%',
+        position: 'absolute', bottom: 54, left: '50%',
         transform: 'translateX(-50%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: py(6),
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
       }}>
-        <div style={{ fontSize: fs(12), color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 500 }}>Seal</div>
-        <SealSVG style={{
-          width: forExport ? '500px' : `${(500 / W) * 100}%`,
-          height: 'auto',
-        }} />
+        <div style={{ fontSize: 12, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 500 }}>Seal</div>
+        <SealSVG style={{ width: 100, height: 'auto' }} />
       </div>
 
       {/* Vertical separator right */}
       <div style={{
-        position: 'absolute',
-        bottom: py(52),
-        right: px(420),
-        width: forExport ? '1.5px' : '0.1%',
-        height: py(130),
-        background: '#bbb',
+        position: 'absolute', bottom: 52, right: 420,
+        width: 1.5, height: 130, background: '#bbb',
       }} />
 
-      {/* Signature (bottom-right) — real image */}
+      {/* Signature (bottom-right) */}
       <div style={{
-        position: 'absolute',
-        bottom: py(44),
-        right: px(80),
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        gap: py(3),
+        position: 'absolute', bottom: 44, right: 80,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3,
       }}>
-        <SignatureSVG style={{
-          width: forExport ? '500px' : `${(500 / W) * 100}%`,
-          height: 'auto',
-          marginBottom: py(4),
-        }} />
-        <div style={{ width: forExport ? '150px' : `${(150 / W) * 100}%`, height: forExport ? '1.5px' : '0.15%', background: '#333' }} />
-        <div style={{ fontSize: fs(11), color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>Authorized Signature</div>
-        <div style={{ fontSize: fs(21), fontWeight: 900, color: '#111' }}>Rakshith</div>
-        <div style={{ fontSize: fs(12), color: '#555' }}>Founder &amp; CEO</div>
-        <div style={{ fontSize: fs(12), color: '#555' }}>MyDesignNexus</div>
+        <SignatureSVG style={{ width: 160, height: 'auto', marginBottom: 4 }} />
+        <div style={{ width: 150, height: 1.5, background: '#333' }} />
+        <div style={{ fontSize: 11, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Authorized Signature</div>
+        <div style={{ fontSize: 21, fontWeight: 900, color: '#111' }}>Rakshith</div>
+        <div style={{ fontSize: 12, color: '#555' }}>Founder &amp; CEO</div>
+        <div style={{ fontSize: 12, color: '#555' }}>MyDesignNexus</div>
       </div>
 
-      {/* ── Footer bar ── */}
+      {/* Footer bar */}
       <div style={{
-        position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        height: py(44),
-        background: '#111',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: `0 ${px(24)}`,
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height: 44, background: '#111',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '0 24px',
       }}>
         <div style={{
-          fontSize: fs(11),
-          color: 'white',
-          fontWeight: 700,
-          letterSpacing: '0.03em',
-          textAlign: 'center' as const,
-          whiteSpace: 'nowrap' as const,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          fontSize: 11, color: 'white', fontWeight: 700,
+          letterSpacing: '0.03em', textAlign: 'center',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {FOOTER_TEXT}
         </div>
       </div>
-
     </div>
   );
 }
 
-function DiagonalGrid({ forExport }: { forExport: boolean }) {
+// Responsive wrapper: scales CertificateCanvas to fit the container width
+function ResponsiveCertificate({ cert }: { cert: CourseCertificate }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const obs = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      if (w > 0) setScale(w / W);
+    });
+    obs.observe(el);
+    // Initial calc
+    const w = el.getBoundingClientRect().width;
+    if (w > 0) setScale(w / W);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={wrapperRef}
+      style={{
+        width: '100%',
+        height: `${H * scale}px`,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div style={{
+        transformOrigin: 'top left',
+        transform: `scale(${scale})`,
+      }}>
+        <CertificateCanvas cert={cert} />
+      </div>
+    </div>
+  );
+}
+
+export function CertificateView({ cert, forExport = false }: Props) {
+  if (forExport) {
+    return <CertificateCanvas cert={cert} />;
+  }
+  return <ResponsiveCertificate cert={cert} />;
+}
+
+function DiagonalGrid() {
   const spacing = 80;
   const lines: React.ReactNode[] = [];
   for (let x = -H; x < W + H; x += spacing) {
@@ -406,8 +349,8 @@ function DiagonalGrid({ forExport }: { forExport: boolean }) {
   return (
     <svg
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-      width={forExport ? `${W}px` : '100%'}
-      height={forExport ? `${H}px` : '100%'}
+      width={`${W}px`}
+      height={`${H}px`}
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
     >
