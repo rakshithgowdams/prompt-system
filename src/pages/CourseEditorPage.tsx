@@ -15,7 +15,6 @@ import { cn } from '../lib/utils';
 import { CourseShareModal } from '../components/courses/CourseShareModal';
 import type { CourseSection, CourseLesson } from '../hooks/useCourses';
 
-const CATEGORIES = ['General', 'Design', 'Development', 'Marketing', 'Business', 'Photography', 'Music', 'Health', 'Other'];
 
 // ── Safe filename helper ──────────────────────────────────────────────────────
 
@@ -648,7 +647,7 @@ export function CourseEditorPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [shortDesc, setShortDesc] = useState('');
-  const [category, setCategory] = useState('General');
+  const [category, setCategory] = useState('');
   const [level, setLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [language, setLanguage] = useState('English');
   const [tags, setTags] = useState('');
@@ -967,10 +966,12 @@ export function CourseEditorPage() {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-ink-500 mb-1 block">Category</label>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)}
-                      className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100">
-                      {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                    </select>
+                    <input
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
+                      placeholder="e.g. AI Automation, Web Development, Design…"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
