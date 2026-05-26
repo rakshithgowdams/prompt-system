@@ -409,9 +409,11 @@ function DetailModal({
                     <p className="text-[12px] text-ink-400 truncate">@{prompt.project_name || 'user'}</p>
                   </div>
                 </div>
-                <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap', platformMeta.pill)}>
-                  {platformMeta.icon} {prompt.platform}
-                </span>
+                <div className="flex flex-col items-end justify-end self-end">
+                  <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap', platformMeta.pill)}>
+                    {platformMeta.icon} {prompt.platform}
+                  </span>
+                </div>
               </div>
             </div>
 
