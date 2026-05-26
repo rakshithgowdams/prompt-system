@@ -67,18 +67,43 @@ const BLOCK_COMMANDS = [
   { type: 'divider'    as BlockType, label: 'Divider',    icon: 'horizontal_rule', desc: 'Horizontal line' },
 ];
 
+// ── Uncontrolled contentEditable ─────────────────────────────────────────────
+// React must NOT set children on contentEditable after mount — doing so resets
+// the cursor to position 0, causing characters to appear in reverse order.
+// Solution: use a ref, set textContent only when block.id changes (new block),
+// and read content exclusively via onInput events.
+
+function useContentEditableRef(
+  blockId: string,
+  initialContent: string,
+  registerRef: (el: HTMLElement | null) => void,
+) {
+  const elRef = useRef<HTMLElement | null>(null);
+  const lastIdRef = useRef<string>('');
+
+  const setEl = useCallback((el: HTMLElement | null) => {
+    elRef.current = el;
+    registerRef(el);
+    if (el && lastIdRef.current !== blockId) {
+      // Only set text on first mount or when the block identity changes
+      el.textContent = initialContent;
+      lastIdRef.current = blockId;
+    }
+  }, [blockId, initialContent, registerRef]);
+
+  return setEl;
+}
+
 // ── BlockRow ──────────────────────────────────────────────────────────────────
 
 function BlockRow({
   block,
   index,
-  focused,
   onChange,
   onKeyDown,
   onFocus,
   onAddAfter,
   onDelete,
-  onTypeChange,
   inputRef,
 }: {
   block: Block;
@@ -95,7 +120,7 @@ function BlockRow({
   const baseInput =
     'w-full bg-transparent outline-none resize-none text-ink-900 leading-relaxed placeholder:text-ink-400 transition-colors';
 
-  const setRef = (el: HTMLElement | null) => inputRef(el);
+  const setRef = useContentEditableRef(block.id, block.content, inputRef);
 
   if (block.type === 'divider') {
     return (
@@ -115,6 +140,7 @@ function BlockRow({
     'data-block-id': block.id,
     onFocus: () => onFocus(block.id),
     onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => onKeyDown(e, block.id, index),
+    onInput: (e: React.FormEvent<HTMLElement>) => onChange(block.id, e.currentTarget.textContent ?? ''),
   };
 
   let content: React.ReactNode;
@@ -127,12 +153,9 @@ function BlockRow({
           contentEditable
           suppressContentEditableWarning
           className={cn(baseInput, 'text-3xl font-bold')}
-          onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
           data-placeholder={BLOCK_PLACEHOLDERS.heading1}
           {...sharedProps}
-        >
-          {block.content}
-        </div>
+        />
       );
       break;
     case 'heading2':
@@ -142,12 +165,9 @@ function BlockRow({
           contentEditable
           suppressContentEditableWarning
           className={cn(baseInput, 'text-2xl font-semibold')}
-          onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
           data-placeholder={BLOCK_PLACEHOLDERS.heading2}
           {...sharedProps}
-        >
-          {block.content}
-        </div>
+        />
       );
       break;
     case 'heading3':
@@ -157,12 +177,9 @@ function BlockRow({
           contentEditable
           suppressContentEditableWarning
           className={cn(baseInput, 'text-xl font-semibold text-ink-700')}
-          onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
           data-placeholder={BLOCK_PLACEHOLDERS.heading3}
           {...sharedProps}
-        >
-          {block.content}
-        </div>
+        />
       );
       break;
     case 'bullet':
@@ -174,12 +191,9 @@ function BlockRow({
             contentEditable
             suppressContentEditableWarning
             className={cn(baseInput, 'flex-1')}
-            onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.bullet}
             {...sharedProps}
-          >
-            {block.content}
-          </div>
+          />
         </div>
       );
       break;
@@ -194,12 +208,9 @@ function BlockRow({
             contentEditable
             suppressContentEditableWarning
             className={cn(baseInput, 'flex-1')}
-            onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.numbered}
             {...sharedProps}
-          >
-            {block.content}
-          </div>
+          />
         </div>
       );
       break;
@@ -222,12 +233,9 @@ function BlockRow({
             contentEditable
             suppressContentEditableWarning
             className={cn(baseInput, 'flex-1', block.checked && 'line-through text-ink-400')}
-            onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.todo}
             {...sharedProps}
-          >
-            {block.content}
-          </div>
+          />
         </div>
       );
       break;
@@ -239,12 +247,9 @@ function BlockRow({
             contentEditable
             suppressContentEditableWarning
             className={cn(baseInput, 'italic text-ink-700')}
-            onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.quote}
             {...sharedProps}
-          >
-            {block.content}
-          </div>
+          />
         </div>
       );
       break;
@@ -260,12 +265,9 @@ function BlockRow({
             contentEditable
             suppressContentEditableWarning
             className="px-4 py-3 font-mono text-sm text-emerald-600 outline-none min-h-[60px] whitespace-pre-wrap"
-            onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             spellCheck={false}
             {...sharedProps}
-          >
-            {block.content}
-          </div>
+          />
         </div>
       );
       break;
@@ -278,12 +280,9 @@ function BlockRow({
             contentEditable
             suppressContentEditableWarning
             className={cn(baseInput, 'flex-1 text-brand-700')}
-            onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
             data-placeholder={BLOCK_PLACEHOLDERS.callout}
             {...sharedProps}
-          >
-            {block.content}
-          </div>
+          />
         </div>
       );
       break;
@@ -294,12 +293,9 @@ function BlockRow({
           contentEditable
           suppressContentEditableWarning
           className={cn(baseInput)}
-          onInput={(e) => onChange(block.id, e.currentTarget.textContent ?? '')}
           data-placeholder={BLOCK_PLACEHOLDERS.paragraph}
           {...sharedProps}
-        >
-          {block.content}
-        </div>
+        />
       );
   }
 
@@ -413,13 +409,19 @@ export function NotionPageEditor() {
   const [slashBlockId, setSlashBlockId] = useState<string | null>(null);
 
   const blockRefs = useRef<Record<string, HTMLElement | null>>({});
+  const titleRef = useRef<HTMLDivElement | null>(null);
+  const titleInitialized = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Populate from DB
+  // Populate from DB — set title DOM directly to avoid cursor-reset on first load
   useEffect(() => {
     if (!page) return;
     setTitle(page.title);
     setIcon(page.icon);
+    if (titleRef.current && !titleInitialized.current) {
+      titleRef.current.textContent = page.title;
+      titleInitialized.current = true;
+    }
     const raw = page.content as Block[];
     if (Array.isArray(raw) && raw.length > 0) {
       setBlocks(raw);
@@ -606,8 +608,9 @@ export function NotionPageEditor() {
           </button>
         </div>
 
-        {/* Title */}
+        {/* Title — uncontrolled: never render children, set textContent via ref only */}
         <div
+          ref={titleRef}
           contentEditable
           suppressContentEditableWarning
           onInput={(e) => setTitleAndSave(e.currentTarget.textContent ?? '')}
@@ -616,9 +619,7 @@ export function NotionPageEditor() {
             'text-3xl sm:text-4xl lg:text-5xl font-bold text-ink-900 outline-none leading-tight mb-8',
             'empty:before:content-[attr(data-placeholder)] empty:before:text-ink-300',
           )}
-        >
-          {title}
-        </div>
+        />
 
         {/* Blocks */}
         <div className="space-y-1 pl-12">
