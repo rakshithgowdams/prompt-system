@@ -308,7 +308,7 @@ function DetailModal({
             <>
               <div
                 ref={imageScrollRef}
-                className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory"
+                className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scroll-smooth"
                 style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
                 onScroll={() => {
                   const el = imageScrollRef.current;
