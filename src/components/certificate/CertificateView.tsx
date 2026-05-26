@@ -337,7 +337,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
         gap: py(3),
       }}>
         <SignatureSVG style={{
-          width: forExport ? '200px' : `${(200 / W) * 100}%`,
+          width: forExport ? '500px' : `${(500 / W) * 100}%`,
           height: 'auto',
           marginBottom: py(4),
         }} />
