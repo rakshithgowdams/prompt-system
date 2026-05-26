@@ -21,10 +21,15 @@ function ProjectCard({ project, promptCount, onClick, onFilesClick, onShare }: {
   onShare: (e: React.MouseEvent) => void;
 }) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverLoading, setCoverLoading] = useState(!!project.cover_image);
 
   useEffect(() => {
-    if (!project.cover_image) return;
-    getSignedUrl(project.cover_image, 3600).then(setCoverUrl).catch(() => {});
+    if (!project.cover_image) { setCoverLoading(false); return; }
+    setCoverLoading(true);
+    getSignedUrl(project.cover_image, 3600)
+      .then(setCoverUrl)
+      .catch(() => {})
+      .finally(() => setCoverLoading(false));
   }, [project.cover_image]);
 
   const hasCover = !!coverUrl;
@@ -43,7 +48,9 @@ function ProjectCard({ project, promptCount, onClick, onFilesClick, onShare }: {
       onClick={onClick}
     >
       <div className="relative w-full h-48">
-        {hasCover ? (
+        {coverLoading ? (
+          <div className="absolute inset-0 overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]" />
+        ) : hasCover ? (
           <>
             <img
               src={coverUrl!}

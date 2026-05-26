@@ -225,12 +225,22 @@ function SidebarProjectTree({ project, isActive, onClose }: { project: Project; 
 
 function ProjectThumb({ project }: { project: Project }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!project.cover_image);
 
   useEffect(() => {
-    if (!project.cover_image) return;
-    getSignedUrl(project.cover_image, 3600).then(setUrl).catch(() => {});
+    if (!project.cover_image) { setLoading(false); return; }
+    setLoading(true);
+    getSignedUrl(project.cover_image, 3600)
+      .then(setUrl)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [project.cover_image]);
 
+  if (loading) {
+    return (
+      <div className="w-5 h-5 rounded-sm flex-shrink-0 relative overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-ink-300/60 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]" />
+    );
+  }
   if (url) {
     return <img src={url} alt="" className="w-5 h-5 object-cover rounded-sm flex-shrink-0" />;
   }

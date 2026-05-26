@@ -201,6 +201,7 @@ export function CoursePlayerPage() {
   const [rightPanel, setRightPanel] = useState<'notes' | 'resources' | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [mediaLoading, setMediaLoading] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -223,9 +224,11 @@ export function CoursePlayerPage() {
     setVideoUrl(null);
     if (!activeLesson) return;
     if (activeLesson.video_path) {
+      setMediaLoading(true);
       supabase.storage.from('prompt-media').createSignedUrl(activeLesson.video_path, 3600)
         .then(({ data }) => setVideoUrl(data?.signedUrl ?? null))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setMediaLoading(false));
     } else if (activeLesson.video_url) {
       setVideoUrl(activeLesson.video_url);
     }
@@ -580,17 +583,35 @@ export function CoursePlayerPage() {
                   )}
 
                   {activeLesson.lesson_type === 'video' && !videoUrl && (
-                    <div className="aspect-video flex items-center justify-center bg-ink-900">
-                      <div className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                    <div className="aspect-video relative overflow-hidden bg-ink-900">
+                      {mediaLoading ? (
+                        <div className="absolute inset-0 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Icon name="play_circle" size={48} className="text-ink-600" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {activeLesson.lesson_type === 'image' && (
                   <div className="p-4 sm:p-6 bg-white flex-shrink-0">
-                    <div className="rounded-2xl overflow-hidden border border-ink-300 bg-ink-100 flex items-center justify-center min-h-[200px]">
-                      <Icon name="image" size={48} className="text-ink-300" />
-                    </div>
+                    {mediaLoading ? (
+                      <div className="rounded-2xl overflow-hidden border border-ink-300 min-h-[200px] relative bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]" />
+                    ) : videoUrl ? (
+                      <div className="rounded-2xl overflow-hidden border border-ink-300 bg-ink-100 flex items-center justify-center">
+                        <img src={videoUrl} alt={activeLesson.title} className="w-full object-contain max-h-[70vh]" />
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl overflow-hidden border border-ink-300 bg-ink-100 flex items-center justify-center min-h-[200px]">
+                        <Icon name="image" size={48} className="text-ink-300" />
+                      </div>
+                    )}
                   </div>
                 )}
 

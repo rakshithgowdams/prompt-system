@@ -65,10 +65,18 @@ const COLOR_OPTIONS = ['blue', 'green', 'red', 'orange', 'pink', 'gray'] as cons
 
 function ProjectCoverThumb({ path }: { path: string | null }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!path);
   useEffect(() => {
-    if (!path) return;
-    getSignedUrl(path, 300).then(setUrl).catch(() => {});
+    if (!path) { setLoading(false); return; }
+    setLoading(true);
+    getSignedUrl(path, 300)
+      .then(setUrl)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [path]);
+  if (loading) {
+    return <div className="w-full h-full relative overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]" />;
+  }
   if (!url) return null;
   return <img src={url} alt="" className="w-full h-full object-cover" />;
 }

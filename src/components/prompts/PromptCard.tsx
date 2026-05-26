@@ -35,7 +35,7 @@ function useThumbnail(promptId: string) {
 
 export function PromptCard({ prompt, onShare }: PromptCardProps) {
   const navigate = useNavigate();
-  const { data: thumbnail } = useThumbnail(prompt.id);
+  const { data: thumbnail, isLoading: thumbnailLoading } = useThumbnail(prompt.id);
 
   return (
     <div className="group relative text-left w-full bg-white border border-ink-300 rounded-lg overflow-hidden hover:border-ink-500 hover:-translate-y-0.5 hover:shadow-card-hover transition-all duration-150">
@@ -43,7 +43,9 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
 
         {/* Thumbnail — natural aspect ratio, never cropped */}
         <div className="relative bg-ink-100 w-full">
-          {thumbnail ? (
+          {thumbnailLoading ? (
+            <div className="w-full aspect-video relative overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]" />
+          ) : thumbnail ? (
             <>
               <img
                 src={thumbnail}

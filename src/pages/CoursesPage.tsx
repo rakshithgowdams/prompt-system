@@ -26,19 +26,26 @@ const LEVEL_COLORS: Record<string, string> = {
 
 function CourseCover({ course, className = '' }: { course: Course; className?: string }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!course.cover_image);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!course.cover_image) return;
+    if (!course.cover_image) { setLoading(false); return; }
+    setLoading(true);
     setFailed(false);
     supabase.storage.from('prompt-media').createSignedUrl(course.cover_image, 3600)
       .then(({ data, error }) => {
-        if (error || !data?.signedUrl) { setFailed(true); return; }
-        setUrl(data.signedUrl);
+        if (error || !data?.signedUrl) { setFailed(true); } else { setUrl(data.signedUrl); }
       })
-      .catch(() => setFailed(true));
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
   }, [course.cover_image]);
 
+  if (loading) {
+    return (
+      <div className={`w-full h-full relative overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite] ${className}`} />
+    );
+  }
   if (url && !failed) {
     return (
       <img
