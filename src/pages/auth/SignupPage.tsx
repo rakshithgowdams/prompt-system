@@ -35,7 +35,8 @@ function OtpInput({ value, onChange, disabled }: {
   disabled?: boolean;
 }) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const digits = value.padEnd(6, '').split('').slice(0, 6);
+  const raw = value.split('').slice(0, 6);
+  const digits = Array.from({ length: 6 }, (_, i) => raw[i] ?? '');
 
   const handleChange = (i: number, ch: string) => {
     const cleaned = ch.replace(/\D/g, '').slice(-1);
@@ -55,8 +56,7 @@ function OtpInput({ value, onChange, disabled }: {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (!pasted) return;
-    const padded = pasted.padEnd(6, '').slice(0, 6);
-    onChange(padded);
+    onChange(pasted);
     const focusIdx = Math.min(pasted.length, 5);
     // Use rAF so the input values have updated before we move focus
     requestAnimationFrame(() => inputRefs.current[focusIdx]?.focus());
