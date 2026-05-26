@@ -361,7 +361,7 @@ function DetailModal({
       </div>
 
       {/* ── Scrollable content below image ── */}
-      <div className="flex-1 overflow-y-auto bg-neutral-50" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-50" style={{ scrollbarWidth: 'none' }}>
         {/* User info row */}
         <div className="bg-white px-4 sm:px-6 pt-5 pb-4">
           <div className="flex items-center justify-between gap-3">
@@ -410,7 +410,7 @@ function DetailModal({
                 IMAGE · {images.length > 0 ? images.length : 1}
               </span>
             </div>
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
               <p className="text-[14px] text-ink-800 leading-[1.7] whitespace-pre-wrap break-words">
                 {prompt.prompt_text}
               </p>
@@ -440,12 +440,14 @@ function DetailModal({
 
           {/* Tags */}
           {prompt.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-1">
-              {prompt.tags.map((tag) => (
-                <span key={tag} className="text-[11px] px-3 py-1.5 rounded-full bg-white text-ink-600 border border-ink-200 font-medium">
-                  #{tag}
-                </span>
-              ))}
+            <div className="overflow-x-auto px-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <div className="flex gap-2 w-max">
+                {prompt.tags.map((tag) => (
+                  <span key={tag} className="text-[11px] px-3 py-1.5 rounded-full bg-white text-ink-600 border border-ink-200 font-medium whitespace-nowrap">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
