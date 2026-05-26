@@ -416,10 +416,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // Close sidebar on route change
   useEffect(() => {
     setSidebarOpen(false);
     setUserMenuOpen(false);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
+
+  // Lock body scroll while mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   const handleSignOut = async () => {
     setSidebarOpen(false);
@@ -458,8 +469,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key="sidebar-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, pointerEvents: 'none' }}
+              transition={{ duration: 0.15 }}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
@@ -469,7 +480,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               initial={{ x: -288 }}
               animate={{ x: 0 }}
               exit={{ x: -288 }}
-              transition={{ type: 'spring', damping: 32, stiffness: 260 }}
+              transition={{ type: 'spring', damping: 36, stiffness: 320 }}
               className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-[70] flex flex-col lg:hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
