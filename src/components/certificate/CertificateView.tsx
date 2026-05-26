@@ -311,7 +311,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
       }}>
         <div style={{ fontSize: fs(12), color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 500 }}>Seal</div>
         <SealSVG style={{
-          width: forExport ? '80px' : `${(80 / W) * 100}%`,
+          width: forExport ? '500px' : `${(500 / W) * 100}%`,
           height: 'auto',
         }} />
       </div>
