@@ -52,14 +52,26 @@ function Nav() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center flex-shrink-0">
+        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
           <motion.img
-            src="/aiwithrakshith-tech-logo.png"
+            src="/aiwithrakshith-tech-logo copy.png"
             alt="aiwithrakshith.tech"
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.06 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="h-8 w-auto"
+            className="h-9 w-9 object-contain flex-shrink-0"
           />
+          <motion.span
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className="hidden sm:flex flex-col leading-none"
+          >
+            <span className="font-display font-black text-ink-900 tracking-tight" style={{ fontSize: '15px', letterSpacing: '-0.02em' }}>
+              AI with <span className="font-black">Rakshith</span>
+            </span>
+            <span className="text-[10px] font-semibold text-ink-400 tracking-widest uppercase" style={{ letterSpacing: '0.12em' }}>
+              .tech
+            </span>
+          </motion.span>
         </Link>
 
         {/* Center nav — desktop */}
@@ -217,8 +229,16 @@ function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-16 border-b border-white/10">
           {/* Brand */}
           <div>
-            <div className="mb-4">
-              <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-10 w-auto brightness-0 invert" />
+            <div className="mb-5 flex items-center gap-3">
+              <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-11 w-11 object-contain brightness-0 invert flex-shrink-0" />
+              <div className="flex flex-col leading-none">
+                <span className="font-display font-black text-white tracking-tight" style={{ fontSize: '16px', letterSpacing: '-0.02em' }}>
+                  AI with Rakshith
+                </span>
+                <span className="text-[10px] font-semibold text-white/40 tracking-widest uppercase mt-0.5" style={{ letterSpacing: '0.12em' }}>
+                  .tech
+                </span>
+              </div>
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
               Your prompts, projects, and learning — all in one vault. Free, forever, for students.

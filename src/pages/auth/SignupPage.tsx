@@ -314,8 +314,12 @@ export function SignupPage() {
             >
               <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
                 <div className="text-center mb-8">
-                  <div className="flex justify-center mb-4">
-                    <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-16 w-auto" />
+                  <div className="flex flex-col items-center gap-3 mb-2">
+                    <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-14 w-14 object-contain" />
+                    <div className="flex flex-col items-center leading-none">
+                      <span className="font-display font-black text-ink-900 tracking-tight" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>AI with Rakshith</span>
+                      <span className="text-xs font-semibold text-ink-400 tracking-widest uppercase mt-1">.tech</span>
+                    </div>
                   </div>
                   <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">Create Account</h1>
                   <p className="text-ink-500 text-sm mt-1">Start managing your AI prompts</p>
