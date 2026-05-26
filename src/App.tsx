@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { LenisScrollManager } from './components/layout/LenisScrollManager';
 import { Skeleton } from './components/ui/Skeleton';
 import { InstallPrompt } from './components/ui/InstallPrompt';
 
@@ -76,6 +77,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
+          <LenisScrollManager />
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<RootGate />} />

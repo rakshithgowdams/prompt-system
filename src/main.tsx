@@ -2,33 +2,15 @@ import { StrictMode, Component, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Lenis from 'lenis';
 import App from './App.tsx';
 import './index.css';
 import { supabase } from './lib/supabase.ts';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Initialize Lenis smooth scroll globally
-const lenis = new Lenis({
-  duration: 1.1,
-  easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-  smoothWheel: true,
-  wheelMultiplier: 1.0,
-  touchMultiplier: 1.8,
-  infinite: false,
-  syncTouch: false,
-});
-
-lenis.on('scroll', ScrollTrigger.update);
-
-gsap.ticker.add((time) => {
-  lenis.raf(time * 1000);
-});
-gsap.ticker.lagSmoothing(0);
-
-// Expose lenis so landing page components can pause/resume if needed
-(window as unknown as Record<string, unknown>).__lenis = lenis;
+// Lenis is NOT initialized here. It is mounted/unmounted per-route by
+// <LenisScrollManager /> in App.tsx to prevent wheel-event hijacking on
+// pages that use internal overflow-y-auto scroll containers.
 
 // ── Inline error report form rendered inside ErrorBoundary ────────────────────
 function ErrorReportForm({ errorStack }: { errorStack: string }) {

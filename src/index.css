@@ -7,16 +7,12 @@ html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 
-/* Native smooth momentum on every inner scrollable container
-   (sidebar, course player column, portfolio sections, etc.)      */
-* {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* All overflow-y containers get smooth scrolling CSS (fallback for
-   browsers that don't respect Lenis on inner elements)            */
+/* Native momentum scrolling — apply ONLY to elements that actually scroll */
 [class*="overflow-y-auto"],
-[class*="overflow-y-scroll"] {
+[class*="overflow-y-scroll"],
+[class*="overflow-auto"],
+[class*="overflow-scroll"] {
+  -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
 }
