@@ -80,10 +80,7 @@ export function LoginPage() {
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-3 mb-2">
               <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-14 w-14 object-contain" />
-              <div className="flex flex-col items-center leading-none">
-                <h1 className="font-display font-black text-ink-900 tracking-tight" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>AI with Rakshith</h1>
-                <span className="text-xs font-semibold text-ink-400 tracking-widest uppercase mt-1">.tech</span>
-              </div>
+              <h1 className="font-display font-black text-ink-900 tracking-tight leading-none" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>aiwithrakshith</h1>
             </div>
             <p className="text-sm text-ink-500 mt-1 font-sans">Sign in to your account</p>
           </div>
