@@ -117,7 +117,7 @@ export function FollowPopup() {
                   {/* Heading */}
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-bold text-white mb-1.5">
-                      Welcome to PromptVault!
+                      Welcome to aiwithrakshith.tech!
                     </h2>
                     <p className="text-gray-400 text-sm leading-relaxed">
                       Created by <span className="text-pink-300 font-semibold">@aiwithrakshith</span> — follow for AI tips,

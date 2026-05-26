@@ -167,7 +167,7 @@ export function CertificatePage() {
                 <Icon name="verified" size={13} className="text-blue-400" fill />
                 <span className="text-[10px] text-gray-400 font-mono">#{certificate.certificate_number}</span>
               </div>
-              <span className="text-[10px] text-gray-300 font-semibold tracking-wider">PromptVault Learning</span>
+              <span className="text-[10px] text-gray-300 font-semibold tracking-wider">aiwithrakshith.tech Learning</span>
             </div>
           </div>
         </motion.div>

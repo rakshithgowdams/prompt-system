@@ -256,7 +256,7 @@ export function VerifyEmailPage() {
 
                 <h1 className="text-2xl font-bold text-white mb-2">Account Activated!</h1>
                 <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                  Your email is verified and your account is now active. Welcome to PromptVault!
+                  Your email is verified and your account is now active. Welcome to aiwithrakshith.tech!
                 </p>
 
                 <div className="mb-5">

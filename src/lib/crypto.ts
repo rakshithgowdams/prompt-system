@@ -17,7 +17,7 @@ async function deriveKey(userId: string): Promise<CryptoKey> {
     {
       name: 'PBKDF2',
       // Fixed salt scoped to userId so the key is stable across sessions
-      salt: enc.encode(`promptvault:${userId}`),
+      salt: enc.encode(`aiwithrakshith.tech:${userId}`),
       iterations: ITERATIONS,
       hash: 'SHA-256',
     },

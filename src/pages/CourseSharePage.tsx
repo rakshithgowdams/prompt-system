@@ -140,7 +140,7 @@ function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; share
         </div>
         <p className="text-center text-xs text-gray-600 mt-4">
           Shared via{' '}
-          <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors font-medium">PromptVault</a>
+          <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors font-medium">aiwithrakshith.tech</a>
         </p>
       </motion.div>
     </div>
@@ -295,7 +295,7 @@ export function CourseSharePage() {
           <h1 className="text-xl font-bold text-white mb-2">Link Unavailable</h1>
           <p className="text-gray-400 text-sm mb-6">{state.message}</p>
           <button onClick={() => navigate('/')} className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium transition-colors">
-            Go to PromptVault
+            Go to aiwithrakshith.tech
           </button>
         </div>
       </div>
@@ -519,7 +519,7 @@ export function CourseSharePage() {
           <div className="px-5 py-4 border-t border-gray-800 mt-auto">
             <p className="text-[11px] text-gray-600 text-center">
               Shared via{' '}
-              <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors font-medium">PromptVault</a>
+              <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors font-medium">aiwithrakshith.tech</a>
               {' '}· Developed by{' '}
               <a
                 href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"

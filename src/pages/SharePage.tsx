@@ -213,10 +213,7 @@ function AuthModal({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <Icon name="lock" size={13} className="text-white" fill />
-                      </div>
-                      <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">PromptVault</span>
+                      <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">aiwithrakshith.tech</span>
                     </div>
                     <h2 className="text-lg font-bold text-white">
                       {tab === 'login' ? 'Sign in to continue' : 'Create a free account'}
@@ -676,8 +673,7 @@ export function SharePage() {
           <div className="pt-2">
             <p className="text-xs text-gray-600 mb-3">Want to share your own files?</p>
             <a href="/signup" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl transition-colors">
-              <Icon name="lock" size={14} fill />
-              Join PromptVault — it's free
+              Join aiwithrakshith.tech — it's free
             </a>
           </div>
         </div>
@@ -699,8 +695,7 @@ export function SharePage() {
           </div>
           <div className="pt-2">
             <a href="/signup" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl transition-colors">
-              <Icon name="lock" size={14} fill />
-              Join PromptVault — it's free
+              Join aiwithrakshith.tech — it's free
             </a>
           </div>
         </div>
@@ -781,7 +776,7 @@ export function SharePage() {
           {/* Join CTA under password card */}
           <div className="mt-4 p-4 bg-gray-900/60 border border-gray-800 rounded-2xl flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-white">New to PromptVault?</p>
+              <p className="text-xs font-semibold text-white">New to aiwithrakshith.tech?</p>
               <p className="text-xs text-gray-500 mt-0.5">Manage and share your AI prompts for free</p>
             </div>
             <a href="/signup" className="flex-shrink-0 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-400/60 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
@@ -806,9 +801,6 @@ export function SharePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
           {/* Left: brand + share name */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-900/40">
-              <Icon name="lock" size={15} className="text-white" fill />
-            </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate leading-tight">{displayName}</p>
               {projectName && <p className="text-xs text-gray-500 truncate leading-tight">from {projectName}</p>}
@@ -1026,7 +1018,7 @@ export function SharePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white">
-                  Shared via <span className="text-pink-300">PromptVault</span> by{' '}
+                  Shared via <span className="text-pink-300">aiwithrakshith.tech</span> by{' '}
                   <a href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj" target="_blank" rel="noopener noreferrer"
                     className="text-pink-300 hover:text-pink-200 transition-colors">@aiwithrakshith</a>
                 </p>
@@ -1077,9 +1069,6 @@ export function SharePage() {
           <div className="bg-gradient-to-r from-blue-600/95 to-blue-700/95 border-t border-blue-500/30 backdrop-blur-md">
             <div className="max-w-5xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Icon name="lock" size={15} className="text-white" fill />
-                </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-white leading-tight">Manage your own AI prompts</p>
                   <p className="text-xs text-blue-200/80 truncate leading-tight hidden sm:block">Share files, write notes, and organise projects — for free</p>
