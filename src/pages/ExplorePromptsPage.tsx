@@ -394,7 +394,7 @@ function DetailModal({
         <div className="flex-1 min-h-0 min-w-0 flex flex-col md:w-[45%] lg:w-[50%]">
           {/* Scrollable area */}
           <div
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scroll-smooth"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {/* Header: user info + platform badge */}
@@ -450,8 +450,17 @@ function DetailModal({
                 </span>
               </div>
               <div
-                className="text-[13.5px] text-ink-800 leading-[1.75] whitespace-pre-wrap break-words overflow-y-auto overscroll-contain"
-                style={{ maxHeight: '250px', scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}
+                className="text-[13.5px] text-ink-800 leading-[1.75] whitespace-pre-wrap break-words overflow-y-auto scroll-smooth"
+                style={{ maxHeight: '250px', scrollbarWidth: 'thin' }}
+                onWheel={(e) => {
+                  const el = e.currentTarget;
+                  const atTop = el.scrollTop === 0;
+                  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+                  if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+                    return;
+                  }
+                  e.stopPropagation();
+                }}
               >
                 {prompt.prompt_text}
               </div>
