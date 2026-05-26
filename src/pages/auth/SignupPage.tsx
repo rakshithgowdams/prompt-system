@@ -52,16 +52,18 @@ function OtpInput({ value, onChange, disabled }: {
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted) {
-      onChange(pasted.padEnd(6, '').slice(0, 6));
-      inputRefs.current[Math.min(pasted.length, 5)]?.focus();
-      e.preventDefault();
-    }
+    if (!pasted) return;
+    const padded = pasted.padEnd(6, '').slice(0, 6);
+    onChange(padded);
+    const focusIdx = Math.min(pasted.length, 5);
+    // Use rAF so the input values have updated before we move focus
+    requestAnimationFrame(() => inputRefs.current[focusIdx]?.focus());
   };
 
   return (
-    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+    <div className="flex gap-2 justify-center">
       {digits.map((d, i) => (
         <input
           key={i}
@@ -73,6 +75,7 @@ function OtpInput({ value, onChange, disabled }: {
           disabled={disabled}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={handlePaste}
           className={[
             'w-11 h-12 text-center text-xl font-bold rounded-md border transition-all outline-none',
             'bg-white text-ink-900',
