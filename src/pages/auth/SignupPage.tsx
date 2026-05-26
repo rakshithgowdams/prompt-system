@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
+import { PolicyModal, type PolicyType } from '../../components/legal/PolicyModal';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -16,6 +17,9 @@ const schema = z.object({
   email: z.string({ error: 'Email is required' }).email('Enter a valid email'),
   password: z.string({ error: 'Password is required' }).min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string({ error: 'Please confirm your password' }),
+  acceptTerms: z.boolean().refine((v) => v === true, {
+    message: 'You must accept the Terms, Privacy Policy, and Refund Policy to continue',
+  }),
 }).refine((d) => d.password === d.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
@@ -23,7 +27,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-// ── OTP Input ────────────────────────────────────────────────────────────────
+// ── OTP Input ─────────────────────────────────────────────────────────────────
 
 function OtpInput({ value, onChange, disabled }: {
   value: string;
@@ -82,7 +86,7 @@ function OtpInput({ value, onChange, disabled }: {
   );
 }
 
-// ── OTP Verification Screen ──────────────────────────────────────────────────
+// ── OTP Verification Screen ───────────────────────────────────────────────────
 
 function OtpScreen({
   email,
@@ -145,7 +149,6 @@ function OtpScreen({
         return;
       }
 
-      // Restore the JWT session from tokens returned by the Edge Function
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
@@ -248,17 +251,27 @@ function OtpScreen({
   );
 }
 
-// ── Signup Form ──────────────────────────────────────────────────────────────
+// ── Signup Form ───────────────────────────────────────────────────────────────
 
 export function SignupPage() {
   const [showPw, setShowPw] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [submittedPassword, setSubmittedPassword] = useState('');
+  const [openPolicy, setOpenPolicy] = useState<PolicyType | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { acceptTerms: false },
   });
+
+  const acceptTerms = watch('acceptTerms');
 
   const onSubmit = async (data: FormData) => {
     const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
@@ -277,97 +290,193 @@ export function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-ink-100 flex items-center justify-center p-4">
-      <AnimatePresence mode="wait">
-        {otpSent ? (
-          <OtpScreen
-            key="otp"
-            email={submittedEmail}
-            password={submittedPassword}
-            onBack={() => setOtpSent(false)}
-          />
-        ) : (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.15 }}
-            className="w-full max-w-md"
-          >
-            <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
-                  <Icon name="bolt" size={24} className="text-white" fill />
+    <>
+      <div className="min-h-screen bg-ink-100 flex items-center justify-center p-4">
+        <AnimatePresence mode="wait">
+          {otpSent ? (
+            <OtpScreen
+              key="otp"
+              email={submittedEmail}
+              password={submittedPassword}
+              onBack={() => setOtpSent(false)}
+            />
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.15 }}
+              className="w-full max-w-md"
+            >
+              <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-400 rounded-md mb-4">
+                    <Icon name="bolt" size={24} className="text-white" fill />
+                  </div>
+                  <h1 className="text-2xl font-extrabold text-ink-900">Create Account</h1>
+                  <p className="text-ink-500 text-sm mt-1">Start managing your AI prompts</p>
                 </div>
-                <h1 className="text-2xl font-extrabold text-ink-900">Create Account</h1>
-                <p className="text-ink-500 text-sm mt-1">Start managing your AI prompts</p>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    error={errors.email?.message}
+                    autoComplete="email"
+                    {...register('email')}
+                  />
+                  <div className="relative">
+                    <Input
+                      label="Password"
+                      type={showPw ? 'text' : 'password'}
+                      placeholder="Min. 8 characters"
+                      error={errors.password?.message}
+                      autoComplete="new-password"
+                      className="pr-12"
+                      {...register('password')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw(!showPw)}
+                      className="absolute right-3 bottom-0 h-11 text-ink-500 hover:text-ink-900 transition-colors"
+                    >
+                      <Icon name={showPw ? 'visibility_off' : 'visibility'} size={18} />
+                    </button>
+                  </div>
+                  <Input
+                    label="Confirm Password"
+                    type="password"
+                    placeholder="Repeat your password"
+                    error={errors.confirmPassword?.message}
+                    autoComplete="new-password"
+                    {...register('confirmPassword')}
+                  />
+
+                  {/* ── Accept Terms ─────────────────────────────────── */}
+                  <div className="space-y-1.5">
+                    <label
+                      className={[
+                        'flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors',
+                        acceptTerms
+                          ? 'bg-brand-50 border-brand-400'
+                          : 'bg-ink-100 border-ink-300 hover:border-ink-500',
+                        errors.acceptTerms ? 'border-danger ring-2 ring-danger/20' : '',
+                      ].join(' ')}
+                    >
+                      <div className="relative flex-shrink-0 mt-0.5">
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          {...register('acceptTerms')}
+                        />
+                        <div
+                          className={[
+                            'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
+                            acceptTerms
+                              ? 'bg-brand-400 border-brand-400'
+                              : 'bg-white border-ink-300',
+                          ].join(' ')}
+                        >
+                          {acceptTerms && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                            >
+                              <Icon name="check" size={12} className="text-white" />
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-ink-700 leading-relaxed">
+                        I have read and agree to the{' '}
+                        <PolicyLink label="Terms of Service" onClick={() => setOpenPolicy('terms')} />,{' '}
+                        <PolicyLink label="Privacy Policy" onClick={() => setOpenPolicy('privacy')} />, and{' '}
+                        <PolicyLink label="Refund Policy" onClick={() => setOpenPolicy('refund')} />.
+                      </span>
+                    </label>
+                    {errors.acceptTerms && (
+                      <p className="text-xs text-danger flex items-center gap-1">
+                        <Icon name="error" size={12} />
+                        {errors.acceptTerms.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full"
+                    size="lg"
+                    loading={isSubmitting}
+                  >
+                    <Icon name="send" size={16} />
+                    Send Verification Code
+                  </Button>
+                </form>
+
+                <p className="text-center text-sm text-ink-500 mt-6">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-brand-400 hover:text-brand-500 font-medium transition-colors">
+                    Sign in
+                  </Link>
+                </p>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="you@example.com"
-                  error={errors.email?.message}
-                  autoComplete="email"
-                  {...register('email')}
-                />
-                <div className="relative">
-                  <Input
-                    label="Password"
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Min. 8 characters"
-                    error={errors.password?.message}
-                    autoComplete="new-password"
-                    className="pr-12"
-                    {...register('password')}
-                  />
+              {/* Policy quick-links row */}
+              <div className="flex items-center justify-center gap-4 mt-4">
+                {[
+                  { label: 'Terms', type: 'terms' as PolicyType },
+                  { label: 'Privacy', type: 'privacy' as PolicyType },
+                  { label: 'Refund', type: 'refund' as PolicyType },
+                ].map(({ label, type }) => (
                   <button
-                    type="button"
-                    onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 bottom-0 h-11 text-ink-500 hover:text-ink-900 transition-colors"
+                    key={type}
+                    onClick={() => setOpenPolicy(type)}
+                    className="text-[11px] text-ink-500 hover:text-brand-400 transition-colors"
                   >
-                    <Icon name={showPw ? 'visibility_off' : 'visibility'} size={18} />
+                    {label}
                   </button>
-                </div>
-                <Input
-                  label="Confirm Password"
-                  type="password"
-                  placeholder="Repeat your password"
-                  error={errors.confirmPassword?.message}
-                  autoComplete="new-password"
-                  {...register('confirmPassword')}
-                />
+                ))}
+              </div>
 
-                <Button type="submit" variant="primary" className="w-full" size="lg" loading={isSubmitting}>
-                  <Icon name="send" size={16} />
-                  Send Verification Code
-                </Button>
-              </form>
-
-              <p className="text-center text-sm text-ink-500 mt-6">
-                Already have an account?{' '}
-                <Link to="/login" className="text-brand-400 hover:text-brand-500 font-medium transition-colors">
-                  Sign in
-                </Link>
+              <p className="text-center text-[11px] text-ink-500 mt-3">
+                Developed by{' '}
+                <a
+                  href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-400 hover:text-brand-500 font-semibold transition-colors"
+                >
+                  @aiwithrakshith
+                </a>
               </p>
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-            <p className="text-center text-[11px] text-ink-500 mt-6">
-              Developed by{' '}
-              <a
-                href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-400 hover:text-brand-500 font-semibold transition-colors"
-              >
-                @aiwithrakshith
-              </a>
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {/* Policy modal — rendered outside the card so it overlays correctly */}
+      <PolicyModal
+        type={openPolicy}
+        onClose={() => setOpenPolicy(null)}
+        onAccept={() => setValue('acceptTerms', true, { shouldValidate: true })}
+      />
+    </>
+  );
+}
+
+// ── Inline link helper ────────────────────────────────────────────────────────
+function PolicyLink({ label, onClick }: { label: string; onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(e); }}
+      className="text-brand-400 hover:text-brand-500 font-medium underline underline-offset-2 transition-colors"
+    >
+      {label}
+    </button>
   );
 }

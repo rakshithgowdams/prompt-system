@@ -12,6 +12,9 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
+import { TermsPage } from './pages/legal/TermsPage';
+import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
+import { RefundPolicyPage } from './pages/legal/RefundPolicyPage';
 
 // Heavy app pages — lazy loaded for fast initial bundle
 const DashboardPage     = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -66,6 +69,9 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/refund" element={<RefundPolicyPage />} />
 
               {/* Public share pages — no auth required */}
               <Route path="/share/:shareId" element={<SharePage />} />
