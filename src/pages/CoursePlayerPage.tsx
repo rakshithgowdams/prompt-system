@@ -391,12 +391,16 @@ export function CoursePlayerPage() {
         className="fixed top-0 right-0 z-30 bg-white border-b border-ink-200 flex items-center gap-3 px-4 sm:px-5"
         style={{ left: contentLeft, height: HEADER_H, transition: 'left 0.22s cubic-bezier(0.22,1,0.36,1)' }}
       >
-        {/* Mobile: show logo always; desktop: logo shown when sidebar is closed */}
-        <Link to="/" className={cn('flex items-center gap-2 flex-shrink-0', sidebarOpen && 'hidden lg:flex')}>
-          <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
-          <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
-        </Link>
-        {!sidebarOpen && <div className="w-px h-5 bg-ink-200 flex-shrink-0 hidden lg:block" />}
+        {/* Logo only when sidebar is hidden (desktop) or always on mobile */}
+        {(!sidebarOpen) && (
+          <>
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0 hidden lg:flex">
+              <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
+              <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
+            </Link>
+            <div className="w-px h-5 bg-ink-200 flex-shrink-0 hidden lg:block" />
+          </>
+        )}
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-display font-bold text-ink-900 truncate leading-tight">{course.title}</p>
