@@ -207,6 +207,11 @@ function LessonEditor({
   const [newMarkerTime, setNewMarkerTime] = useState('');
   const [newMarkerLabel, setNewMarkerLabel] = useState('');
 
+  // Local path state — tracks uploaded paths so delete/replace reflects immediately
+  const [videoPath, setVideoPath] = useState(lessonType === 'video' ? (lesson.video_path ?? null) : null);
+  const [imagePath, setImagePath] = useState(lessonType === 'image' ? (lesson.video_path ?? null) : null);
+  const [mainFilePath, setMainFilePath] = useState(lessonType === 'resource' ? (lesson.video_path ?? null) : null);
+
   // Signed URLs for already-uploaded content
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
@@ -218,21 +223,25 @@ function LessonEditor({
 
   // Load signed URLs for existing uploaded content
   useEffect(() => {
-    if (lesson.video_path && lessonType === 'video') {
-      supabase.storage.from('prompt-media').createSignedUrl(lesson.video_path, 3600)
+    if (videoPath && lessonType === 'video') {
+      supabase.storage.from('prompt-media').createSignedUrl(videoPath, 3600)
         .then(({ data }) => data?.signedUrl && setVideoPreviewUrl(data.signedUrl))
         .catch(() => {});
+    } else if (!videoPath) {
+      setVideoPreviewUrl(null);
     }
-  }, [lesson.video_path, lessonType]);
+  }, [videoPath, lessonType]);
 
   // For image lessons: video_path stores the image path
   useEffect(() => {
-    if (lesson.video_path && lessonType === 'image') {
-      supabase.storage.from('prompt-media').createSignedUrl(lesson.video_path, 3600)
+    if (imagePath && lessonType === 'image') {
+      supabase.storage.from('prompt-media').createSignedUrl(imagePath, 3600)
         .then(({ data }) => data?.signedUrl && setImagePreviewUrl(data.signedUrl))
         .catch(() => {});
+    } else if (!imagePath) {
+      setImagePreviewUrl(null);
     }
-  }, [lesson.video_path, lessonType]);
+  }, [imagePath, lessonType]);
 
   const doUpload = async (file: File, path: string, label: string): Promise<string> => {
     setUploading(true);
@@ -258,11 +267,20 @@ function LessonEditor({
     try {
       const path = `${user!.id}/courses/${lesson.course_id}/lessons/${lesson.id}/${safeName(file.name)}`;
       await doUpload(file, path, 'Uploading video');
+      setVideoPath(path);
       const { data: signed } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
       if (signed?.signedUrl) setVideoPreviewUrl(signed.signedUrl);
       onSave({ video_path: path, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources });
       toast.success('Video uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
+  const handleDeleteVideo = () => {
+    setVideoPath(null);
+    setVideoPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    onSave({ video_path: null, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources });
+    toast.success('Video removed');
   };
 
   const handleImageUpload = async (file: File) => {
@@ -271,12 +289,20 @@ function LessonEditor({
     try {
       const path = `${user!.id}/courses/${lesson.course_id}/images/${lesson.id}/${safeName(file.name)}`;
       await doUpload(file, path, 'Uploading image');
+      setImagePath(path);
       const { data: signed } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
       if (signed?.signedUrl) setImagePreviewUrl(signed.signedUrl);
-      // video_path column stores the image path for image-type lessons
       onSave({ video_path: path, title, description, lesson_type: 'image', content, is_preview: isPreview, resources });
       toast.success('Image uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
+  const handleDeleteImage = () => {
+    setImagePath(null);
+    setImagePreviewUrl(null);
+    if (imgInputRef.current) imgInputRef.current.value = '';
+    onSave({ video_path: null, title, description, lesson_type: 'image', content, is_preview: isPreview, resources });
+    toast.success('Image removed');
   };
 
   const handleMainFileUpload = async (file: File) => {
@@ -284,11 +310,19 @@ function LessonEditor({
     try {
       const path = `${user!.id}/courses/${lesson.course_id}/files/${lesson.id}/${safeName(file.name)}`;
       await doUpload(file, path, 'Uploading file');
+      setMainFilePath(path);
       const newRes = [{ name: file.name, path, size: file.size, mime_type: file.type }, ...resources.filter((r) => r.path !== path)];
       setResources(newRes);
       onSave({ video_path: path, title, description, lesson_type: 'resource', content, is_preview: isPreview, resources: newRes });
       toast.success('File uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
+  const handleDeleteMainFile = () => {
+    setMainFilePath(null);
+    if (mainFileInputRef.current) mainFileInputRef.current.value = '';
+    onSave({ video_path: null, title, description, lesson_type: 'resource', content, is_preview: isPreview, resources });
+    toast.success('File removed');
   };
 
   const handleResourceUpload = async (file: File) => {
@@ -298,16 +332,27 @@ function LessonEditor({
       await doUpload(file, path, 'Uploading resource');
       const newRes = [...resources, { name: file.name, path, size: file.size, mime_type: file.type }];
       setResources(newRes);
-      // Include full lesson state so nothing is wiped on save
       onSave({ title, description, lesson_type: lessonType, video_url: videoUrl || null, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources: newRes });
       toast.success('Resource uploaded');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
+  const replaceResource = (idx: number, file: File) => {
+    const old = resources[idx];
+    const newPath = `${user!.id}/courses/${lesson.course_id}/resources/${lesson.id}/${safeName(file.name)}`;
+    doUpload(file, newPath, `Replacing ${old.name}`).then(() => {
+      const newRes = resources.map((r, i) => i === idx ? { name: file.name, path: newPath, size: file.size, mime_type: file.type } : r);
+      setResources(newRes);
+      onSave({ title, description, lesson_type: lessonType, video_url: videoUrl || null, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources: newRes });
+      toast.success('Resource replaced');
+    }).catch((err) => toast.error(err instanceof Error ? err.message : 'Replace failed'));
   };
 
   const removeResource = (idx: number) => {
     const newRes = resources.filter((_, i) => i !== idx);
     setResources(newRes);
     onSave({ title, description, lesson_type: lessonType, video_url: videoUrl || null, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources: newRes });
+    toast.success('Attachment removed');
   };
 
   // Store mutable refs so the debounced flush always uses the latest values
@@ -451,21 +496,53 @@ function LessonEditor({
               <div className="space-y-3">
                 {/* Existing uploaded video preview */}
                 {videoPreviewUrl && !uploading && (
-                  <div className="rounded-md overflow-hidden bg-black aspect-video">
-                    <video src={videoPreviewUrl} controls className="w-full h-full" />
+                  <div className="space-y-2">
+                    <div className="rounded-md overflow-hidden bg-black aspect-video">
+                      <video src={videoPreviewUrl} controls className="w-full h-full" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md bg-ink-100 border border-ink-300 text-xs font-medium text-ink-700 hover:bg-brand-50 hover:border-brand-400 hover:text-brand-500 transition-all"
+                      >
+                        <Icon name="upload" size={13} />
+                        Replace Video
+                      </button>
+                      <button
+                        onClick={handleDeleteVideo}
+                        className="flex items-center justify-center gap-1.5 px-3 h-8 rounded-md bg-ink-100 border border-ink-300 text-xs font-medium text-ink-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500 transition-all"
+                      >
+                        <Icon name="delete" size={13} />
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <UploadZone
-                  onClick={() => fileInputRef.current?.click()}
-                  accept="video/*"
-                  icon="smart_display"
-                  label={lesson.video_path ? 'Replace Video' : 'Upload Video'}
-                  sublabel="MP4, MOV, WEBM · Max 500 MB"
-                  color="blue"
-                />
+                {!videoPreviewUrl && !uploading && (
+                  <UploadZone
+                    onClick={() => fileInputRef.current?.click()}
+                    accept="video/*"
+                    icon="smart_display"
+                    label="Upload Video"
+                    sublabel="MP4, MOV, WEBM · Max 500 MB"
+                    color="blue"
+                  />
+                )}
+
+                {uploading && (
+                  <UploadZone
+                    onClick={() => {}}
+                    accept="video/*"
+                    icon="smart_display"
+                    label="Uploading…"
+                    sublabel=""
+                    color="blue"
+                  />
+                )}
+
                 <input ref={fileInputRef} type="file" accept="video/*" className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleVideoUpload(e.target.files[0])} />
+                  onChange={(e) => { if (e.target.files?.[0]) { handleVideoUpload(e.target.files[0]); e.target.value = ''; } }} />
 
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-ink-300" />
@@ -494,19 +571,28 @@ function LessonEditor({
               <div className="space-y-3">
                 {/* Current image preview */}
                 {imagePreviewUrl && !uploading ? (
-                  <div className="relative rounded-lg overflow-hidden bg-ink-100 group">
-                    <img src={imagePreviewUrl} alt="Lesson" className="w-full object-contain max-h-64" />
-                    <button
-                      onClick={() => imgInputRef.current?.click()}
-                      className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
-                    >
-                      <div className="flex flex-col items-center gap-1.5 text-white">
-                        <Icon name="edit" size={20} />
-                        <span className="text-xs font-semibold">Replace Image</span>
-                      </div>
-                    </button>
+                  <div className="space-y-2">
+                    <div className="relative rounded-lg overflow-hidden bg-ink-100">
+                      <img src={imagePreviewUrl} alt="Lesson" className="w-full object-contain max-h-64" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => imgInputRef.current?.click()}
+                        className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md bg-ink-100 border border-ink-300 text-xs font-medium text-ink-700 hover:bg-green-50 hover:border-green-400 hover:text-green-600 transition-all"
+                      >
+                        <Icon name="upload" size={13} />
+                        Replace Image
+                      </button>
+                      <button
+                        onClick={handleDeleteImage}
+                        className="flex items-center justify-center gap-1.5 px-3 h-8 rounded-md bg-ink-100 border border-ink-300 text-xs font-medium text-ink-500 hover:bg-red-50 hover:border-red-300 hover:text-red-500 transition-all"
+                      >
+                        <Icon name="delete" size={13} />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                ) : (
+                ) : !uploading ? (
                   <UploadZone
                     onClick={() => imgInputRef.current?.click()}
                     accept="image/*"
@@ -515,9 +601,18 @@ function LessonEditor({
                     sublabel="JPG, PNG, GIF, WEBP · Max 100 MB"
                     color="emerald"
                   />
+                ) : (
+                  <UploadZone
+                    onClick={() => {}}
+                    accept="image/*"
+                    icon="add_photo_alternate"
+                    label="Uploading…"
+                    sublabel=""
+                    color="emerald"
+                  />
                 )}
                 <input ref={imgInputRef} type="file" accept="image/*" className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+                  onChange={(e) => { if (e.target.files?.[0]) { handleImageUpload(e.target.files[0]); e.target.value = ''; } }} />
 
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1 block">Caption / Notes</label>
@@ -542,27 +637,39 @@ function LessonEditor({
             {lessonType === 'resource' && (
               <div className="space-y-3">
                 {/* Show current main file if any */}
-                {lesson.video_path && !uploading && (
-                  <div className="flex items-center gap-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-md">
-                    <div className="w-9 h-9 bg-amber-500/15 rounded-md flex items-center justify-center flex-shrink-0">
-                      <Icon name="description" size={17} className="text-amber-400" />
+                {mainFilePath && !uploading && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+                    <div className="flex items-center gap-3 p-3">
+                      <div className="w-10 h-10 bg-amber-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Icon name="description" size={20} className="text-amber-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-ink-900 truncate">
+                          {mainFilePath.split('/').pop()}
+                        </p>
+                        <p className="text-xs text-amber-600/70 mt-0.5">Main lesson file</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-ink-900 truncate">
-                        {lesson.video_path.split('/').pop()}
-                      </p>
-                      <p className="text-[10px] text-amber-400/70 mt-0.5">Main lesson file</p>
+                    <div className="flex border-t border-amber-500/20">
+                      <button
+                        onClick={() => mainFileInputRef.current?.click()}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-amber-700 hover:bg-amber-500/10 transition-colors border-r border-amber-500/20"
+                      >
+                        <Icon name="upload" size={12} />
+                        Replace File
+                      </button>
+                      <button
+                        onClick={handleDeleteMainFile}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Icon name="delete" size={12} />
+                        Delete File
+                      </button>
                     </div>
-                    <button
-                      onClick={() => mainFileInputRef.current?.click()}
-                      className="text-xs text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
-                    >
-                      Replace
-                    </button>
                   </div>
                 )}
 
-                {!lesson.video_path && (
+                {!mainFilePath && !uploading && (
                   <UploadZone
                     onClick={() => mainFileInputRef.current?.click()}
                     accept="*/*"
@@ -572,8 +679,20 @@ function LessonEditor({
                     color="amber"
                   />
                 )}
+
+                {uploading && (
+                  <UploadZone
+                    onClick={() => {}}
+                    accept="*/*"
+                    icon="upload_file"
+                    label="Uploading…"
+                    sublabel=""
+                    color="amber"
+                  />
+                )}
+
                 <input ref={mainFileInputRef} type="file" className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleMainFileUpload(e.target.files[0])} />
+                  onChange={(e) => { if (e.target.files?.[0]) { handleMainFileUpload(e.target.files[0]); e.target.value = ''; } }} />
 
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1 block">Description / Instructions</label>
@@ -653,26 +772,55 @@ function LessonEditor({
                 <p className="text-xs text-ink-300">No attachments yet</p>
               </div>
             ) : (
-              <div className="space-y-1.5">
-                {resources.map((res, i) => (
-                  <div key={i} className="flex items-center gap-2.5 p-3 bg-ink-100 hover:bg-ink-100 rounded-md transition-colors group">
-                    <div className="w-8 h-8 bg-ink-300 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon name={
-                        res.mime_type?.startsWith('image/') ? 'image' :
-                        res.mime_type?.startsWith('video/') ? 'smart_display' :
-                        res.mime_type === 'application/pdf' ? 'picture_as_pdf' :
-                        res.mime_type?.includes('zip') ? 'folder_zip' : 'description'
-                      } size={14} className="text-ink-500" />
+              <div className="space-y-2">
+                {resources.map((res, i) => {
+                  const replaceInputId = `replace-res-${i}`;
+                  const fileIcon =
+                    res.mime_type?.startsWith('image/') ? 'image' :
+                    res.mime_type?.startsWith('video/') ? 'smart_display' :
+                    res.mime_type === 'application/pdf' ? 'picture_as_pdf' :
+                    res.mime_type?.includes('zip') ? 'folder_zip' : 'description';
+                  const iconColor =
+                    res.mime_type?.startsWith('image/') ? 'bg-green-50 text-green-500' :
+                    res.mime_type?.startsWith('video/') ? 'bg-brand-50 text-brand-400' :
+                    res.mime_type === 'application/pdf' ? 'bg-red-50 text-red-400' :
+                    res.mime_type?.includes('zip') ? 'bg-amber-50 text-amber-500' : 'bg-ink-100 text-ink-500';
+                  return (
+                    <div key={i} className="rounded-lg border border-ink-200 bg-white overflow-hidden">
+                      <div className="flex items-center gap-2.5 p-3">
+                        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', iconColor)}>
+                          <Icon name={fileIcon} size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-ink-900 truncate">{res.name}</p>
+                          <p className="text-[10px] text-ink-400 mt-0.5">{formatBytes(res.size)}</p>
+                        </div>
+                      </div>
+                      <div className="flex border-t border-ink-200">
+                        <label
+                          htmlFor={replaceInputId}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-ink-600 hover:bg-brand-50 hover:text-brand-500 transition-colors cursor-pointer border-r border-ink-200"
+                        >
+                          <Icon name="upload" size={12} />
+                          Replace
+                        </label>
+                        <input
+                          id={replaceInputId}
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => { if (e.target.files?.[0]) { replaceResource(i, e.target.files[0]); e.target.value = ''; } }}
+                        />
+                        <button
+                          onClick={() => removeResource(i)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <Icon name="delete" size={12} />
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-ink-900 truncate">{res.name}</p>
-                      <p className="text-[10px] text-ink-500">{formatBytes(res.size)}</p>
-                    </div>
-                    <button onClick={() => removeResource(i)} className="text-ink-300 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
-                      <Icon name="delete" size={14} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
