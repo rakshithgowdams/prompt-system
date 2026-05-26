@@ -245,21 +245,34 @@ function DetailModal({ prompt, onClose }: { prompt: PublishedPrompt; onClose: ()
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#D1D7DC transparent' }}>
 
-            {/* Media */}
+            {/* Media — capped height so prompt text is always visible */}
             {prompt.media_files.length > 0 && (
               <div className="space-y-1.5">
                 {loading ? (
-                  <div className="aspect-video rounded-xl bg-ink-100 animate-pulse" />
+                  <div className="h-44 rounded-xl bg-ink-100 animate-pulse" />
                 ) : (
                   <>
                     {images.map((img, i) => urls[img.id] && (
-                      <div key={img.id} className="relative rounded-xl overflow-hidden cursor-pointer group" onClick={() => setLightboxIndex(i)}>
-                        <img src={urls[img.id]} alt={img.file_name} className="w-full h-auto block group-hover:opacity-95 transition-opacity" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      <div
+                        key={img.id}
+                        className="relative rounded-xl overflow-hidden cursor-pointer group"
+                        style={{ maxHeight: '220px' }}
+                        onClick={() => setLightboxIndex(i)}
+                      >
+                        <img
+                          src={urls[img.id]}
+                          alt={img.file_name}
+                          className="w-full h-full object-cover group-hover:opacity-95 transition-opacity"
+                          style={{ maxHeight: '220px' }}
+                        />
+                        {/* Tap to expand hint */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <span className="bg-black/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm">Tap to expand</span>
+                        </div>
                       </div>
                     ))}
                     {videos.map((vid) => urls[vid.id] && (
-                      <video key={vid.id} src={urls[vid.id]} controls preload="metadata" className="w-full rounded-xl bg-black" />
+                      <video key={vid.id} src={urls[vid.id]} controls preload="metadata" className="w-full rounded-xl bg-black" style={{ maxHeight: '220px' }} />
                     ))}
                   </>
                 )}
@@ -268,17 +281,20 @@ function DetailModal({ prompt, onClose }: { prompt: PublishedPrompt; onClose: ()
 
             {/* Prompt text */}
             <div>
-              <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider mb-2">Prompt</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider">Prompt</p>
+                <span className="text-[10px] text-ink-400">{prompt.prompt_text.length} chars</span>
+              </div>
               <div className="bg-ink-50 border border-ink-200 rounded-xl overflow-hidden">
                 <div
                   className="overflow-y-auto p-3.5"
                   style={{
-                    maxHeight: '220px',
+                    maxHeight: '200px',
                     scrollbarWidth: 'thin',
                     scrollbarColor: '#D1D7DC transparent',
                   }}
                 >
-                  <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words">
+                  <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words select-all">
                     {prompt.prompt_text}
                   </p>
                 </div>
