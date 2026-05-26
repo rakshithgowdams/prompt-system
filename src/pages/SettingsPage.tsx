@@ -57,6 +57,7 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
   const [coverDragging, setCoverDragging] = useState(false);
   const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(null);
   const [removeCover, setRemoveCover] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
 
@@ -94,6 +95,7 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
 
   const handleSubmit = async (data: ProjectForm) => {
     if (!project) return;
+    setSubmitting(true);
     try {
       let coverPath = project.cover_image;
 
@@ -114,6 +116,8 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
       onClose();
     } catch {
       toast.error('Failed to update project');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -203,8 +207,10 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
         </div>
 
         <div className="flex gap-3 pt-1">
-          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
-          <Button type="submit" className="flex-1" loading={updateProject.isPending}>Save Changes</Button>
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>Cancel</Button>
+          <Button type="submit" className="flex-1" loading={submitting}>
+            {submitting ? (coverFile ? 'Uploading…' : 'Saving…') : 'Save Changes'}
+          </Button>
         </div>
       </form>
     </Modal>
@@ -223,6 +229,7 @@ export function SettingsPage() {
   const [actionProject, setActionProject] = useState<Project | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [showPw, setShowPw] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -252,6 +259,7 @@ export function SettingsPage() {
 
   const handleCreateProject = async (data: ProjectForm) => {
     const slug = data.name.toLowerCase().replace(/\s+/g, '-');
+    setCreatingProject(true);
     try {
       const project = await createProject.mutateAsync({
         name: data.name, slug, icon: '📁', color: data.color, cover_image: null,
@@ -260,11 +268,16 @@ export function SettingsPage() {
         const path = await uploadProjectCover(user.id, project.id, coverFile);
         await supabase.from('projects').update({ cover_image: path }).eq('id', project.id);
       }
-      toast.success('Project created!');
+      toast.success(`"${data.name}" project created!`, {
+        description: 'What would you like to do next?',
+        duration: 4000,
+      });
       closeNewProject();
       setActionProject(project);
     } catch {
       toast.error('Failed to create project');
+    } finally {
+      setCreatingProject(false);
     }
   };
 
@@ -423,7 +436,7 @@ export function SettingsPage() {
       </div>
 
       {/* ── New project modal ──────────────────────────────────────── */}
-      <Modal open={newProjectOpen} onClose={closeNewProject} title="New Project">
+      <Modal open={newProjectOpen} onClose={creatingProject ? () => {} : closeNewProject} title="New Project">
         <form onSubmit={projectForm.handleSubmit(handleCreateProject)} className="space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300 block">Project Cover Image</label>
@@ -493,7 +506,9 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" loading={createProject.isPending}>Create Project</Button>
+          <Button type="submit" className="w-full" loading={creatingProject}>
+            {creatingProject ? (coverFile ? 'Uploading cover…' : 'Creating…') : 'Create Project'}
+          </Button>
         </form>
       </Modal>
 
