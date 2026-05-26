@@ -14,7 +14,7 @@ export function NotFoundPage() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-10">
           <img
-            src="/aiwithrakshith-tech-logo copy.png"
+            src="/aiwithrakshith-tech-logo.png"
             alt="aiwithrakshith"
             className="h-9 w-9 object-contain"
           />

@@ -74,7 +74,7 @@ export function RefundPolicyPage() {
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-ink-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith" className="h-8 w-8 object-contain" />
+            <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-8 w-8 object-contain" />
             <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight" style={{ fontSize: '14px', letterSpacing: '-0.02em' }}>
               aiwithrakshith
             </span>

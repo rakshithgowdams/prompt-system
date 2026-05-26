@@ -315,7 +315,7 @@ export function SignupPage() {
               <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
                 <div className="text-center mb-8">
                   <div className="flex flex-col items-center gap-3 mb-2">
-                    <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-14 w-14 object-contain" />
+                    <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-14 w-14 object-contain" />
                     <span className="font-display font-black text-ink-900 tracking-tight leading-none" style={{ fontSize: '22px', letterSpacing: '-0.03em' }}>aiwithrakshith</span>
                   </div>
                   <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">Create Account</h1>

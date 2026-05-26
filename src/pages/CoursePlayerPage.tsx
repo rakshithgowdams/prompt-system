@@ -411,7 +411,7 @@ export function CoursePlayerPage() {
       <header className="flex items-center gap-3 px-4 sm:px-5 h-14 bg-white border-b border-ink-300 flex-shrink-0 sticky top-0 z-30">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-          <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
+          <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
           <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
         </Link>
 

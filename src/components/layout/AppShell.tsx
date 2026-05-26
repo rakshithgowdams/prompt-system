@@ -298,7 +298,7 @@ function SidebarNav({
     <>
       <div className="flex items-center justify-between gap-2 px-4 py-4 border-b border-ink-300 flex-shrink-0">
         <Link to="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-          <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain flex-shrink-0" />
+          <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain flex-shrink-0" />
           <span className="font-display font-black text-ink-900 tracking-tight leading-none" style={{ fontSize: '13px', letterSpacing: '-0.02em' }}>aiwithrakshith</span>
         </Link>
         {onClose && (
@@ -502,7 +502,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Icon name="menu" size={22} />
           </button>
           <Link to="/dashboard" className="flex items-center gap-2">
-            <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-7 w-7 object-contain flex-shrink-0" />
+            <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-7 w-7 object-contain flex-shrink-0" />
             <span className="font-display font-black text-ink-900 tracking-tight leading-none" style={{ fontSize: '12px', letterSpacing: '-0.02em' }}>aiwithrakshith</span>
           </Link>
         </header>
