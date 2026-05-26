@@ -20,7 +20,7 @@ function GoogleIcon() {
 
 export function PublicCertificatePage() {
   const { slug } = useParams<{ slug: string }>();
-  const { data: cert, isLoading } = useCertificateBySlug(slug);
+  const { data: cert, isLoading, isFetching, isError } = useCertificateBySlug(slug);
   const { user, signInWithGoogle } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -44,7 +44,7 @@ export function PublicCertificatePage() {
     setMeta('og:url', window.location.href);
   }, [cert]);
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="min-h-screen bg-ink-100 flex items-center justify-center">
         <div className="text-center space-y-3">
@@ -55,7 +55,7 @@ export function PublicCertificatePage() {
     );
   }
 
-  if (!cert) {
+  if (isError || !cert) {
     return (
       <div className="min-h-screen bg-ink-100 flex items-center justify-center p-8">
         <div className="text-center space-y-4 max-w-md">

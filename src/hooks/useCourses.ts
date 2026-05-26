@@ -698,8 +698,9 @@ export function useIssueCertificate() {
       return data as CourseCertificate;
     },
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['my-certificate', vars.course_id] });
-      qc.invalidateQueries({ queryKey: ['all-my-certificates'] });
+      qc.invalidateQueries({ queryKey: ['my-certificate', vars.course_id, user?.id] });
+      qc.invalidateQueries({ queryKey: ['all-my-certificates', user?.id] });
+      qc.invalidateQueries({ queryKey: ['all-certificates', user?.id] });
     },
   });
 }
@@ -711,7 +712,7 @@ export function useCertificateBySlug(slug: string | undefined) {
       if (!slug) return null;
       const { data, error } = await supabase
         .from('course_certificates')
-        .select('id, certificate_number, issued_at, department, internship_from, internship_to, growth_area, instructor_name, student_name, course_title, course_category, serial_number, share_slug, share_view_count')
+        .select('id, user_id, course_id, certificate_number, issued_at, department, internship_from, internship_to, growth_area, instructor_name, student_name, course_title, course_category, serial_number, share_slug, share_view_count')
         .eq('share_slug', slug)
         .maybeSingle();
       if (error) throw error;
@@ -723,6 +724,8 @@ export function useCertificateBySlug(slug: string | undefined) {
       return data as CourseCertificate | null;
     },
     enabled: !!slug,
+    staleTime: 0,
+    retry: 3,
   });
 }
 
