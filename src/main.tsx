@@ -1,7 +1,25 @@
 import { StrictMode, Component, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
 import App from './App.tsx';
 import './index.css';
+
+gsap.registerPlugin(ScrollTrigger);
+
+// Initialize Lenis smooth scroll globally
+const lenis = new Lenis({ duration: 1.2, smoothWheel: true });
+
+lenis.on('scroll', ScrollTrigger.update);
+
+gsap.ticker.add((time) => {
+  lenis.raf(time * 1000);
+});
+gsap.ticker.lagSmoothing(0);
+
+// Expose lenis so landing page components can pause/resume if needed
+(window as unknown as Record<string, unknown>).__lenis = lenis;
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null };

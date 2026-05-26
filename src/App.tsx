@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Skeleton } from './components/ui/Skeleton';
 
@@ -33,12 +33,20 @@ const CourseEditorPage  = lazy(() => import('./pages/CourseEditorPage').then((m)
 const CoursePlayerPage  = lazy(() => import('./pages/CoursePlayerPage').then((m) => ({ default: m.CoursePlayerPage })));
 const CertificatePage   = lazy(() => import('./pages/CertificatePage').then((m) => ({ default: m.CertificatePage })));
 const CourseSharePage   = lazy(() => import('./pages/CourseSharePage').then((m) => ({ default: m.CourseSharePage })));
+const LandingPage       = lazy(() => import('./pages/landing/LandingPage'));
+const PricingPage       = lazy(() => import('./pages/landing/PricingPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 1000 * 60 * 2, retry: 1 },
   },
 });
+
+function RootGate() {
+  const { user, loading } = useAuth();
+  if (loading) return <PageFallback />;
+  return user ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+}
 
 function PageFallback() {
   return (
@@ -63,7 +71,8 @@ export default function App() {
         <BrowserRouter>
           <Suspense fallback={<PageFallback />}>
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<RootGate />} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
