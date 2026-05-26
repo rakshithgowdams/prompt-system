@@ -40,7 +40,13 @@ export function useCreateTodo() {
       if (error) throw error;
       return data as Todo;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['todos'] }),
+    onSuccess: (todo) => {
+      qc.invalidateQueries({ queryKey: ['todos'] });
+      // Fire-and-forget: "todo created" email — best-effort, never blocks UI
+      supabase.functions
+        .invoke('todo-created', { body: { todo_id: todo.id } })
+        .catch((e) => console.warn('[todo-email] created notification failed:', e));
+    },
   });
 }
 
@@ -70,6 +76,8 @@ export function useToggleTodo() {
         .update({
           completed,
           completed_at: completed ? new Date().toISOString() : null,
+          // Reset sent flag when un-completing so re-completing sends the email again
+          ...(completed ? {} : { completed_email_sent_at: null }),
         })
         .eq('id', id)
         .select()
@@ -77,8 +85,52 @@ export function useToggleTodo() {
       if (error) throw error;
       return data as Todo;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['todos'] }),
+    onSuccess: (todo) => {
+      qc.invalidateQueries({ queryKey: ['todos'] });
+      // Fire-and-forget: "todo completed" email — only when transitioning to completed=true
+      if (todo.completed) {
+        supabase.functions
+          .invoke('todo-completed', { body: { todo_id: todo.id } })
+          .catch((e) => console.warn('[todo-email] completed notification failed:', e));
+      }
+    },
   });
+}
+
+export function useTodoEmailPreference() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['todo-email-pref', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('todo_emails_enabled')
+        .eq('id', user!.id)
+        .maybeSingle();
+      return data?.todo_emails_enabled ?? true;
+    },
+    enabled: !!user,
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ todo_emails_enabled: enabled })
+        .eq('id', user!.id);
+      if (error) throw error;
+      return enabled;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['todo-email-pref'] }),
+  });
+
+  return {
+    enabled: query.data ?? true,
+    setEnabled: mutation.mutateAsync,
+    isUpdating: mutation.isPending,
+  };
 }
 
 export function useDeleteTodo() {

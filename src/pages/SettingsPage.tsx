@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects';
 import { useProfile, useUpsertProfile, getAvatarUrl } from '../hooks/useProfile';
+import { useTodoEmailPreference } from '../hooks/useTodos';
 
 // Upload a file to Supabase Storage with XHR progress tracking
 async function uploadWithProgress(
@@ -251,6 +252,58 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
         </div>
       </form>
     </Modal>
+  );
+}
+
+// ── Notifications section ───────────────────────────────────────────────────
+function NotificationsSection() {
+  const { enabled, setEnabled, isUpdating } = useTodoEmailPreference();
+
+  const handleToggle = async () => {
+    const next = !enabled;
+    try {
+      await setEnabled(next);
+      toast.success(next ? 'Todo email notifications enabled' : 'Todo email notifications disabled');
+    } catch {
+      toast.error('Failed to update notification preference');
+    }
+  };
+
+  return (
+    <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
+      <div className="flex items-center gap-3 pb-3 border-b border-ink-300">
+        <Icon name="notifications" size={18} className="text-brand-400 flex-shrink-0" fill />
+        <h2 className="font-display font-semibold text-ink-900">Notifications</h2>
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-ink-900">Todo email notifications</p>
+          <p className="text-xs text-ink-500 mt-0.5">
+            Receive emails when you create a todo, when it's due soon, when you complete it, or when it goes overdue.
+          </p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={enabled}
+          onClick={handleToggle}
+          disabled={isUpdating}
+          className={cn(
+            'relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed',
+            enabled ? 'bg-brand-500' : 'bg-ink-300',
+          )}
+        >
+          <motion.span
+            layout
+            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            className={cn(
+              'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm',
+              enabled ? 'left-[22px]' : 'left-0.5',
+            )}
+          />
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -586,6 +639,9 @@ export function SettingsPage() {
             </Button>
           </form>
         </section>
+
+        {/* ── Notifications ───────────────────────────────────────── */}
+        <NotificationsSection />
 
         {/* ── Projects ────────────────────────────────────────────── */}
         <section className="bg-white border border-ink-300 rounded-lg p-4 sm:p-5 space-y-4">
