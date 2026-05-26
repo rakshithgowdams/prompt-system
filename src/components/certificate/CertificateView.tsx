@@ -9,26 +9,37 @@ interface Props {
 const W = 1414;
 const H = 1000;
 
-// SVG inline assets — replaces empty public-folder placeholder files
+// Logo SVG — faithfully reproduces the MyDesignNexus wordmark:
+// "MyDesign" bold in light dusty-rose, "Nexus" light in mid-grey, subtitle tracked in pale grey.
+// Uses a <text> with two <tspan> children so glyph widths are handled by the SVG renderer,
+// eliminating hard-coded x-offset guessing for the colour break.
 function LogoSVG({ style }: { style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 320 80" style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* MD mark */}
-      <g transform="translate(0,8)">
-        <rect x="0" y="0" width="64" height="64" fill="none"/>
-        {/* M shape */}
-        <path d="M4 60 L4 4 L20 4 L32 36 L44 4 L60 4 L60 60 L50 60 L50 18 L36 50 L28 50 L14 18 L14 60 Z" fill="#111"/>
-        {/* D shape with cut */}
-        <path d="M66 4 L88 4 Q108 4 108 32 Q108 60 88 60 L66 60 Z" fill="#111"/>
-        <path d="M76 14 L86 14 Q96 14 96 32 Q96 50 86 50 L76 50 Z" fill="white"/>
-        {/* diagonal cut */}
-        <path d="M66 60 L108 4 L108 60 Z" fill="#111"/>
-        <path d="M88 4 L108 4 L66 60 L66 50 Z" fill="white"/>
-      </g>
-      {/* Wordmark */}
-      <text x="120" y="38" fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="700" fontSize="22" fill="#1a1a1a" letterSpacing="0.5">MyDesign</text>
-      <text x="120" y="38" fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="300" fontSize="22" fill="#888" letterSpacing="0.5" dx="89">Nexus</text>
-      <text x="120" y="56" fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="400" fontSize="10" fill="#aaa" letterSpacing="2">AI Solution Company</text>
+    <svg
+      viewBox="0 0 400 100"
+      style={style}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="MyDesignNexus — AI Solution Company"
+    >
+      {/* Combined wordmark on one baseline so colour break is exact */}
+      <text
+        x="0" y="62"
+        fontFamily="'Helvetica Neue','Arial',sans-serif"
+        fontSize="54"
+        letterSpacing="-0.5"
+      >
+        <tspan fontWeight="700" fill="#e2b8b8">MyDesign</tspan>
+        <tspan fontWeight="300" fill="#a0a0a0">Nexus</tspan>
+      </text>
+      {/* Subtitle */}
+      <text
+        x="2" y="84"
+        fontFamily="'Helvetica Neue','Arial',sans-serif"
+        fontWeight="400"
+        fontSize="12"
+        fill="#b8b8b8"
+        letterSpacing="3"
+      >AI Solution Company</text>
     </svg>
   );
 }
@@ -133,7 +144,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
         gap: py(4),
       }}>
         <LogoSVG style={{
-          width: forExport ? '220px' : `${(220 / W) * 100}%`,
+          width: forExport ? '300px' : `${(300 / W) * 100}%`,
           height: 'auto',
         }} />
       </div>
