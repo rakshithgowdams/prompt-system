@@ -594,6 +594,25 @@ export function CoursePlayerPage() {
         })}
       </div>
 
+      {/* Certificate card (shown when earned) */}
+      {certificate && (
+        <div className="px-4 pt-3 pb-1 flex-shrink-0 border-t border-ink-300">
+          <button
+            onClick={() => navigate(`/courses/${courseId}/certificate`)}
+            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-100 transition-all duration-200 group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center flex-shrink-0">
+              <Icon name="workspace_premium" size={18} className="text-white" fill />
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-[11px] font-bold text-white/80 uppercase tracking-widest leading-none mb-0.5">Your Certificate</p>
+              <p className="text-sm font-extrabold text-white leading-tight truncate">View &amp; Download</p>
+            </div>
+            <Icon name="chevron_right" size={16} className="text-white/70 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+          </button>
+        </div>
+      )}
+
       {/* Back to courses link */}
       <div className="px-4 py-3 border-t border-ink-300 flex-shrink-0">
         <Link
