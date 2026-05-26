@@ -100,6 +100,18 @@ export function LoginPage() {
             Create one
           </Link>
         </p>
+
+        <p className="text-center text-[11px] text-gray-600 mt-8">
+          Developed by{' '}
+          <a
+            href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-400/70 hover:text-pink-300 font-semibold transition-colors"
+          >
+            @aiwithrakshith
+          </a>
+        </p>
       </div>
     </div>
   );

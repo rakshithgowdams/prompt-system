@@ -6,6 +6,7 @@ import { useProjects } from '../../hooks/useProjects';
 import { useFolders, useAllProjectFiles } from '../../hooks/useProjectFiles';
 import { Icon } from '../ui/Icon';
 import { FileTypeIcon } from '../files/FileTypeIcon';
+import { FollowPopup } from '../ui/FollowPopup';
 import { getSignedUrl } from '../../lib/storage';
 import { cn, PROJECT_COLORS } from '../../lib/utils';
 import type { Project } from '../../lib/database.types';
@@ -346,11 +347,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Developer credit */}
+      <div className="px-4 py-2.5 border-t border-gray-800/60 flex-shrink-0">
+        <p className="text-[10px] text-gray-600 text-center leading-relaxed">
+          Developed by{' '}
+          <a
+            href="https://www.instagram.com/aiwithrakshith?igsh=anAxYmJrdWhsODFj"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-400/80 hover:text-pink-300 font-semibold transition-colors"
+          >
+            @aiwithrakshith
+          </a>
+        </p>
+      </div>
     </>
   );
 
   return (
     <div className="min-h-screen bg-gray-950 flex overflow-x-hidden">
+      <FollowPopup />
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-gray-900 border-r border-gray-800 fixed inset-y-0 left-0 z-30">
         <NavContent />
