@@ -452,10 +452,10 @@ export function ProjectFilesPage() {
 
       {/* ── Header ── */}
       <div className={cn(
-        'px-4 lg:px-8 py-5 bg-gradient-to-r text-white relative overflow-hidden',
+        'px-4 lg:px-8 py-5 bg-gradient-to-r text-white relative overflow-visible',
         PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray,
       )}>
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/30 overflow-hidden rounded-none pointer-events-none" />
         <div className="relative z-10 flex flex-col gap-3">
           {/* Breadcrumb navigation */}
           <Breadcrumb
@@ -515,7 +515,7 @@ export function ProjectFilesPage() {
                         initial={{ opacity: 0, scale: 0.95, y: -4 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute right-0 top-full mt-1 z-20 bg-white border border-ink-200 rounded-xl shadow-2xl py-1.5 min-w-[180px] overflow-hidden"
+                        className="absolute right-0 top-full mt-1 z-[100] bg-white border border-ink-200 rounded-xl shadow-2xl py-1.5 min-w-[180px] overflow-hidden"
                       >
                         <button
                           onClick={() => { setNewMenuOpen(false); setNewFolderOpen(true); }}
