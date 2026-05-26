@@ -39,6 +39,9 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
   const [muted, setMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [quality, setQuality] = useState<string>('Auto');
+  const [showQuality, setShowQuality] = useState(false);
+  const [nativeHeight, setNativeHeight] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [hoveredMarker, setHoveredMarker] = useState<TimelineMarker | null>(null);
@@ -99,6 +102,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
     const v = ref.current;
     if (!v) return;
     setDuration(v.duration);
+    setNativeHeight(v.videoHeight);
     if (initialTime && initialTime > 0) v.currentTime = initialTime;
   };
 
@@ -145,6 +149,28 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
     setSpeed(s);
     setShowSpeed(false);
     if (ref.current) ref.current.playbackRate = s;
+  };
+
+  const qualityOptions = (() => {
+    const opts = ['Auto'];
+    if (nativeHeight >= 2160) opts.push('2160p');
+    if (nativeHeight >= 1440) opts.push('1440p');
+    if (nativeHeight >= 1080) opts.push('1080p');
+    if (nativeHeight >= 720) opts.push('720p');
+    if (nativeHeight >= 480) opts.push('480p');
+    if (nativeHeight >= 360) opts.push('360p');
+    return opts;
+  })();
+
+  const changeQuality = (q: string) => {
+    setQuality(q);
+    setShowQuality(false);
+    const v = ref.current;
+    if (!v) return;
+    if (q === 'Auto') {
+      v.style.height = '';
+      v.style.width = '';
+    }
   };
 
   const toggleFullscreen = async () => {
@@ -343,7 +369,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
             {/* Speed control */}
             <div className="relative">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowSpeed(!showSpeed); }}
+                onClick={(e) => { e.stopPropagation(); setShowSpeed(!showSpeed); setShowQuality(false); }}
                 className="px-2 py-1 text-white text-[11px] font-bold hover:bg-white/10 rounded transition-colors"
               >
                 {speed}x
@@ -365,6 +391,38 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                 </div>
               )}
             </div>
+
+            {/* Quality selector */}
+            {nativeHeight > 0 && (
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowQuality(!showQuality); setShowSpeed(false); }}
+                  className="px-2 py-1 text-white text-[11px] font-bold hover:bg-white/10 rounded transition-colors flex items-center gap-1"
+                >
+                  <Icon name="settings" size={14} />
+                  {quality === 'Auto' ? `Auto (${nativeHeight}p)` : quality}
+                </button>
+                {showQuality && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-gray-900/95 backdrop-blur-sm rounded-lg overflow-hidden shadow-xl border border-white/10 z-50">
+                    <div className="px-3 py-1.5 border-b border-white/10">
+                      <span className="text-[10px] text-white/50 font-semibold uppercase tracking-wider">Quality</span>
+                    </div>
+                    {qualityOptions.map((q) => (
+                      <button
+                        key={q}
+                        onClick={(e) => { e.stopPropagation(); changeQuality(q); }}
+                        className={cn(
+                          'block w-full px-4 py-2 text-left text-[12px] font-medium hover:bg-white/10 transition-colors whitespace-nowrap',
+                          q === quality ? 'text-red-400 bg-white/5' : 'text-white'
+                        )}
+                      >
+                        {q} {q === 'Auto' && nativeHeight > 0 && `(${nativeHeight}p)`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Fullscreen */}
             <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="p-1.5 text-white hover:text-white/80 transition-colors">
