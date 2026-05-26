@@ -1,8 +1,27 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Prompt, MediaFile } from '../lib/database.types';
 import { useAuth } from '../contexts/AuthContext';
+
+// ── Engagement types ──────────────────────────────────────────────────────────
+
+export interface PromptComment {
+  id: string;
+  prompt_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_profiles?: { display_name: string | null; avatar_path: string | null } | null;
+}
+
+export interface PromptStats {
+  like_count: number;
+  view_count: number;
+  comment_count: number;
+  user_has_liked: boolean;
+}
 
 export function usePrompts(projectId?: string) {
   const { user } = useAuth();
@@ -235,5 +254,139 @@ export function useDeleteMediaFile() {
       return { promptId };
     },
     onSuccess: ({ promptId }) => qc.invalidateQueries({ queryKey: ['media', promptId] }),
+  });
+}
+
+// ── Engagement: stats ─────────────────────────────────────────────────────────
+
+export function usePromptStats(promptId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['prompt-stats', promptId, user?.id],
+    queryFn: async (): Promise<PromptStats> => {
+      const [{ data: statsRow }, { data: likedRow }] = await Promise.all([
+        supabase.rpc('get_prompt_stats', { p_prompt_id: promptId }),
+        user
+          ? supabase
+              .from('prompt_likes')
+              .select('id')
+              .eq('prompt_id', promptId)
+              .eq('user_id', user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      const stats = Array.isArray(statsRow) ? statsRow[0] : statsRow;
+      return {
+        like_count: Number(stats?.like_count ?? 0),
+        view_count: Number(stats?.view_count ?? 0),
+        comment_count: Number(stats?.comment_count ?? 0),
+        user_has_liked: !!likedRow,
+      };
+    },
+    enabled: !!promptId,
+    staleTime: 30_000,
+  });
+}
+
+// ── Engagement: record view ───────────────────────────────────────────────────
+
+export function useRecordView() {
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (promptId: string) => {
+      await supabase.from('prompt_views').insert({
+        prompt_id: promptId,
+        viewer_id: user?.id ?? null,
+      });
+    },
+  });
+}
+
+// ── Engagement: toggle like ───────────────────────────────────────────────────
+
+export function useToggleLike() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ promptId, liked }: { promptId: string; liked: boolean }) => {
+      if (!user) throw new Error('Not authenticated');
+      if (liked) {
+        await supabase.from('prompt_likes').delete().eq('prompt_id', promptId).eq('user_id', user.id);
+      } else {
+        await supabase.from('prompt_likes').insert({ prompt_id: promptId, user_id: user.id });
+      }
+      return { promptId, newLiked: !liked };
+    },
+    onMutate: async ({ promptId, liked }) => {
+      await qc.cancelQueries({ queryKey: ['prompt-stats', promptId, user?.id] });
+      const prev = qc.getQueryData<PromptStats>(['prompt-stats', promptId, user?.id]);
+      qc.setQueryData<PromptStats>(['prompt-stats', promptId, user?.id], (old) =>
+        old
+          ? { ...old, user_has_liked: !liked, like_count: old.like_count + (liked ? -1 : 1) }
+          : old
+      );
+      return { prev };
+    },
+    onError: (_err, { promptId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['prompt-stats', promptId, user?.id], ctx.prev);
+    },
+    onSuccess: ({ promptId }) => {
+      qc.invalidateQueries({ queryKey: ['prompt-stats', promptId] });
+    },
+  });
+}
+
+// ── Engagement: comments ──────────────────────────────────────────────────────
+
+export function usePromptComments(promptId: string) {
+  return useQuery({
+    queryKey: ['prompt-comments', promptId],
+    queryFn: async (): Promise<PromptComment[]> => {
+      const { data, error } = await supabase
+        .from('prompt_comments')
+        .select('*, user_profiles(display_name, avatar_path)')
+        .eq('prompt_id', promptId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as PromptComment[];
+    },
+    enabled: !!promptId,
+  });
+}
+
+export function useAddComment() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ promptId, content }: { promptId: string; content: string }) => {
+      if (!user) throw new Error('Not authenticated');
+      const { data, error } = await supabase
+        .from('prompt_comments')
+        .insert({ prompt_id: promptId, user_id: user.id, content: content.trim() })
+        .select('*, user_profiles(display_name, avatar_path)')
+        .single();
+      if (error) throw error;
+      return data as PromptComment;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['prompt-comments', data.prompt_id] });
+      qc.invalidateQueries({ queryKey: ['prompt-stats', data.prompt_id] });
+    },
+  });
+}
+
+export function useDeleteComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, promptId }: { id: string; promptId: string }) => {
+      const { error } = await supabase.from('prompt_comments').delete().eq('id', id);
+      if (error) throw error;
+      return { promptId };
+    },
+    onSuccess: ({ promptId }) => {
+      qc.invalidateQueries({ queryKey: ['prompt-comments', promptId] });
+      qc.invalidateQueries({ queryKey: ['prompt-stats', promptId] });
+    },
   });
 }

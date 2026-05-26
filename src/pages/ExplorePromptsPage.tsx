@@ -3,29 +3,45 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Globe, Copy, Check, Sparkles, X,
-  ChevronLeft, ChevronRight, Image as ImageIcon, Video as VideoIcon,
+  ChevronLeft, ChevronRight, Image as ImageIcon,
+  Heart, Eye, MessageCircle, Send, Trash2, User,
+  BarChart2, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePublishedPrompts, type PublishedPrompt } from '../hooks/usePrompts';
+import {
+  usePublishedPrompts,
+  usePromptStats,
+  useRecordView,
+  useToggleLike,
+  usePromptComments,
+  useAddComment,
+  useDeleteComment,
+  type PublishedPrompt,
+  type PromptComment,
+} from '../hooks/usePrompts';
 import { Skeleton } from '../components/ui/Skeleton';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 import type { MediaFile } from '../lib/database.types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PLATFORMS = ['All', 'Veo 3', 'Seedance 2.0', 'Midjourney', 'ChatGPT', 'Claude', 'Other'] as const;
+const PLATFORMS = ['All', 'Veo 3', 'Seedance 2.0', 'GPT Image', 'Midjourney', 'ChatGPT', 'Claude', 'Other'] as const;
+const SORT_OPTIONS = ['Featured', 'Newest', 'Popular'] as const;
+type SortOption = (typeof SORT_OPTIONS)[number];
 
-const PLATFORM_COLORS: Record<string, string> = {
-  'Veo 3':        'bg-blue-100/80 text-blue-700 border-blue-200',
-  'Seedance 2.0': 'bg-amber-100/80 text-amber-700 border-amber-200',
-  'Midjourney':   'bg-rose-100/80 text-rose-700 border-rose-200',
-  'ChatGPT':      'bg-green-100/80 text-green-700 border-green-200',
-  'Claude':       'bg-orange-100/80 text-orange-700 border-orange-200',
-  'Other':        'bg-white/60 text-ink-600 border-ink-200',
+const PLATFORM_COLORS: Record<string, { pill: string; icon: string }> = {
+  'Veo 3':        { pill: 'bg-blue-50 text-blue-700 border-blue-200',    icon: '🎬' },
+  'Seedance 2.0': { pill: 'bg-amber-50 text-amber-700 border-amber-200', icon: '🌱' },
+  'GPT Image':    { pill: 'bg-green-50 text-green-700 border-green-200', icon: '🤖' },
+  'Midjourney':   { pill: 'bg-rose-50 text-rose-700 border-rose-200',    icon: '🎨' },
+  'ChatGPT':      { pill: 'bg-teal-50 text-teal-700 border-teal-200',    icon: '💬' },
+  'Claude':       { pill: 'bg-orange-50 text-orange-700 border-orange-200', icon: '⚡' },
+  'Other':        { pill: 'bg-ink-50 text-ink-600 border-ink-200',       icon: '✦' },
 };
 
-// ── Signed URL helper ─────────────────────────────────────────────────────────
+// ── Utilities ─────────────────────────────────────────────────────────────────
 
 async function getSignedUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
@@ -33,74 +49,36 @@ async function getSignedUrl(path: string): Promise<string> {
   return data.signedUrl;
 }
 
-// ── Lightbox ─────────────────────────────────────────────────────────────────
-
-function Lightbox({
-  urls, index, onClose, onPrev, onNext,
-}: {
-  urls: string[]; index: number;
-  onClose: () => void; onPrev: () => void; onNext: () => void;
-}) {
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose, onPrev, onNext]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[70] bg-black/92 flex items-center justify-center"
-      onClick={onClose}
-    >
-      <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10">
-        <X size={20} />
-      </button>
-      {urls.length > 1 && (
-        <>
-          <button onClick={(e) => { e.stopPropagation(); onPrev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-            <ChevronLeft size={20} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onNext(); }} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-            <ChevronRight size={20} />
-          </button>
-        </>
-      )}
-      <motion.img
-        key={index}
-        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
-        src={urls[index]} alt=""
-        className="max-w-[92vw] max-h-[88vh] object-contain rounded-xl shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      />
-      {urls.length > 1 && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5">
-          {urls.map((_, i) => (
-            <div key={i} className={cn('w-1.5 h-1.5 rounded-full transition-colors', i === index ? 'bg-white' : 'bg-white/30')} />
-          ))}
-        </div>
-      )}
-    </motion.div>
-  );
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
 
-// ── useSignedUrls — shared hook ───────────────────────────────────────────────
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ── useSignedUrls ─────────────────────────────────────────────────────────────
 
 function useSignedUrls(mediaFiles: MediaFile[]) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const toLoad = mediaFiles;
-    if (toLoad.length === 0) { setLoading(false); return; }
+    if (mediaFiles.length === 0) { setLoading(false); return; }
     let cancelled = false;
+    setLoading(true);
     Promise.all(
-      toLoad.map(async (f) => {
+      mediaFiles.map(async (f) => {
         try { return [f.id, await getSignedUrl(f.file_path)] as [string, string]; }
         catch { return null; }
       })
@@ -117,55 +95,258 @@ function useSignedUrls(mediaFiles: MediaFile[]) {
   return { urls, loading };
 }
 
-// ── Compact thumbnail for the grid card ──────────────────────────────────────
+// ── Image Carousel (used inside detail modal) ─────────────────────────────────
 
-function CardThumbnail({ mediaFiles }: { mediaFiles: MediaFile[] }) {
-  const images = mediaFiles.filter((f) => f.file_type === 'image');
-  const videos = mediaFiles.filter((f) => f.file_type === 'video');
-  const { urls, loading } = useSignedUrls(mediaFiles.slice(0, 1));
+function ImageCarousel({
+  images,
+  urls,
+  loading,
+}: {
+  images: MediaFile[];
+  urls: Record<string, string>;
+  loading: boolean;
+}) {
+  const [active, setActive] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
 
-  const firstImage = images[0];
-  const firstVideo = videos[0];
+  useEffect(() => { setActive(0); }, [images.length]);
+
+  const prev = useCallback(() => setActive((i) => (i - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setActive((i) => (i + 1) % images.length), [images.length]);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false);
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [fullscreen, prev, next]);
+
+  if (images.length === 0) return null;
+
+  const activeUrl = urls[images[active]?.id];
 
   return (
-    <div className="w-full aspect-[4/3] overflow-hidden rounded-t-2xl bg-gradient-to-br from-ink-100 to-ink-200 relative">
-      {loading ? (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-ink-100 to-ink-200" />
-      ) : firstImage && urls[firstImage.id] ? (
-        <img
-          src={urls[firstImage.id]}
-          alt=""
-          className="w-full h-full object-cover"
-        />
-      ) : firstVideo && urls[firstVideo.id] ? (
-        <video src={urls[firstVideo.id]} className="w-full h-full object-cover" muted playsInline />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Sparkles size={24} className="text-ink-300" />
+    <>
+      <div className="relative bg-black/5 rounded-xl overflow-hidden select-none">
+        {/* Counter */}
+        <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
+          {active + 1} / {images.length}
+        </div>
+
+        {/* Main image */}
+        <div
+          className="relative cursor-zoom-in"
+          style={{ minHeight: 280 }}
+          onClick={() => setFullscreen(true)}
+        >
+          {loading ? (
+            <div className="h-72 w-full animate-pulse bg-ink-100 rounded-xl" />
+          ) : activeUrl ? (
+            <motion.img
+              key={active}
+              initial={{ opacity: 0, scale: 1.02 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              src={activeUrl}
+              alt={images[active]?.file_name}
+              className="w-full object-contain max-h-80 rounded-xl"
+            />
+          ) : (
+            <div className="h-72 flex items-center justify-center text-ink-300">
+              <ImageIcon size={32} />
+            </div>
+          )}
+        </div>
+
+        {/* Prev / Next */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); next(); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div className="flex gap-2 mt-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {images.map((img, i) => (
+            <button
+              key={img.id}
+              onClick={() => setActive(i)}
+              className={cn(
+                'flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all',
+                i === active ? 'border-ink-900 shadow-md' : 'border-transparent opacity-60 hover:opacity-100',
+              )}
+            >
+              {urls[img.id] ? (
+                <img src={urls[img.id]} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-ink-100 flex items-center justify-center">
+                  <ImageIcon size={12} className="text-ink-300" />
+                </div>
+              )}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Media count badge */}
-      {(images.length + videos.length) > 1 && (
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">
-          {images.length > 1 && <><ImageIcon size={9} /><span>{images.length}</span></>}
-          {videos.length > 0 && <><VideoIcon size={9} /><span>{videos.length}</span></>}
+      {/* Fullscreen */}
+      <AnimatePresence>
+        {fullscreen && activeUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            onClick={() => setFullscreen(false)}
+          >
+            <button
+              onClick={() => setFullscreen(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+            >
+              <X size={18} />
+            </button>
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prev(); }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); next(); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </>
+            )}
+            <img
+              src={activeUrl}
+              alt=""
+              className="max-w-[94vw] max-h-[92vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute bottom-5 text-white/50 text-xs">
+              {active + 1} / {images.length}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ── Comment bubble ────────────────────────────────────────────────────────────
+
+function CommentBubble({
+  comment,
+  currentUserId,
+  onDelete,
+}: {
+  comment: PromptComment;
+  currentUserId?: string;
+  onDelete: (id: string) => void;
+}) {
+  const isOwn = comment.user_id === currentUserId;
+  const name = comment.user_profiles?.display_name || 'Anonymous';
+
+  return (
+    <div className="flex gap-2.5 group">
+      {/* Avatar */}
+      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-200 flex items-center justify-center overflow-hidden">
+        {comment.user_profiles?.avatar_path ? (
+          <img
+            src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${comment.user_profiles.avatar_path}`}
+            alt={name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <User size={13} className="text-ink-500" />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-1.5 mb-0.5">
+          <span className="text-[12px] font-semibold text-ink-800">{name}</span>
+          <span className="text-[10px] text-ink-400">{timeAgo(comment.created_at)}</span>
         </div>
+        <p className="text-[13px] text-ink-700 leading-relaxed break-words">{comment.content}</p>
+      </div>
+
+      {isOwn && (
+        <button
+          onClick={() => onDelete(comment.id)}
+          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-ink-400 hover:text-red-500 mt-0.5"
+        >
+          <Trash2 size={12} />
+        </button>
       )}
     </div>
   );
 }
 
-// ── Detail bottom-sheet / modal ───────────────────────────────────────────────
+// ── Detail Modal (desktop split / mobile sheet) ───────────────────────────────
 
-function DetailModal({ prompt, onClose }: { prompt: PublishedPrompt; onClose: () => void }) {
+function DetailModal({
+  prompt,
+  onClose,
+}: {
+  prompt: PublishedPrompt;
+  onClose: () => void;
+}) {
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [activeTab, setActiveTab] = useState<'prompt' | 'comments'>('prompt');
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+
   const images = prompt.media_files.filter((f) => f.file_type === 'image');
   const videos = prompt.media_files.filter((f) => f.file_type === 'video');
-  const { urls, loading } = useSignedUrls(prompt.media_files);
-  const platformColor = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
-  const imageUrls = images.map((f) => urls[f.id]).filter(Boolean);
+  const { urls, loading: urlsLoading } = useSignedUrls(prompt.media_files);
+
+  const { data: stats, isLoading: statsLoading } = usePromptStats(prompt.id);
+  const { data: comments = [], isLoading: commentsLoading } = usePromptComments(prompt.id);
+  const recordView = useRecordView();
+  const toggleLike = useToggleLike();
+  const addComment = useAddComment();
+  const deleteComment = useDeleteComment();
+
+  const platformMeta = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
+
+  // Record view once on open
+  useEffect(() => {
+    recordView.mutate(prompt.id);
+  }, [prompt.id]);
+
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  // Keyboard close
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -178,264 +359,506 @@ function DetailModal({ prompt, onClose }: { prompt: PublishedPrompt; onClose: ()
     }
   }, [prompt.prompt_text]);
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
+  const handleLike = () => {
+    if (!user) { toast.error('Sign in to like prompts'); return; }
+    toggleLike.mutate({ promptId: prompt.id, liked: stats?.user_has_liked ?? false });
+  };
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
+  const handleComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) { toast.error('Sign in to comment'); return; }
+    const text = commentText.trim();
+    if (!text) return;
+    try {
+      await addComment.mutateAsync({ promptId: prompt.id, content: text });
+      setCommentText('');
+      setActiveTab('comments');
+    } catch {
+      toast.error('Failed to post comment');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteComment.mutateAsync({ id: commentId, promptId: prompt.id });
+    } catch {
+      toast.error('Failed to delete comment');
+    }
+  };
 
   return (
     <AnimatePresence>
       {/* Backdrop */}
       <motion.div
-        key="backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        key="bd"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Sheet — slides up from bottom on mobile, centred modal on desktop */}
+      {/* Modal */}
       <motion.div
-        key="sheet"
-        initial={{ opacity: 0, y: '100%' }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-[60] sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-6 pointer-events-none"
+        key="modal"
+        initial={{ opacity: 0, scale: 0.97, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 20 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 pointer-events-none"
       >
         <div
-          className="pointer-events-auto w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl bg-white/95 backdrop-blur-xl shadow-2xl border border-white/60 flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden"
+          className="pointer-events-auto w-full max-w-5xl max-h-[96vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col lg:flex-row"
           onClick={(e) => e.stopPropagation()}
+          style={{ height: 'min(96vh, 700px)' }}
         >
-          {/* Drag handle (mobile) */}
-          <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
-            <div className="w-10 h-1 rounded-full bg-ink-300" />
-          </div>
+          {/* ── Left panel: images ─────────────────────────────────────── */}
+          <div className="lg:w-[54%] flex-shrink-0 bg-[#f5f5f5] flex flex-col overflow-hidden">
+            {/* Top bar */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-black/8">
+              <span className="text-[12px] font-semibold text-ink-600">
+                {images.length + videos.length} media file{images.length + videos.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-black/8 hover:bg-black/15 flex items-center justify-center transition-colors text-ink-700"
+              >
+                <X size={15} />
+              </button>
+            </div>
 
-          {/* Header */}
-          <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 flex-shrink-0">
-            <div className="flex-1 min-w-0">
-              <h2 className="font-display font-bold text-ink-900 text-[16px] leading-snug line-clamp-2">
-                {prompt.title}
-              </h2>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                <span className={cn('inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border', platformColor)}>
-                  {prompt.platform}
-                </span>
-                {prompt.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-ink-100 text-ink-500 border border-ink-200">
-                    #{tag}
-                  </span>
-                ))}
-                {prompt.tags.length > 3 && (
-                  <span className="text-[10px] text-ink-400">+{prompt.tags.length - 3}</span>
+            {/* Media area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ scrollbarWidth: 'thin' }}>
+              {images.length > 0 ? (
+                <ImageCarousel images={images} urls={urls} loading={urlsLoading} />
+              ) : videos.length > 0 ? (
+                videos.map((vid) => urls[vid.id] && (
+                  <video
+                    key={vid.id}
+                    src={urls[vid.id]}
+                    controls
+                    preload="metadata"
+                    className="w-full rounded-xl bg-black max-h-80"
+                  />
+                ))
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center gap-2 text-ink-300">
+                  <Sparkles size={28} />
+                  <span className="text-sm">No media attached</span>
+                </div>
+              )}
+
+              {/* Prompt text sections — styled like reference image */}
+              <div className="space-y-3 pt-2">
+                {prompt.media_files.length > 0 ? (
+                  images.map((img, i) => (
+                    <div key={img.id} className="bg-white border border-ink-100 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <ImageIcon size={12} className="text-ink-400" />
+                        <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide">Image · {i + 1}</span>
+                      </div>
+                      <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap line-clamp-6">
+                        {prompt.prompt_text}
+                      </p>
+                      <div className="flex items-center gap-3 mt-3 pt-2 border-t border-ink-100">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(prompt.prompt_text); toast.success('Copied!'); }}
+                          className="flex items-center gap-1 text-[11px] text-ink-500 hover:text-ink-800 transition-colors"
+                        >
+                          <Copy size={11} />
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white border border-ink-100 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <Layers size={12} className="text-ink-400" />
+                      <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wide">Prompt</span>
+                    </div>
+                    <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap">
+                      {prompt.prompt_text}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
-            <button onClick={onClose} className="flex-shrink-0 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center transition-colors text-ink-600">
-              <X size={15} />
-            </button>
           </div>
 
-          {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#D1D7DC transparent' }}>
-
-            {/* Media — capped height so prompt text is always visible */}
-            {prompt.media_files.length > 0 && (
-              <div className="space-y-1.5">
-                {loading ? (
-                  <div className="h-44 rounded-xl bg-ink-100 animate-pulse" />
-                ) : (
-                  <>
-                    {images.map((img, i) => urls[img.id] && (
-                      <div
-                        key={img.id}
-                        className="relative rounded-xl overflow-hidden cursor-pointer group"
-                        style={{ maxHeight: '220px' }}
-                        onClick={() => setLightboxIndex(i)}
-                      >
-                        <img
-                          src={urls[img.id]}
-                          alt={img.file_name}
-                          className="w-full h-full object-cover group-hover:opacity-95 transition-opacity"
-                          style={{ maxHeight: '220px' }}
-                        />
-                        {/* Tap to expand hint */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <span className="bg-black/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm">Tap to expand</span>
-                        </div>
-                      </div>
-                    ))}
-                    {videos.map((vid) => urls[vid.id] && (
-                      <video key={vid.id} src={urls[vid.id]} controls preload="metadata" className="w-full rounded-xl bg-black" style={{ maxHeight: '220px' }} />
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Prompt text */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider">Prompt</p>
-                <span className="text-[10px] text-ink-400">{prompt.prompt_text.length} chars</span>
-              </div>
-              <div className="bg-ink-50 border border-ink-200 rounded-xl overflow-hidden">
-                <div
-                  className="overflow-y-auto p-3.5"
-                  style={{
-                    maxHeight: '200px',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#D1D7DC transparent',
-                  }}
-                >
-                  <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words select-all">
-                    {prompt.prompt_text}
-                  </p>
+          {/* ── Right panel: meta + comments ──────────────────────────── */}
+          <div className="flex-1 flex flex-col bg-white border-l border-ink-100 overflow-hidden min-h-0">
+            {/* Author row */}
+            <div className="px-5 pt-4 pb-3 border-b border-ink-100 flex-shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-ink-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <User size={16} className="text-ink-500" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-ink-900 leading-tight">
+                      {prompt.title}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded border', platformMeta.pill)}>
+                        {platformMeta.icon} {prompt.platform}
+                      </span>
+                      <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Notes */}
-            {prompt.notes && (
-              <div className="border-l-2 border-ink-300 pl-3">
-                <p className="text-xs text-ink-500 leading-relaxed italic">{prompt.notes}</p>
+              {/* Stats row */}
+              <div className="flex items-center gap-4 mt-3">
+                {/* Like */}
+                <button
+                  onClick={handleLike}
+                  disabled={toggleLike.isPending}
+                  className={cn(
+                    'flex items-center gap-1.5 text-[13px] font-semibold transition-all',
+                    stats?.user_has_liked
+                      ? 'text-red-500'
+                      : 'text-ink-500 hover:text-red-500',
+                  )}
+                >
+                  <Heart
+                    size={15}
+                    className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')}
+                  />
+                  <span>{statsLoading ? '–' : formatCount(stats?.like_count ?? 0)}</span>
+                </button>
+
+                {/* Views */}
+                <div className="flex items-center gap-1.5 text-[13px] text-ink-500">
+                  <BarChart2 size={14} />
+                  <span>{statsLoading ? '–' : formatCount(stats?.view_count ?? 0)}</span>
+                </div>
+
+                {/* Comments */}
+                <button
+                  onClick={() => { setActiveTab('comments'); commentInputRef.current?.focus(); }}
+                  className="flex items-center gap-1.5 text-[13px] text-ink-500 hover:text-ink-800 transition-colors"
+                >
+                  <MessageCircle size={14} />
+                  <span>{statsLoading ? '–' : formatCount(stats?.comment_count ?? 0)}</span>
+                </button>
               </div>
-            )}
-
-            {/* Meta */}
-            <div className="flex items-center gap-1.5 text-xs text-ink-400">
-              <Globe size={11} className="text-green-500" />
-              <span>Public</span>
-              <span className="text-ink-300">·</span>
-              <span>{new Date(prompt.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
-          </div>
 
-          {/* Sticky copy button */}
-          <div className="flex-shrink-0 px-5 pb-6 pt-3 border-t border-ink-200 bg-white/80 backdrop-blur-sm">
-            <button
-              onClick={handleCopy}
-              className={cn(
-                'w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all duration-200',
-                copied
-                  ? 'bg-green-500 text-white shadow-lg shadow-green-200'
-                  : 'bg-ink-900 text-white hover:bg-ink-700 active:scale-[0.98] shadow-lg shadow-ink-900/20',
+            {/* Tabs */}
+            <div className="flex border-b border-ink-100 flex-shrink-0">
+              {(['prompt', 'comments'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    'flex-1 py-2.5 text-[12px] font-semibold capitalize transition-colors',
+                    activeTab === tab
+                      ? 'text-ink-900 border-b-2 border-ink-900'
+                      : 'text-ink-400 hover:text-ink-700',
+                  )}
+                >
+                  {tab}
+                  {tab === 'comments' && !statsLoading && stats && stats.comment_count > 0 && (
+                    <span className="ml-1 text-[10px] bg-ink-100 text-ink-600 px-1.5 py-0.5 rounded-full">
+                      {stats.comment_count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab body */}
+            <div className="flex-1 overflow-y-auto min-h-0" style={{ scrollbarWidth: 'thin' }}>
+              {activeTab === 'prompt' ? (
+                <div className="p-5 space-y-4">
+                  {/* Prompt text */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider">Full Prompt</span>
+                      <span className="text-[10px] text-ink-400">{prompt.prompt_text.length} chars</span>
+                    </div>
+                    <div className="bg-ink-50 border border-ink-200 rounded-xl p-3.5 max-h-48 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                      <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words select-all">
+                        {prompt.prompt_text}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  {prompt.tags.length > 0 && (
+                    <div>
+                      <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider block mb-2">Tags</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {prompt.tags.map((tag) => (
+                          <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-600 border border-ink-200">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {prompt.notes && (
+                    <div className="border-l-2 border-ink-200 pl-3">
+                      <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider block mb-1">Notes</span>
+                      <p className="text-[12px] text-ink-600 leading-relaxed italic">{prompt.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Meta info */}
+                  <div className="flex items-center gap-2 text-[11px] text-ink-400 pt-2 border-t border-ink-100">
+                    <Globe size={11} className="text-green-500" />
+                    <span>Public</span>
+                    <span className="text-ink-300">·</span>
+                    <span>{new Date(prompt.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 space-y-3">
+                  {commentsLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex gap-2.5 animate-pulse">
+                        <div className="w-7 h-7 rounded-full bg-ink-100 flex-shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 bg-ink-100 rounded w-24" />
+                          <div className="h-3 bg-ink-100 rounded w-full" />
+                          <div className="h-3 bg-ink-100 rounded w-3/4" />
+                        </div>
+                      </div>
+                    ))
+                  ) : comments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <MessageCircle size={24} className="text-ink-300 mb-2" />
+                      <p className="text-[13px] font-semibold text-ink-600">No comments yet</p>
+                      <p className="text-[11px] text-ink-400 mt-0.5">Be the first to share your thoughts!</p>
+                    </div>
+                  ) : (
+                    comments.map((c) => (
+                      <CommentBubble
+                        key={c.id}
+                        comment={c}
+                        currentUserId={user?.id}
+                        onDelete={handleDeleteComment}
+                      />
+                    ))
+                  )}
+                </div>
               )}
-            >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? 'Copied!' : 'Copy Prompt'}
-            </button>
+            </div>
+
+            {/* Comment input + Copy button */}
+            <div className="flex-shrink-0 border-t border-ink-100 bg-white">
+              {/* Comment input */}
+              <form onSubmit={handleComment} className="flex items-end gap-2 px-4 py-3 border-b border-ink-100">
+                <textarea
+                  ref={commentInputRef}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(e); } }}
+                  placeholder={user ? 'Add a comment…' : 'Sign in to comment'}
+                  disabled={!user || addComment.isPending}
+                  rows={1}
+                  className="flex-1 resize-none text-[13px] border border-ink-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ink-900/20 focus:border-ink-400 placeholder:text-ink-400 text-ink-900 bg-ink-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ maxHeight: 80, overflowY: 'auto' }}
+                />
+                <button
+                  type="submit"
+                  disabled={!user || !commentText.trim() || addComment.isPending}
+                  className="flex-shrink-0 w-8 h-8 rounded-full bg-ink-900 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:bg-ink-700 transition-colors"
+                >
+                  <Send size={13} />
+                </button>
+              </form>
+
+              {/* Copy button */}
+              <div className="px-4 py-3">
+                <button
+                  onClick={handleCopy}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200',
+                    copied
+                      ? 'bg-green-500 text-white shadow-lg shadow-green-200'
+                      : 'bg-ink-900 text-white hover:bg-ink-700 active:scale-[0.98]',
+                  )}
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? 'Copied!' : 'Copy Prompt'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
-
-      {/* Lightbox over the modal */}
-      {lightboxIndex !== null && imageUrls.length > 0 && (
-        <Lightbox
-          urls={imageUrls}
-          index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onPrev={() => setLightboxIndex((i) => (i! - 1 + imageUrls.length) % imageUrls.length)}
-          onNext={() => setLightboxIndex((i) => (i! + 1) % imageUrls.length)}
-        />
-      )}
     </AnimatePresence>
   );
 }
 
-// ── Compact glass card (grid item) ────────────────────────────────────────────
+// ── MasonryGrid ───────────────────────────────────────────────────────────────
 
-function PromptCard({ prompt, onClick }: { prompt: PublishedPrompt; onClick: () => void }) {
-  const platformColor = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
-  const hasMedia = prompt.media_files.length > 0;
-
+function MasonryGrid({ prompts, onSelect }: { prompts: PublishedPrompt[]; onSelect: (p: PublishedPrompt) => void }) {
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 16, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-      onClick={onClick}
-      className={cn(
-        'group relative cursor-pointer rounded-2xl overflow-hidden flex flex-col',
-        'bg-white/70 backdrop-blur-md',
-        'border border-white/80 shadow-sm',
-        'hover:shadow-lg hover:shadow-black/8 hover:border-white',
-        'hover:-translate-y-0.5 active:scale-[0.98]',
-        'transition-all duration-200',
-        // Glass shimmer on hover
-        'before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/40 before:to-transparent before:opacity-0 before:transition-opacity before:duration-300',
-        'hover:before:opacity-100',
-      )}
+    <div
+      className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3"
+      style={{ columnFill: 'balance' }}
     >
-      {/* Thumbnail */}
-      {hasMedia ? (
-        <CardThumbnail mediaFiles={prompt.media_files} />
-      ) : (
-        /* No-media placeholder — compact gradient */
-        <div className="w-full aspect-[4/3] rounded-t-2xl bg-gradient-to-br from-ink-100 via-ink-50 to-white flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-ink-100/30 to-ink-200/20" />
-          <Sparkles size={22} className="text-ink-300 relative z-10" />
-        </div>
-      )}
-
-      {/* Card body */}
-      <div className="flex flex-col gap-2 p-3 flex-1">
-        {/* Platform badge */}
-        <span className={cn('self-start inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md border', platformColor)}>
-          {prompt.platform}
-        </span>
-
-        {/* Title */}
-        <h3 className="font-display font-bold text-ink-900 text-[12px] sm:text-[13px] leading-snug line-clamp-2">
-          {prompt.title}
-        </h3>
-
-        {/* Prompt preview — 2 lines max */}
-        <p className="text-[11px] text-ink-500 leading-relaxed line-clamp-2 font-mono">
-          {prompt.prompt_text}
-        </p>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-ink-100">
-          <span className="text-[10px] text-ink-400">
-            {new Date(prompt.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
-          <span className="flex items-center gap-1 text-[10px] text-green-600 font-semibold">
-            <Globe size={9} />
-            Public
-          </span>
-        </div>
-      </div>
-
-      {/* Tap hint overlay — subtle */}
-      <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/60 pointer-events-none group-hover:ring-white/90 transition-all" />
-    </motion.article>
+      {prompts.map((prompt, idx) => (
+        <MasonryCard
+          key={prompt.id}
+          prompt={prompt}
+          onClick={() => onSelect(prompt)}
+          delay={idx * 0.03}
+        />
+      ))}
+    </div>
   );
 }
 
-// ── Skeleton card ─────────────────────────────────────────────────────────────
+// ── MasonryCard ───────────────────────────────────────────────────────────────
 
-function SkeletonCard() {
+function MasonryCard({
+  prompt,
+  onClick,
+  delay,
+}: {
+  prompt: PublishedPrompt;
+  onClick: () => void;
+  delay: number;
+}) {
+  const images = prompt.media_files.filter((f) => f.file_type === 'image');
+  const { urls, loading } = useSignedUrls(images.slice(0, 1));
+  const firstImage = images[0];
+  const platformMeta = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
+  const { data: stats } = usePromptStats(prompt.id);
+
   return (
-    <div className="rounded-2xl overflow-hidden bg-white/70 border border-white/80 shadow-sm">
-      <div className="aspect-[4/3] bg-ink-100 animate-pulse" />
-      <div className="p-3 space-y-2">
-        <Skeleton className="h-3.5 w-16 rounded-md" />
-        <Skeleton className="h-3.5 w-5/6" />
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay, ease: [0.22, 1, 0.36, 1] }}
+      className="break-inside-avoid mb-3"
+    >
+      <div
+        onClick={onClick}
+        className={cn(
+          'group relative cursor-pointer rounded-2xl overflow-hidden bg-white',
+          'shadow-[0_1px_4px_rgba(0,0,0,0.08)]',
+          'hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)]',
+          'hover:-translate-y-0.5 active:scale-[0.99]',
+          'transition-all duration-200',
+        )}
+      >
+        {/* Image */}
+        {firstImage ? (
+          <div className="relative overflow-hidden">
+            {loading ? (
+              <div className="w-full bg-ink-100 animate-pulse" style={{ paddingBottom: '100%' }} />
+            ) : urls[firstImage.id] ? (
+              <img
+                src={urls[firstImage.id]}
+                alt={prompt.title}
+                className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full aspect-square bg-gradient-to-br from-ink-100 to-ink-200 flex items-center justify-center">
+                <Sparkles size={20} className="text-ink-300" />
+              </div>
+            )}
+
+            {/* Overlay on hover */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
+
+            {/* Multi-image badge */}
+            {images.length > 1 && (
+              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">
+                <ImageIcon size={9} />
+                {images.length}
+              </div>
+            )}
+
+            {/* Bottom overlay on hover */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="flex items-center gap-3 text-white">
+                <span className="flex items-center gap-1 text-[11px]">
+                  <Heart size={11} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
+                  {formatCount(stats?.like_count ?? 0)}
+                </span>
+                <span className="flex items-center gap-1 text-[11px]">
+                  <Eye size={11} />
+                  {formatCount(stats?.view_count ?? 0)}
+                </span>
+                <span className="flex items-center gap-1 text-[11px]">
+                  <MessageCircle size={11} />
+                  {formatCount(stats?.comment_count ?? 0)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Text-only card */
+          <div className="p-4 bg-gradient-to-br from-ink-50 to-white min-h-[100px] flex flex-col justify-between">
+            <p className="text-[12px] text-ink-700 leading-relaxed font-mono line-clamp-5">
+              {prompt.prompt_text}
+            </p>
+            <div className="flex items-center gap-2 mt-3 text-[10px] text-ink-400">
+              <span className="flex items-center gap-0.5">
+                <Heart size={9} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
+                {formatCount(stats?.like_count ?? 0)}
+              </span>
+              <span className="flex items-center gap-0.5">
+                <Eye size={9} />
+                {formatCount(stats?.view_count ?? 0)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Card footer */}
+        <div className="p-3">
+          <div className="flex items-start justify-between gap-1.5 mb-1">
+            <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0', platformMeta.pill)}>
+              {platformMeta.icon} {prompt.platform}
+            </span>
+            <span className="text-[10px] text-ink-400 flex-shrink-0 mt-0.5">{timeAgo(prompt.created_at)}</span>
+          </div>
+          <h3 className="font-semibold text-ink-900 text-[12px] leading-snug line-clamp-2 mt-1">
+            {prompt.title}
+          </h3>
+
+          {/* Stats strip */}
+          <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-ink-100 text-[11px] text-ink-400">
+            <span className="flex items-center gap-1">
+              <Heart size={10} className={cn('transition-colors', stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
+              {formatCount(stats?.like_count ?? 0)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Eye size={10} />
+              {formatCount(stats?.view_count ?? 0)}
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle size={10} />
+              {formatCount(stats?.comment_count ?? 0)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Skeleton masonry card ─────────────────────────────────────────────────────
+
+function SkeletonCard({ h }: { h: number }) {
+  return (
+    <div className="break-inside-avoid mb-3 rounded-2xl overflow-hidden bg-white shadow-sm">
+      <div className="bg-ink-100 animate-pulse" style={{ height: h }} />
+      <div className="p-3 space-y-1.5">
+        <Skeleton className="h-3 w-14 rounded" />
         <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-3/4" />
-        <div className="flex justify-between pt-1 border-t border-ink-100">
-          <Skeleton className="h-3 w-12" />
-          <Skeleton className="h-3 w-10" />
-        </div>
       </div>
     </div>
   );
@@ -447,6 +870,7 @@ export function ExplorePromptsPage() {
   const { data: prompts = [], isLoading } = usePublishedPrompts();
   const [search, setSearch] = useState('');
   const [activePlatform, setActivePlatform] = useState<string>('All');
+  const [sort, setSort] = useState<SortOption>('Newest');
   const [selected, setSelected] = useState<PublishedPrompt | null>(null);
 
   const filtered = useMemo(() => {
@@ -465,90 +889,89 @@ export function ExplorePromptsPage() {
     return list;
   }, [prompts, search, activePlatform]);
 
+  // Dummy heights for skeleton placeholders
+  const skeletonHeights = [160, 220, 130, 280, 170, 200, 150, 240, 190, 160, 210, 180];
+
   return (
     <>
-      {/* Page */}
-      <div className="min-h-full" style={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 50%, #eceef1 100%)' }}>
-
-        {/* Sticky header */}
+      <div
+        className="min-h-full"
+        style={{ background: 'linear-gradient(160deg, #fafafa 0%, #f2f3f5 100%)' }}
+      >
+        {/* ── Sticky header ──────────────────────────────────────────── */}
         <div
-          className="sticky top-0 z-20 border-b border-white/60"
-          style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+          className="sticky top-0 z-20 border-b border-black/8"
+          style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}
         >
-          <div className="px-3 sm:px-6 lg:px-8 pt-4 pb-3">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="flex items-center gap-3"
-            >
-              <div className="w-8 h-8 rounded-xl bg-ink-900 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Sparkles size={14} className="text-white" />
+          <div className="px-4 sm:px-6 lg:px-8 pt-3.5 pb-2">
+            <div className="flex items-center gap-3">
+              {/* Platform filter pills */}
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                {PLATFORMS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setActivePlatform(p)}
+                    className={cn(
+                      'whitespace-nowrap text-[12px] font-semibold px-3 py-1.5 rounded-full border transition-all duration-150 flex-shrink-0',
+                      activePlatform === p
+                        ? 'bg-ink-900 text-white border-ink-900 shadow-sm'
+                        : 'bg-white text-ink-600 border-ink-200 hover:border-ink-400 hover:text-ink-900',
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="font-display font-black text-[17px] text-ink-900 tracking-tight leading-none">
-                  Explore Prompts
-                </h1>
-                <p className="text-[11px] text-ink-500 mt-0.5">
-                  {isLoading ? 'Loading…' : `${prompts.length} prompts · tap to view & copy`}
-                </p>
+
+              {/* Sort options (right side) */}
+              <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+                {SORT_OPTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSort(s)}
+                    className={cn(
+                      'text-[12px] font-semibold px-3 py-1.5 rounded-full transition-colors',
+                      sort === s
+                        ? 'text-ink-900 font-bold'
+                        : 'text-ink-400 hover:text-ink-700',
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
-              {/* Desktop search */}
-              <div className="hidden sm:flex relative">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
+
+              {/* Search */}
+              <div className="relative flex-shrink-0">
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
                 <input
-                  type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search…"
-                  className="w-48 pl-7 pr-3 py-1.5 text-[13px] border border-ink-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-ink-900/20 focus:border-ink-400 placeholder:text-ink-400 text-ink-900 transition-all"
+                  className="w-36 sm:w-48 pl-7 pr-3 py-1.5 text-[12px] border border-ink-200 rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-ink-900/15 focus:border-ink-400 placeholder:text-ink-400 text-ink-900 transition-all"
                 />
               </div>
-            </motion.div>
-
-            {/* Mobile search */}
-            <div className="sm:hidden mt-2.5 relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
-              <input
-                type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search prompts…"
-                className="w-full pl-7 pr-3 py-2 text-[13px] border border-ink-200 rounded-xl bg-white/80 focus:outline-none focus:ring-2 focus:ring-ink-900/20 focus:border-ink-400 placeholder:text-ink-400 text-ink-900"
-              />
             </div>
-          </div>
-
-          {/* Platform pills */}
-          <div className="flex items-center gap-1.5 px-3 sm:px-6 lg:px-8 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            {PLATFORMS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setActivePlatform(p)}
-                className={cn(
-                  'whitespace-nowrap text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all duration-150 flex-shrink-0',
-                  activePlatform === p
-                    ? 'bg-ink-900 text-white border-ink-900 shadow-sm'
-                    : 'bg-white/80 text-ink-600 border-ink-200 hover:border-ink-500 hover:text-ink-900',
-                )}
-              >
-                {p}
-              </button>
-            ))}
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="px-3 sm:px-6 lg:px-8 py-4">
+        {/* ── Grid content ───────────────────────────────────────────── */}
+        <div className="px-4 sm:px-6 lg:px-8 py-5">
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
+              {skeletonHeights.map((h, i) => <SkeletonCard key={i} h={h} />)}
             </div>
           ) : filtered.length === 0 ? (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-20 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-24 text-center"
             >
-              <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm border border-white/60 flex items-center justify-center mb-3 shadow-sm">
-                <Globe size={24} className="text-ink-400" />
+              <div className="w-14 h-14 rounded-2xl bg-white border border-ink-100 flex items-center justify-center mb-3 shadow-sm">
+                <Globe size={22} className="text-ink-400" />
               </div>
-              <p className="text-base font-display font-bold text-ink-900 mb-1.5">
+              <p className="text-[15px] font-bold text-ink-900 mb-1.5">
                 {search || activePlatform !== 'All' ? 'No matching prompts' : 'No published prompts yet'}
               </p>
               <p className="text-xs text-ink-500 max-w-[220px] leading-relaxed">
@@ -557,30 +980,23 @@ export function ExplorePromptsPage() {
                   : 'Be the first! Publish a prompt from your dashboard.'}
               </p>
               {!(search || activePlatform !== 'All') && (
-                <Link to="/dashboard" className="mt-5 bg-ink-900 text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-ink-700 transition-colors">
+                <Link
+                  to="/dashboard"
+                  className="mt-5 bg-ink-900 text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-ink-700 transition-colors"
+                >
                   Go to my prompts
                 </Link>
               )}
             </motion.div>
           ) : (
-            <>
-              <p className="text-[11px] text-ink-400 mb-3">
-                {filtered.length} prompt{filtered.length !== 1 ? 's' : ''}
-                {(search || activePlatform !== 'All') && ' found'}
-              </p>
-              <AnimatePresence mode="popLayout">
-                <motion.div layout className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {filtered.map((prompt) => (
-                    <PromptCard key={prompt.id} prompt={prompt} onClick={() => setSelected(prompt)} />
-                  ))}
-                </motion.div>
-              </AnimatePresence>
-            </>
+            <AnimatePresence mode="wait">
+              <MasonryGrid key={activePlatform + search + sort} prompts={filtered} onSelect={setSelected} />
+            </AnimatePresence>
           )}
         </div>
       </div>
 
-      {/* Detail modal / bottom sheet */}
+      {/* Detail modal */}
       <AnimatePresence>
         {selected && (
           <DetailModal key={selected.id} prompt={selected} onClose={() => setSelected(null)} />
