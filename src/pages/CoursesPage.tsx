@@ -198,6 +198,13 @@ function CourseCard({
               {course.language}
             </span>
           )}
+          {(course.reviews_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1 font-semibold text-ink-700">
+              <Icon name="star" size={11} fill className="text-amber-400" />
+              {(course.avg_rating ?? 0).toFixed(1)}
+              <span className="text-ink-400 font-normal">({course.reviews_count})</span>
+            </span>
+          )}
         </div>
 
         {!isOwner && (

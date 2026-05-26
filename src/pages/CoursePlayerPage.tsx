@@ -15,6 +15,8 @@ import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
 import { VideoPlayer } from '../components/courses/VideoPlayer';
 import { LessonComments } from '../components/courses/LessonComments';
+import { CourseQnA } from '../components/courses/CourseQnA';
+import { CourseReviews } from '../components/courses/CourseReviews';
 import { cn } from '../lib/utils';
 import type { CourseLesson } from '../hooks/useCourses';
 
@@ -424,7 +426,7 @@ export function CoursePlayerPage() {
 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'discussion' | 'notes' | 'resources'>('discussion');
+  const [activeTab, setActiveTab] = useState<'discussion' | 'qna' | 'notes' | 'resources'>('discussion');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
@@ -1043,8 +1045,9 @@ export function CoursePlayerPage() {
               <div className="flex items-center max-w-4xl">
                 {([
                   ['discussion', 'chat_bubble_outline', 'Discussion'] as const,
-                  ['notes', 'edit_note', 'My Notes'] as const,
-                  ['resources', 'attach_file', 'Resources'] as const,
+                  ['qna',        'help_outline',         'Q&A']        as const,
+                  ['notes',      'edit_note',            'My Notes']   as const,
+                  ['resources',  'attach_file',          'Resources']  as const,
                 ]).map(([key, icon, label]) => (
                   <button key={key}
                     onClick={() => setActiveTab(key)}
@@ -1063,9 +1066,17 @@ export function CoursePlayerPage() {
             </div>
 
             {/* Tab content */}
-            <div className="max-w-4xl px-4 sm:px-6 py-6 pb-20">
+            <div className="max-w-4xl px-4 sm:px-6 py-6">
               {activeTab === 'discussion' && (
                 <LessonComments lessonId={activeLesson.id} courseId={courseId!} courseOwnerId={course.user_id} />
+              )}
+              {activeTab === 'qna' && (
+                <CourseQnA
+                  courseId={courseId!}
+                  courseOwnerId={course.user_id}
+                  isEnrolled={!!enrollment}
+                  activeLessonId={activeLesson.id}
+                />
               )}
               {activeTab === 'notes' && (
                 <div className="bg-white rounded-2xl border border-ink-200 p-5">
@@ -1079,6 +1090,17 @@ export function CoursePlayerPage() {
                   <ResourceList lesson={activeLesson} />
                 </div>
               )}
+            </div>
+
+            {/* Course-level reviews — below the lesson tabs */}
+            <div className="max-w-4xl px-4 sm:px-6 pb-20">
+              <CourseReviews
+                courseId={courseId!}
+                courseOwnerId={course.user_id}
+                isEnrolled={!!enrollment}
+                avgRating={course.avg_rating ?? 0}
+                reviewsCount={course.reviews_count ?? 0}
+              />
             </div>
           </>
         ) : (

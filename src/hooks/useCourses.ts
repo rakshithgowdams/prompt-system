@@ -21,6 +21,8 @@ export interface Course {
   total_duration_minutes: number;
   requirements: string[];
   what_you_learn: string[];
+  avg_rating: number;
+  reviews_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -933,5 +935,340 @@ export function useDeleteLessonComment() {
       return lessonId;
     },
     onSuccess: (lessonId) => qc.invalidateQueries({ queryKey: ['lesson-comments', lessonId] }),
+  });
+}
+
+// ─── Course Q&A ──────────────────────────────────────────────────────────────
+
+export interface CourseQuestion {
+  id: string;
+  course_id: string;
+  user_id: string;
+  lesson_id: string | null;
+  title: string;
+  body: string;
+  is_resolved: boolean;
+  upvote_count: number;
+  answer_count: number;
+  created_at: string;
+  updated_at: string;
+  author_name?: string;
+  author_avatar?: string | null;
+  user_has_voted?: boolean;
+}
+
+export interface CourseAnswer {
+  id: string;
+  question_id: string;
+  course_id: string;
+  user_id: string;
+  body: string;
+  is_instructor: boolean;
+  upvote_count: number;
+  created_at: string;
+  updated_at: string;
+  author_name?: string;
+  author_avatar?: string | null;
+  user_has_voted?: boolean;
+}
+
+export function useCourseQuestions(
+  courseId: string,
+  opts: { sort?: 'recent' | 'unanswered' | 'top'; search?: string } = {},
+) {
+  const { user } = useAuth();
+  const { sort = 'recent', search = '' } = opts;
+  return useQuery({
+    queryKey: ['course-questions', courseId, sort, search],
+    queryFn: async () => {
+      let q = supabase
+        .from('course_questions')
+        .select('*, user_profiles!course_questions_user_id_fkey(display_name, avatar_path)')
+        .eq('course_id', courseId);
+
+      if (sort === 'unanswered') q = q.eq('answer_count', 0);
+      if (sort === 'top')        q = q.order('upvote_count', { ascending: false });
+      else                       q = q.order('created_at',   { ascending: false });
+
+      if (search.trim()) {
+        const term = `%${search.trim()}%`;
+        q = (q as any).or(`title.ilike.${term},body.ilike.${term}`);
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      const ids = (data ?? []).map((row: any) => row.id);
+      let voteSet = new Set<string>();
+      if (user && ids.length) {
+        const { data: votes } = await supabase
+          .from('course_votes')
+          .select('target_id')
+          .eq('user_id', user.id)
+          .eq('target_type', 'question')
+          .in('target_id', ids);
+        voteSet = new Set((votes ?? []).map((v: any) => v.target_id));
+      }
+
+      return (data ?? []).map((row: any) => ({
+        ...row,
+        author_name: row.user_profiles?.display_name ?? 'Student',
+        author_avatar: row.user_profiles?.avatar_path ?? null,
+        user_has_voted: voteSet.has(row.id),
+      })) as CourseQuestion[];
+    },
+    enabled: !!courseId,
+    staleTime: 30_000,
+  });
+}
+
+export function useCourseAnswers(questionId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['course-answers', questionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_answers')
+        .select('*, user_profiles!course_answers_user_id_fkey(display_name, avatar_path)')
+        .eq('question_id', questionId)
+        .order('is_instructor', { ascending: false })
+        .order('upvote_count',  { ascending: false })
+        .order('created_at',    { ascending: true });
+      if (error) throw error;
+
+      const ids = (data ?? []).map((row: any) => row.id);
+      let voteSet = new Set<string>();
+      if (user && ids.length) {
+        const { data: votes } = await supabase
+          .from('course_votes')
+          .select('target_id')
+          .eq('user_id', user.id)
+          .eq('target_type', 'answer')
+          .in('target_id', ids);
+        voteSet = new Set((votes ?? []).map((v: any) => v.target_id));
+      }
+
+      return (data ?? []).map((row: any) => ({
+        ...row,
+        author_name: row.user_profiles?.display_name ?? 'Student',
+        author_avatar: row.user_profiles?.avatar_path ?? null,
+        user_has_voted: voteSet.has(row.id),
+      })) as CourseAnswer[];
+    },
+    enabled: !!questionId,
+    staleTime: 30_000,
+  });
+}
+
+export function useAskQuestion() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { course_id: string; lesson_id?: string | null; title: string; body: string }) => {
+      const { data, error } = await supabase
+        .from('course_questions')
+        .insert({ course_id: p.course_id, user_id: user!.id, lesson_id: p.lesson_id ?? null, title: p.title.trim(), body: p.body.trim() })
+        .select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-questions', vars.course_id] }),
+  });
+}
+
+export function usePostAnswer() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { question_id: string; course_id: string; body: string }) => {
+      const { data, error } = await supabase
+        .from('course_answers')
+        .insert({ question_id: p.question_id, course_id: p.course_id, user_id: user!.id, body: p.body.trim() })
+        .select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['course-answers', vars.question_id] });
+      qc.invalidateQueries({ queryKey: ['course-questions', vars.course_id] });
+    },
+  });
+}
+
+export function useToggleVote() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { target_type: 'question' | 'answer'; target_id: string; voted: boolean }) => {
+      if (p.voted) {
+        const { error } = await supabase.from('course_votes').delete()
+          .eq('user_id', user!.id).eq('target_type', p.target_type).eq('target_id', p.target_id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('course_votes')
+          .insert({ user_id: user!.id, target_type: p.target_type, target_id: p.target_id });
+        if (error && error.code !== '23505') throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['course-questions'] });
+      qc.invalidateQueries({ queryKey: ['course-answers'] });
+    },
+  });
+}
+
+export function useDeleteQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { id: string; course_id: string }) => {
+      const { error } = await supabase.from('course_questions').delete().eq('id', p.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-questions', vars.course_id] }),
+  });
+}
+
+export function useDeleteAnswer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { id: string; question_id: string; course_id: string }) => {
+      const { error } = await supabase.from('course_answers').delete().eq('id', p.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['course-answers', vars.question_id] });
+      qc.invalidateQueries({ queryKey: ['course-questions', vars.course_id] });
+    },
+  });
+}
+
+export function useToggleResolved() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { id: string; course_id: string; is_resolved: boolean }) => {
+      const { error } = await supabase.from('course_questions').update({ is_resolved: p.is_resolved }).eq('id', p.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-questions', vars.course_id] }),
+  });
+}
+
+// ─── Course Reviews ──────────────────────────────────────────────────────────
+
+export interface CourseReview {
+  id: string;
+  course_id: string;
+  user_id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  instructor_response: string | null;
+  instructor_responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  author_name?: string;
+  author_avatar?: string | null;
+}
+
+export function useCourseReviews(courseId: string) {
+  return useQuery({
+    queryKey: ['course-reviews', courseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_reviews')
+        .select('*, user_profiles!course_reviews_user_id_fkey(display_name, avatar_path)')
+        .eq('course_id', courseId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((row: any) => ({
+        ...row,
+        author_name: row.user_profiles?.display_name ?? 'Student',
+        author_avatar: row.user_profiles?.avatar_path ?? null,
+      })) as CourseReview[];
+    },
+    enabled: !!courseId,
+  });
+}
+
+export function useMyReview(courseId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['my-review', courseId, user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('course_reviews')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return (data as CourseReview) ?? null;
+    },
+    enabled: !!user && !!courseId,
+  });
+}
+
+export function useSubmitReview() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { course_id: string; rating: number; title?: string; body?: string }) => {
+      const { data, error } = await supabase
+        .from('course_reviews')
+        .insert({ course_id: p.course_id, user_id: user!.id, rating: p.rating, title: p.title?.trim() || null, body: p.body?.trim() || null })
+        .select().single();
+
+      if (error) {
+        if (error.code === '23505') {
+          const { data: updated, error: updErr } = await supabase
+            .from('course_reviews')
+            .update({ rating: p.rating, title: p.title?.trim() || null, body: p.body?.trim() || null })
+            .eq('course_id', p.course_id).eq('user_id', user!.id)
+            .select().single();
+          if (updErr) throw updErr;
+          return updated;
+        }
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['course-reviews', vars.course_id] });
+      qc.invalidateQueries({ queryKey: ['my-review', vars.course_id] });
+      qc.invalidateQueries({ queryKey: ['course', vars.course_id] });
+      qc.invalidateQueries({ queryKey: ['courses'] });
+      qc.invalidateQueries({ queryKey: ['explore-courses'] });
+    },
+  });
+}
+
+export function useDeleteMyReview() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      const { error } = await supabase.from('course_reviews').delete()
+        .eq('course_id', courseId).eq('user_id', user!.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, courseId) => {
+      qc.invalidateQueries({ queryKey: ['course-reviews', courseId] });
+      qc.invalidateQueries({ queryKey: ['my-review', courseId] });
+      qc.invalidateQueries({ queryKey: ['course', courseId] });
+      qc.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+}
+
+export function useInstructorRespond() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { review_id: string; course_id: string; response: string }) => {
+      const { error } = await supabase.from('course_reviews')
+        .update({ instructor_response: p.response.trim(), instructor_responded_at: new Date().toISOString() })
+        .eq('id', p.review_id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-reviews', vars.course_id] }),
   });
 }
