@@ -64,7 +64,7 @@ function Nav() {
             whileHover={{ scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             className="hidden sm:block font-display font-black text-ink-900 tracking-tight leading-none"
-            style={{ fontSize: '15px', letterSpacing: '-0.02em' }}
+            style={{ fontSize: '15px', letterSpacing: '-0.02em', marginLeft: '10px', marginRight: '10px' }}
           >
             aiwithrakshith
           </motion.span>
