@@ -21,27 +21,26 @@ const COURSES = [
 
 function CourseCard({ course, index }: { course: typeof COURSES[0]; index: number }) {
   return (
-    <TiltCard className="flex-shrink-0 w-56 sm:w-64 snap-start">
+    <TiltCard className="flex-shrink-0 w-[200px] sm:w-[220px] snap-start">
       <motion.div
-        className="bg-white border border-ink-300 rounded-2xl overflow-hidden h-full"
+        className="bg-white border border-ink-200 rounded-2xl overflow-hidden h-full shadow-sm"
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ delay: index * 0.06, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        whileHover={{ y: -6, boxShadow: '0 20px 60px -10px rgba(0,0,0,0.15)' }}
+        whileHover={{ y: -5, boxShadow: '0 16px 40px -8px rgba(0,0,0,0.14)' }}
       >
-        <div className={`h-36 bg-gradient-to-br ${course.color} flex items-center justify-center relative overflow-hidden`}>
-          <div className="absolute inset-0 bg-black/10" />
+        {/* Gradient thumbnail */}
+        <div className={`h-[140px] sm:h-[150px] bg-gradient-to-br ${course.color} flex items-center justify-center relative overflow-hidden`}>
           <motion.span
             initial={{ scale: 0 }}
             whileInView={{ scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 + index * 0.06, type: 'spring', stiffness: 400 }}
-            className="relative z-10 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full"
+            className="relative z-10 bg-white/25 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full tracking-wide"
           >
             FREE
           </motion.span>
-          {/* Shimmer overlay */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
             initial={{ x: '-100%' }}
@@ -49,26 +48,27 @@ function CourseCard({ course, index }: { course: typeof COURSES[0]; index: numbe
             transition={{ duration: 0.6 }}
           />
         </div>
-        <div className="p-4">
+        {/* Card body */}
+        <div className="p-3.5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-ink-500 bg-ink-100 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-medium text-ink-500 bg-ink-100 px-2 py-0.5 rounded-md">
               {course.level}
             </span>
             <motion.div
-              className="flex items-center gap-1 text-xs font-semibold text-rating"
+              className="flex items-center gap-1 text-[11px] font-semibold text-rating"
               whileHover={{ scale: 1.1 }}
             >
               <Star className="w-3 h-3 fill-current" />
               {course.rating}
             </motion.div>
           </div>
-          <h3 className="font-display font-bold text-sm text-ink-900 leading-snug mb-1 line-clamp-2 group-hover:text-brand-500 transition-colors">
+          <h3 className="font-display font-bold text-[13px] text-ink-900 leading-snug mb-1 line-clamp-2">
             {course.title}
           </h3>
-          <p className="text-xs text-ink-500 mb-3">{course.instructor}</p>
-          <div className="flex items-center justify-between text-xs text-ink-500">
+          <p className="text-[11px] text-ink-500 mb-3 leading-none">{course.instructor}</p>
+          <div className="flex items-center justify-between text-[11px] text-ink-500 border-t border-ink-100 pt-2.5">
             <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+              <Clock className="w-3 h-3 flex-shrink-0" />
               {course.hours}h
             </div>
             <span>{course.students.toLocaleString('en-IN')} students</span>
@@ -96,9 +96,9 @@ export function CoursesPreview() {
   }, []);
 
   return (
-    <section id="courses" className="py-16 sm:py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+    <section id="courses" className="py-16 sm:py-24 bg-white">
+      <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">
               Learn with the community
@@ -125,36 +125,34 @@ export function CoursesPreview() {
         </div>
       </div>
 
-      {/* Outer wrapper constrains left edge to match the header, overflow visible right */}
-      <div className="max-w-7xl mx-auto">
-        <div
-          ref={stripRef}
-          className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 snap-x snap-mandatory"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      {/* Strip: left edge aligns with header content, cards overflow right */}
+      <div
+        ref={stripRef}
+        className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 snap-x snap-mandatory pl-4 sm:pl-6 lg:pl-8"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {COURSES.map((course, i) => (
+          <CourseCard key={course.title} course={course} index={i} />
+        ))}
+        {/* CTA card */}
+        <motion.div
+          className="flex-shrink-0 w-48 sm:w-56 bg-ink-900 rounded-2xl overflow-hidden flex items-center justify-center snap-start mr-4 sm:mr-6 lg:mr-8"
+          whileHover={{ scale: 1.03, backgroundColor: '#A435F0' }}
+          transition={{ duration: 0.3 }}
         >
-          {COURSES.map((course, i) => (
-            <CourseCard key={course.title} course={course} index={i} />
-          ))}
-          {/* CTA card */}
-          <motion.div
-            className="flex-shrink-0 w-56 sm:w-64 bg-ink-900 rounded-2xl overflow-hidden flex items-center justify-center snap-start"
-            whileHover={{ scale: 1.03, backgroundColor: '#A435F0' }}
-            transition={{ duration: 0.3 }}
+          <Link
+            to="/signup"
+            className="flex flex-col items-center gap-3 p-8 text-center text-white"
           >
-            <Link
-              to="/signup"
-              className="flex flex-col items-center gap-3 p-8 text-center text-white"
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <ArrowRight className="w-8 h-8" />
-              </motion.div>
-              <span className="font-display font-bold text-sm">Build your own course</span>
-            </Link>
-          </motion.div>
-        </div>
+              <ArrowRight className="w-8 h-8" />
+            </motion.div>
+            <span className="font-display font-bold text-sm">Build your own course</span>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
