@@ -12,6 +12,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { FolderOpen, Folder, Eye, CreditCard as Edit2, Lock, Download } from 'lucide-react';
 
 type ShareStatus = 'loading' | 'password' | 'expired' | 'notfound' | 'ready' | 'error';
 type AccessType = 'anyone' | 'can_edit' | 'password';
@@ -818,7 +819,9 @@ export function SharePage() {
           {/* Right: access badge + auth button */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className={cn('hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium', currentAccess.cls)}>
-              <Icon name={currentAccess.icon} size={12} />
+              {currentAccess.icon === 'visibility' && <Eye size={12} className="flex-shrink-0" />}
+              {currentAccess.icon === 'edit' && <Edit2 size={12} className="flex-shrink-0" />}
+              {currentAccess.icon === 'lock' && <Lock size={12} className="flex-shrink-0" />}
               {currentAccess.label}
             </span>
             {isGuest && (
@@ -873,27 +876,33 @@ export function SharePage() {
         {/* Stats strip */}
         <div className="flex flex-wrap items-center gap-3 text-sm text-ink-500">
           <span className="flex items-center gap-1.5">
-            <Icon name="folder_open" size={15} />
+            <FolderOpen size={15} className="flex-shrink-0" />
             {files.length} file{files.length !== 1 ? 's' : ''}
           </span>
           {folderName && (
             <span className="flex items-center gap-1.5 text-amber-600">
-              <Icon name="folder" size={15} />
+              <Folder size={15} className="flex-shrink-0" />
               {folderName}
             </span>
           )}
           <span className={cn('flex items-center gap-1.5 sm:hidden', currentAccess.cls.split(' ')[0])}>
-            <Icon name={currentAccess.icon} size={13} />
+            {currentAccess.icon === 'visibility' && <Eye size={13} className="flex-shrink-0" />}
+            {currentAccess.icon === 'edit' && <Edit2 size={13} className="flex-shrink-0" />}
+            {currentAccess.icon === 'lock' && <Lock size={13} className="flex-shrink-0" />}
             {currentAccess.label}
           </span>
           {share?.allow_download ? (
             <span className="flex items-center gap-1.5 text-success">
-              <Icon name="download" size={14} />
+              <Download size={14} className="flex-shrink-0" />
               Downloads enabled
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-ink-400">
-              <Icon name="download_off" size={14} />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                <path d="M12 3v9m0 0l-3-3m3 3l3-3" opacity=".4"/>
+                <path d="M2 2l20 20"/>
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              </svg>
               View only
             </span>
           )}
