@@ -361,10 +361,17 @@ export function useAddComment() {
   return useMutation({
     mutationFn: async ({ promptId, content }: { promptId: string; content: string }) => {
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase
+      // Insert without join to avoid FK resolution issues, then re-fetch with profile
+      const { data: inserted, error: insertErr } = await supabase
         .from('prompt_comments')
         .insert({ prompt_id: promptId, user_id: user.id, content: content.trim() })
+        .select('id, prompt_id')
+        .single();
+      if (insertErr) throw insertErr;
+      const { data, error } = await supabase
+        .from('prompt_comments')
         .select('*, user_profiles(display_name, avatar_path)')
+        .eq('id', inserted.id)
         .single();
       if (error) throw error;
       return data as PromptComment;
