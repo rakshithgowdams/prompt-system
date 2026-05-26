@@ -400,10 +400,15 @@ function CommentBubble({
 }
 
 // ── Detail Modal ──────────────────────────────────────────────────────────────
-// Responsive:
-//   mobile  (<768px)  → full-screen bottom sheet, stacked (media top, info bottom)
-//   tablet  (≥768px)  → centred modal, stacked with more breathing room
-//   desktop (≥1024px) → side-by-side: images LEFT | info + comments RIGHT
+// Layout: single sheet that slides up from bottom on all screen sizes.
+// Structure (top → bottom, single scroll):
+//   • Sticky header (drag handle + title + close)
+//   • Images inline (plain img tags, no animation, natural aspect ratio)
+//   • Platform / meta row
+//   • Stats row (like / views / comments)
+//   • Tabs: Prompt | Comments
+//   • Tab content (scrollable)
+//   • Sticky footer: comment input + copy button
 
 function DetailModal({
   prompt,
@@ -418,10 +423,10 @@ function DetailModal({
   const [activeTab, setActiveTab] = useState<'prompt' | 'comments'>('prompt');
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const images = prompt.media_files.filter((f) => f.file_type === 'image');
   const videos = prompt.media_files.filter((f) => f.file_type === 'video');
-  const hasMedia = images.length + videos.length > 0;
   const { urls, loading: urlsLoading } = useSignedUrls(prompt.media_files);
 
   const { data: stats, isLoading: statsLoading } = usePromptStats(prompt.id);
@@ -434,22 +439,18 @@ function DetailModal({
   const platformMeta = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
 
   useEffect(() => { recordView.mutate(prompt.id); }, [prompt.id]);
-
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
-
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
-
-  // Auto-scroll to latest comment
   useEffect(() => {
     if (activeTab === 'comments') {
-      commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
     }
   }, [comments.length, activeTab]);
 
@@ -459,9 +460,7 @@ function DetailModal({
       setCopied(true);
       toast.success('Prompt copied!');
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error('Failed to copy');
-    }
+    } catch { toast.error('Failed to copy'); }
   }, [prompt.prompt_text]);
 
   const handleLike = () => {
@@ -478,375 +477,265 @@ function DetailModal({
       await addComment.mutateAsync({ promptId: prompt.id, content: text });
       setCommentText('');
       setActiveTab('comments');
-    } catch {
-      toast.error('Failed to post comment');
-    }
+    } catch { toast.error('Failed to post comment'); }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    try {
-      await deleteComment.mutateAsync({ id: commentId, promptId: prompt.id });
-    } catch {
-      toast.error('Failed to delete comment');
-    }
+  const handleDeleteComment = async (id: string) => {
+    try { await deleteComment.mutateAsync({ id, promptId: prompt.id }); }
+    catch { toast.error('Failed to delete comment'); }
   };
-
-  // ── shared sub-sections ──────────────────────────────────────────────────────
-
-  const StatsRow = (
-    <div className="flex items-center gap-5">
-      <button
-        onClick={handleLike}
-        disabled={toggleLike.isPending}
-        className={cn(
-          'flex items-center gap-1.5 text-[13px] font-semibold transition-all active:scale-95',
-          stats?.user_has_liked ? 'text-red-500' : 'text-ink-400 hover:text-red-500',
-        )}
-      >
-        <Heart size={16} className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')} />
-        <span>{statsLoading ? '–' : formatCount(stats?.like_count ?? 0)}</span>
-      </button>
-      <div className="flex items-center gap-1.5 text-[13px] text-ink-400">
-        <BarChart2 size={15} />
-        <span>{statsLoading ? '–' : formatCount(stats?.view_count ?? 0)}</span>
-      </div>
-      <button
-        onClick={() => { setActiveTab('comments'); setTimeout(() => commentInputRef.current?.focus(), 50); }}
-        className="flex items-center gap-1.5 text-[13px] text-ink-400 hover:text-ink-800 transition-colors"
-      >
-        <MessageCircle size={15} />
-        <span>{statsLoading ? '–' : formatCount(stats?.comment_count ?? 0)}</span>
-      </button>
-    </div>
-  );
-
-  const PromptTextPanel = (
-    <div className="space-y-4">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider">Full Prompt</span>
-          <span className="text-[10px] text-ink-400">{prompt.prompt_text.length} chars</span>
-        </div>
-        <div className="bg-ink-50 border border-ink-200 rounded-xl p-4">
-          <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words select-all">
-            {prompt.prompt_text}
-          </p>
-        </div>
-      </div>
-
-      {prompt.tags.length > 0 && (
-        <div>
-          <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider block mb-2">Tags</span>
-          <div className="flex flex-wrap gap-1.5">
-            {prompt.tags.map((tag) => (
-              <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-600 border border-ink-200">
-                #{tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {prompt.notes && (
-        <div className="border-l-2 border-ink-200 pl-3">
-          <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider block mb-1">Notes</span>
-          <p className="text-[12px] text-ink-600 leading-relaxed italic">{prompt.notes}</p>
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 text-[11px] text-ink-400 pt-2 border-t border-ink-100">
-        <Globe size={11} className="text-green-500" />
-        <span>Public</span>
-        <span className="text-ink-300">·</span>
-        <span>{new Date(prompt.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-      </div>
-    </div>
-  );
-
-  const CommentsPanel = (
-    <div className="space-y-3">
-      {commentsLoading ? (
-        Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex gap-3 animate-pulse">
-            <div className="w-8 h-8 rounded-full bg-ink-100 flex-shrink-0" />
-            <div className="flex-1 space-y-2 pt-1">
-              <div className="h-2.5 bg-ink-100 rounded w-24" />
-              <div className="h-2.5 bg-ink-100 rounded w-full" />
-              <div className="h-2.5 bg-ink-100 rounded w-2/3" />
-            </div>
-          </div>
-        ))
-      ) : comments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <MessageCircle size={28} className="text-ink-200 mb-2" />
-          <p className="text-[13px] font-semibold text-ink-500">No comments yet</p>
-          <p className="text-[11px] text-ink-400 mt-1">Be the first to share your thoughts!</p>
-        </div>
-      ) : (
-        <>
-          {comments.map((c) => (
-            <CommentBubble key={c.id} comment={c} currentUserId={user?.id} onDelete={handleDeleteComment} />
-          ))}
-          <div ref={commentsEndRef} />
-        </>
-      )}
-    </div>
-  );
-
-  const CommentInputBar = (
-    <form onSubmit={handleComment} className="flex items-end gap-2">
-      <textarea
-        ref={commentInputRef}
-        value={commentText}
-        onChange={(e) => setCommentText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(e); } }}
-        placeholder={user ? 'Add a comment…' : 'Sign in to comment'}
-        disabled={!user || addComment.isPending}
-        rows={1}
-        className="flex-1 resize-none text-[13px] border border-ink-200 rounded-2xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-ink-900/20 focus:border-ink-400 placeholder:text-ink-400 text-ink-900 bg-ink-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed leading-snug"
-        style={{ maxHeight: 88, overflowY: 'auto' }}
-      />
-      <button
-        type="submit"
-        disabled={!user || !commentText.trim() || addComment.isPending}
-        className="flex-shrink-0 w-9 h-9 rounded-full bg-ink-900 text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-ink-700 active:scale-95 transition-all"
-      >
-        <Send size={14} />
-      </button>
-    </form>
-  );
-
-  const CopyBtn = (
-    <button
-      onClick={handleCopy}
-      className={cn(
-        'w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200 active:scale-[0.98]',
-        copied
-          ? 'bg-green-500 text-white shadow-lg shadow-green-200/60'
-          : 'bg-ink-900 text-white hover:bg-ink-800 shadow-lg shadow-ink-900/10',
-      )}
-    >
-      {copied ? <Check size={15} /> : <Copy size={15} />}
-      {copied ? 'Copied!' : 'Copy Prompt'}
-    </button>
-  );
-
-  // ── Media left-panel content ─────────────────────────────────────────────────
-
-  const MediaContent = (
-    <>
-      {images.length > 0 ? (
-        <ImageCarousel images={images} urls={urls} loading={urlsLoading} />
-      ) : videos.length > 0 ? (
-        videos.map((vid) => urls[vid.id] && (
-          <video key={vid.id} src={urls[vid.id]} controls preload="metadata"
-            className="w-full rounded-xl bg-black" style={{ maxHeight: 380 }} />
-        ))
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-ink-300">
-          <Sparkles size={32} className="mb-2" />
-          <span className="text-sm">No media</span>
-        </div>
-      )}
-      {/* Per-image prompt labels */}
-      {images.length > 0 && (
-        <div className="space-y-3 pt-1">
-          {images.map((_img, i) => (
-            <div key={i} className="bg-white border border-ink-100 rounded-xl p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <ImageIcon size={11} className="text-ink-400" />
-                <span className="text-[10px] font-bold text-ink-400 uppercase tracking-wider">Image · {i + 1}</span>
-              </div>
-              <p className="text-[12px] text-ink-700 leading-relaxed font-mono whitespace-pre-wrap line-clamp-6">
-                {prompt.prompt_text}
-              </p>
-              <div className="mt-2.5 pt-2 border-t border-ink-100">
-                <button
-                  onClick={() => { navigator.clipboard.writeText(prompt.prompt_text); toast.success('Copied!'); }}
-                  className="flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-800 transition-colors font-medium"
-                >
-                  <Copy size={10} /> Copy
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  );
-
-  // Detect mobile via window width for animation choice — avoids rendering two modals
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   return (
-    <AnimatePresence>
-      {/* ── Backdrop ── */}
+    <>
+      {/* Backdrop */}
       <motion.div
-        key="modal-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[3px]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.22 }}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]"
         onClick={onClose}
       />
 
-      {/* ── Single modal — mobile: bottom sheet / md+: centred overlay ── */}
+      {/* Sheet — slides up from bottom, same animation on all screen sizes */}
       <motion.div
-        key="modal-panel"
-        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 10 }}
-        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 10 }}
-        transition={isMobile
-          ? { type: 'spring', damping: 32, stiffness: 320 }
-          : { type: 'spring', damping: 30, stiffness: 340 }}
-        className={cn(
-          'fixed z-[60]',
-          // Mobile: bottom sheet
-          'inset-x-0 bottom-0 md:inset-0',
-          // md+: centred flex container
-          'md:flex md:items-center md:justify-center md:p-4 lg:md:p-8',
-        )}
-        onClick={onClose}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
+        className="fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-white md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl md:rounded-t-3xl rounded-t-3xl shadow-2xl"
+        style={{ maxHeight: '92dvh' }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Inner white card */}
-        <div
-          className={cn(
-            'bg-white w-full overflow-hidden',
-            // Mobile: rounded top sheet
-            'rounded-t-3xl md:rounded-3xl',
-            // md+: max-width, fixed height, side-by-side
-            'md:flex md:flex-col lg:flex-row md:shadow-2xl',
-          )}
-          style={{
-            maxHeight: isMobile ? '95dvh' : 'min(90vh, 700px)',
-            maxWidth: isMobile ? undefined : 960,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-
-          {/* ── MOBILE HEADER (drag handle + title + close) ── */}
-          <div className="md:hidden flex-shrink-0">
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-ink-200" />
-            </div>
-            <div className="flex items-start justify-between gap-3 px-4 pb-3 border-b border-ink-100">
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-bold text-ink-900 leading-snug line-clamp-1">{prompt.title}</p>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
-                    {platformMeta.icon} {prompt.platform}
-                  </span>
-                  <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
-                </div>
-                <div className="mt-2">{StatsRow}</div>
-              </div>
-              <button onClick={onClose}
-                className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600">
-                <X size={15} />
-              </button>
-            </div>
+        {/* ── Sticky header ── */}
+        <div className="flex-shrink-0 pt-3 pb-0">
+          {/* Drag pill */}
+          <div className="flex justify-center mb-3">
+            <div className="w-10 h-[5px] rounded-full bg-ink-200" />
           </div>
-
-          {/* ── DESKTOP/TABLET layout: flex row on lg ── */}
-          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-
-            {/* ── LEFT / TOP: media panel ── */}
-            <div
-              className="lg:w-[52%] flex-shrink-0 bg-[#f3f3f3] flex flex-col"
-              style={{ minHeight: 0 }}
-            >
-              {/* Media panel header — desktop only */}
-              <div className="hidden md:flex flex-shrink-0 items-center justify-between px-4 py-3 border-b border-black/[0.06]">
-                <span className="text-[12px] font-semibold text-ink-500">
-                  {images.length + videos.length > 0
-                    ? `${images.length + videos.length} media file${images.length + videos.length !== 1 ? 's' : ''}`
-                    : 'No media'}
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-3 px-5 pb-4 border-b border-ink-100">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[16px] font-bold text-ink-900 leading-snug line-clamp-2 pr-2">{prompt.title}</h2>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
+                  {platformMeta.icon} {prompt.platform}
                 </span>
-                <button onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-black/[0.06] hover:bg-black/[0.12] flex items-center justify-center transition-colors text-ink-700">
-                  <X size={14} />
-                </button>
-              </div>
-              {/* Scrollable media */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3"
-                style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ddd transparent', minHeight: 0, maxHeight: '40vh' }}>
-                {hasMedia ? MediaContent : (
-                  <div className="flex flex-col items-center justify-center py-16 text-ink-300">
-                    <Sparkles size={32} className="mb-2" />
-                    <span className="text-sm">No media</span>
-                  </div>
-                )}
+                <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
+                <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
+                  <Globe size={9} /> Public
+                </span>
               </div>
             </div>
-
-            {/* ── RIGHT / BOTTOM: info panel ── */}
-            <div
-              className="flex-1 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-ink-100"
-              style={{ minHeight: 0 }}
+            <button
+              onClick={onClose}
+              className="flex-shrink-0 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 active:bg-ink-300 flex items-center justify-center text-ink-600 transition-colors"
             >
-              {/* Desktop header */}
-              <div className="hidden md:block flex-shrink-0 px-5 pt-5 pb-4 border-b border-ink-100">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-ink-200 flex items-center justify-center flex-shrink-0">
-                      <User size={17} className="text-ink-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-ink-900 leading-tight line-clamp-2">{prompt.title}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
-                          {platformMeta.icon} {prompt.platform}
-                        </span>
-                        <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button onClick={onClose}
-                    className="flex-shrink-0 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600 transition-colors">
-                    <X size={14} />
-                  </button>
-                </div>
-                <div className="mt-3">{StatsRow}</div>
-              </div>
+              <X size={15} />
+            </button>
+          </div>
+        </div>
 
-            {/* Tabs */}
-            <div className="flex-shrink-0 flex border-b border-ink-100">
-              {(['prompt', 'comments'] as const).map((tab) => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={cn(
-                    'flex-1 py-2.5 text-[12px] font-semibold capitalize transition-colors',
-                    activeTab === tab ? 'text-ink-900 border-b-2 border-ink-900' : 'text-ink-400 hover:text-ink-700',
+        {/* ── Scrollable body ── */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto"
+          style={{ overflowY: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
+          {/* ── Images: plain inline display, no animation ── */}
+          {(images.length > 0 || videos.length > 0) && (
+            <div className="px-5 pt-4 space-y-3">
+              {images.map((img) => (
+                <div key={img.id} className="rounded-2xl overflow-hidden bg-ink-100">
+                  {urlsLoading ? (
+                    <div className="w-full aspect-[4/3] animate-pulse bg-ink-200" />
+                  ) : urls[img.id] ? (
+                    <img
+                      src={urls[img.id]}
+                      alt={img.file_name}
+                      className="w-full h-auto block"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="w-full aspect-[4/3] flex items-center justify-center bg-ink-100">
+                      <ImageIcon size={28} className="text-ink-300" />
+                    </div>
                   )}
-                >
-                  {tab}
-                  {tab === 'comments' && (stats?.comment_count ?? 0) > 0 && (
-                    <span className="ml-1 text-[10px] bg-ink-100 text-ink-600 px-1.5 py-0.5 rounded-full">
-                      {stats!.comment_count}
-                    </span>
-                  )}
-                </button>
+                </div>
+              ))}
+              {videos.map((vid) => urls[vid.id] && (
+                <video
+                  key={vid.id}
+                  src={urls[vid.id]}
+                  controls
+                  preload="metadata"
+                  className="w-full rounded-2xl bg-black"
+                />
               ))}
             </div>
+          )}
 
-            {/* Scrollable tab body */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-5"
-              style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ddd transparent', minHeight: 0 }}>
-              {activeTab === 'prompt' ? PromptTextPanel : CommentsPanel}
+          {/* ── Stats row ── */}
+          <div className="flex items-center gap-5 px-5 pt-4 pb-1">
+            <button
+              onClick={handleLike}
+              disabled={toggleLike.isPending}
+              className={cn(
+                'flex items-center gap-1.5 text-[13px] font-semibold transition-all active:scale-90',
+                stats?.user_has_liked ? 'text-red-500' : 'text-ink-400 hover:text-red-500',
+              )}
+            >
+              <Heart size={16} className={cn('transition-all', stats?.user_has_liked ? 'fill-red-500' : '')} />
+              <span>{statsLoading ? '–' : formatCount(stats?.like_count ?? 0)}</span>
+            </button>
+            <div className="flex items-center gap-1.5 text-[13px] text-ink-400">
+              <BarChart2 size={15} />
+              <span>{statsLoading ? '–' : formatCount(stats?.view_count ?? 0)}</span>
             </div>
+            <button
+              onClick={() => { setActiveTab('comments'); setTimeout(() => commentInputRef.current?.focus(), 60); }}
+              className="flex items-center gap-1.5 text-[13px] text-ink-400 hover:text-ink-800 transition-colors"
+            >
+              <MessageCircle size={15} />
+              <span>{statsLoading ? '–' : formatCount(stats?.comment_count ?? 0)}</span>
+            </button>
+          </div>
 
-            {/* Sticky footer: comment + copy */}
-            <div className="flex-shrink-0 border-t border-ink-100 px-4 md:px-5 py-3 md:py-4 space-y-2.5 bg-white"
-              style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-              {CommentInputBar}
-              {CopyBtn}
-            </div>
-            </div>{/* end right panel */}
-          </div>{/* end flex row */}
-        </div>{/* end white card */}
+          {/* ── Tabs ── */}
+          <div className="flex border-b border-ink-100 mx-5 mt-3">
+            {(['prompt', 'comments'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'flex-1 py-2.5 text-[12px] font-semibold capitalize transition-colors relative',
+                  activeTab === tab ? 'text-ink-900' : 'text-ink-400 hover:text-ink-700',
+                )}
+              >
+                {tab}
+                {tab === 'comments' && (stats?.comment_count ?? 0) > 0 && (
+                  <span className="ml-1 text-[10px] bg-ink-100 text-ink-600 px-1.5 py-0.5 rounded-full">
+                    {stats!.comment_count}
+                  </span>
+                )}
+                {activeTab === tab && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-ink-900 rounded-t" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Tab content ── */}
+          <div className="px-5 py-4">
+            {activeTab === 'prompt' ? (
+              <div className="space-y-4 pb-2">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider">Prompt</span>
+                    <span className="text-[10px] text-ink-400">{prompt.prompt_text.length} chars</span>
+                  </div>
+                  <div className="bg-ink-50 border border-ink-200 rounded-xl p-4">
+                    <p className="text-[13px] text-ink-800 leading-relaxed font-mono whitespace-pre-wrap break-words select-all">
+                      {prompt.prompt_text}
+                    </p>
+                  </div>
+                </div>
+                {prompt.tags.length > 0 && (
+                  <div>
+                    <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider block mb-2">Tags</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {prompt.tags.map((tag) => (
+                        <span key={tag} className="text-[11px] px-2.5 py-1 rounded-full bg-ink-100 text-ink-600 border border-ink-200">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {prompt.notes && (
+                  <div className="border-l-2 border-ink-200 pl-3.5">
+                    <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wider block mb-1">Notes</span>
+                    <p className="text-[12px] text-ink-600 leading-relaxed italic">{prompt.notes}</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-[11px] text-ink-400 pt-1 border-t border-ink-100">
+                  <span>{new Date(prompt.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 pb-2">
+                {commentsLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex gap-3 animate-pulse">
+                      <div className="w-8 h-8 rounded-full bg-ink-100 flex-shrink-0" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-2.5 bg-ink-100 rounded w-24" />
+                        <div className="h-2.5 bg-ink-100 rounded w-full" />
+                        <div className="h-2.5 bg-ink-100 rounded w-2/3" />
+                      </div>
+                    </div>
+                  ))
+                ) : comments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <MessageCircle size={28} className="text-ink-200 mb-2" />
+                    <p className="text-[13px] font-semibold text-ink-500">No comments yet</p>
+                    <p className="text-[11px] text-ink-400 mt-1">Be the first to share your thoughts!</p>
+                  </div>
+                ) : (
+                  <>
+                    {comments.map((c) => (
+                      <CommentBubble key={c.id} comment={c} currentUserId={user?.id} onDelete={handleDeleteComment} />
+                    ))}
+                    <div ref={commentsEndRef} />
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Sticky footer ── */}
+        <div
+          className="flex-shrink-0 border-t border-ink-100 bg-white px-4 pt-3 pb-4 space-y-2.5"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
+          {/* Comment input */}
+          <form onSubmit={handleComment} className="flex items-end gap-2">
+            <textarea
+              ref={commentInputRef}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(e); } }}
+              placeholder={user ? 'Add a comment…' : 'Sign in to comment'}
+              disabled={!user || addComment.isPending}
+              rows={1}
+              className="flex-1 resize-none text-[13px] border border-ink-200 rounded-2xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-ink-900/20 focus:border-ink-400 placeholder:text-ink-400 text-ink-900 bg-ink-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed leading-snug"
+              style={{ maxHeight: 80, overflowY: 'auto' }}
+            />
+            <button
+              type="submit"
+              disabled={!user || !commentText.trim() || addComment.isPending}
+              className="flex-shrink-0 w-9 h-9 rounded-full bg-ink-900 text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-ink-700 active:scale-95 transition-all"
+            >
+              <Send size={14} />
+            </button>
+          </form>
+          {/* Copy button */}
+          <button
+            onClick={handleCopy}
+            className={cn(
+              'w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-200 active:scale-[0.98]',
+              copied
+                ? 'bg-green-500 text-white shadow-lg shadow-green-200/60'
+                : 'bg-ink-900 text-white hover:bg-ink-800 shadow-lg shadow-ink-900/15',
+            )}
+          >
+            {copied ? <Check size={15} /> : <Copy size={15} />}
+            {copied ? 'Copied!' : 'Copy Prompt'}
+          </button>
+        </div>
       </motion.div>
-    </AnimatePresence>
+    </>
   );
 }
 
