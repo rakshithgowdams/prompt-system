@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  useCourse, useUpdateCourse, useCourseSections, useCourseLessons,
+  useCourse, useUpdateCourse, useDeleteCourse, useCourseSections, useCourseLessons,
   useCreateSection, useUpdateSection, useDeleteSection,
   useCreateLesson, useUpdateLesson, useDeleteLesson,
 } from '../hooks/useCourses';
@@ -402,6 +402,7 @@ export function CourseEditorPage() {
   const { data: lessons = [] } = useCourseLessons(courseId ?? '');
 
   const updateCourse = useUpdateCourse();
+  const deleteCourse = useDeleteCourse();
   const createSection = useCreateSection();
   const updateSection = useUpdateSection();
   const deleteSection = useDeleteSection();
@@ -803,37 +804,100 @@ export function CourseEditorPage() {
             <div className="max-w-lg mx-auto space-y-4">
               <h2 className="text-base font-semibold text-white mb-4">Course Settings</h2>
 
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between">
+              {/* Visibility & publish */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-0">
+
+                {/* Published toggle */}
+                <div className="flex items-center justify-between py-3">
                   <div>
                     <p className="text-sm font-medium text-white">Published</p>
-                    <p className="text-xs text-gray-500">Visible to all users when published</p>
+                    <p className="text-xs text-gray-500">Make this course live for students to enroll</p>
                   </div>
-                  <button onClick={handlePublish}
-                    className={cn('w-11 h-6 rounded-full relative transition-colors', course.is_published ? 'bg-emerald-500' : 'bg-gray-700')} >
+                  <button
+                    onClick={handlePublish}
+                    className={cn('w-11 h-6 rounded-full relative transition-colors flex-shrink-0', course.is_published ? 'bg-emerald-500' : 'bg-gray-700')}
+                  >
                     <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform', course.is_published ? 'translate-x-6' : 'translate-x-1')} />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-gray-800">
+                <div className="border-t border-gray-800" />
+
+                {/* Hide from Explore toggle */}
+                <div className="flex items-start justify-between py-3 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-white flex items-center gap-1.5">
+                      Hide from Explore
+                      {course.is_hidden && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">HIDDEN</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      When enabled, this course will not appear in the Explore section.
+                      Share links and enrolled students are not affected.
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateCourse.mutateAsync({ id: course.id, is_hidden: !course.is_hidden });
+                        toast.success(course.is_hidden ? 'Course visible in Explore' : 'Course hidden from Explore');
+                      } catch { toast.error('Failed'); }
+                    }}
+                    className={cn('w-11 h-6 rounded-full relative transition-colors flex-shrink-0 mt-0.5', course.is_hidden ? 'bg-amber-500' : 'bg-gray-700')}
+                  >
+                    <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform', course.is_hidden ? 'translate-x-6' : 'translate-x-1')} />
+                  </button>
+                </div>
+
+                <div className="border-t border-gray-800" />
+
+                {/* Free badge */}
+                <div className="flex items-center justify-between py-3">
                   <div>
                     <p className="text-sm font-medium text-white">Free Course</p>
-                    <p className="text-xs text-gray-500">This course is always free</p>
+                    <p className="text-xs text-gray-500">This course is always free for everyone</p>
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 rounded-full">Always Free</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 rounded-full flex-shrink-0">Always Free</span>
                 </div>
               </div>
 
+              {/* Upload limits info */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <Icon name="upload" size={15} className="text-blue-400" />
+                  Upload Limits
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { icon: 'smart_display', label: 'Video files', limit: 'Up to 500 MB per video', color: 'text-blue-400' },
+                    { icon: 'image', label: 'Image files', limit: 'Up to 100 MB per image', color: 'text-emerald-400' },
+                    { icon: 'attach_file', label: 'Resource files', limit: 'Up to 100 MB per file', color: 'text-amber-400' },
+                    { icon: 'add_photo_alternate', label: 'Cover image', limit: 'Up to 10 MB (JPG, PNG, WEBP)', color: 'text-pink-400' },
+                  ].map(({ icon, label, limit, color }) => (
+                    <div key={label} className="flex items-center gap-3 py-1.5">
+                      <Icon name={icon} size={14} className={color} />
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-gray-300">{label}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{limit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Danger zone */}
               <div className="bg-red-500/5 border border-red-500/15 rounded-2xl p-5">
                 <p className="text-sm font-medium text-white mb-1">Danger Zone</p>
-                <p className="text-xs text-gray-500 mb-3">Permanently delete this course and all its content.</p>
+                <p className="text-xs text-gray-500 mb-3">Permanently delete this course and all its content. This cannot be undone.</p>
                 <button
                   onClick={async () => {
-                    if (!confirm('Delete this course permanently?')) return;
+                    if (!confirm('Delete this course permanently? All lessons, sections, and enrollments will be removed.')) return;
                     try {
-                      await updateCourse.mutateAsync({ id: course.id, is_published: false });
+                      await deleteCourse.mutateAsync(course.id);
+                      toast.success('Course deleted');
                       navigate('/courses');
-                    } catch { toast.error('Failed'); }
+                    } catch { toast.error('Failed to delete course'); }
                   }}
                   className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-medium hover:bg-red-500/20 transition-colors"
                 >

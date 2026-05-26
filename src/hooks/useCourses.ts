@@ -17,6 +17,7 @@ export interface Course {
   tags: string[];
   is_published: boolean;
   is_free: boolean;
+  is_hidden: boolean;
   total_duration_minutes: number;
   requirements: string[];
   what_you_learn: string[];
@@ -99,6 +100,26 @@ export interface CourseCertificate {
 
 // ── Course queries ────────────────────────────────────────────────────────────
 
+// All published, non-hidden courses — for Explore tab
+export function useExploreCourses() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['explore-courses', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .eq('is_hidden', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Course[];
+    },
+    enabled: !!user,
+  });
+}
+
+// Legacy — kept for backwards compat; returns all courses visible to user
 export function useCourses() {
   const { user } = useAuth();
   return useQuery({

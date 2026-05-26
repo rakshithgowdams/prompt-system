@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { useCourses, useMyCourses, useMyEnrollments, useEnroll, useCreateCourse, useDeleteCourse } from '../hooks/useCourses';
+import {
+  useExploreCourses, useMyCourses, useMyEnrollments,
+  useEnroll, useCreateCourse, useDeleteCourse,
+} from '../hooks/useCourses';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
@@ -67,12 +70,16 @@ function CourseCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30 transition-all duration-200"
+      className={cn(
+        'group relative bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/30 transition-all duration-200',
+        course.is_hidden && isOwner && 'opacity-60',
+      )}
     >
       {/* Cover */}
       <div className="relative aspect-video overflow-hidden">
         <CourseCover course={course} />
-        {/* Badges overlay */}
+
+        {/* Top-left badges */}
         <div className="absolute top-2.5 left-2.5 flex gap-1.5 flex-wrap">
           <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full border', LEVEL_COLORS[course.level] ?? LEVEL_COLORS.beginner)}>
             {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
@@ -81,7 +88,8 @@ function CourseCard({
             FREE
           </span>
         </div>
-        {/* Owner menu */}
+
+        {/* Owner context menu */}
         {isOwner && (
           <div className="absolute top-2 right-2">
             <button
@@ -98,7 +106,7 @@ function CourseCard({
                     initial={{ opacity: 0, scale: 0.95, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 top-8 z-20 bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-1 min-w-[130px]"
+                    className="absolute right-0 top-8 z-20 bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-1 min-w-[140px]"
                   >
                     <button onClick={() => { setMenuOpen(false); onEdit(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
@@ -118,25 +126,25 @@ function CourseCard({
             </AnimatePresence>
           </div>
         )}
-        {/* Draft badge */}
-        {isOwner && !course.is_published && (
-          <div className="absolute bottom-2 left-2">
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-700 text-gray-300 border border-gray-600">
-              DRAFT
-            </span>
-          </div>
-        )}
-        {/* Published badge for owner */}
-        {isOwner && course.is_published && (
-          <div className="absolute bottom-2 left-2">
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              PUBLISHED
-            </span>
+
+        {/* Bottom status badges (owner only) */}
+        {isOwner && (
+          <div className="absolute bottom-2 left-2 flex gap-1.5">
+            {course.is_hidden && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-700/90 text-gray-300 border border-gray-600 flex items-center gap-1 backdrop-blur-sm">
+                <Icon name="visibility_off" size={9} /> Hidden
+              </span>
+            )}
+            {!course.is_published ? (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-700/90 text-gray-300 border border-gray-600 backdrop-blur-sm">DRAFT</span>
+            ) : (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-sm">PUBLISHED</span>
+            )}
           </div>
         )}
       </div>
 
-      {/* Content */}
+      {/* Body */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
           <span className="text-[11px] text-blue-400 font-medium">{course.category}</span>
@@ -149,7 +157,7 @@ function CourseCard({
           {course.short_description || course.description || 'No description yet.'}
         </p>
 
-        {/* Stats row */}
+        {/* Stats */}
         <div className="flex items-center gap-3 text-[11px] text-gray-500 mb-3">
           {course.total_duration_minutes > 0 && (
             <span className="flex items-center gap-1">
@@ -190,6 +198,26 @@ function CourseCard({
   );
 }
 
+// ── Skeleton grid ─────────────────────────────────────────────────────────────
+
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 animate-pulse">
+          <div className="aspect-video bg-gray-800" />
+          <div className="p-4 space-y-2">
+            <div className="h-3 bg-gray-800 rounded w-3/4" />
+            <div className="h-4 bg-gray-800 rounded" />
+            <div className="h-4 bg-gray-800 rounded w-2/3" />
+            <div className="h-8 bg-gray-800 rounded-xl mt-3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── New course modal ──────────────────────────────────────────────────────────
 
 function NewCourseModal({ open, onClose, onCreate }: {
@@ -217,9 +245,7 @@ function NewCourseModal({ open, onClose, onCreate }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -278,16 +304,19 @@ function NewCourseModal({ open, onClose, onCreate }: {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+type Tab = 'explore' | 'my' | 'enrolled';
+
 export function CoursesPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: courses = [], isLoading } = useCourses();
-  const { data: myCourses = [] } = useMyCourses();
+
+  const { data: exploreCourses = [], isLoading: exploreLoading } = useExploreCourses();
+  const { data: myCourses = [], isLoading: myLoading } = useMyCourses();
   const { data: enrollments = [] } = useMyEnrollments();
   const enroll = useEnroll();
   const deleteCourse = useDeleteCourse();
 
-  const [tab, setTab] = useState<'all' | 'my' | 'enrolled'>('all');
+  const [tab, setTab] = useState<Tab>('explore');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [level, setLevel] = useState('All');
@@ -295,18 +324,26 @@ export function CoursesPage() {
   const [sharingCourse, setSharingCourse] = useState<Course | null>(null);
 
   const enrolledIds = new Set(enrollments.map((e) => e.course_id));
-  const myIds = new Set(myCourses.map((c) => c.id));
+
+  const filter = (list: Course[]) => {
+    let out = list;
+    if (search) out = out.filter((c) =>
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.description.toLowerCase().includes(search.toLowerCase())
+    );
+    if (category !== 'All') out = out.filter((c) => c.category === category);
+    if (level !== 'All') out = out.filter((c) => c.level === level);
+    return out;
+  };
 
   const displayCourses = (() => {
-    let list = tab === 'my' ? myCourses
-      : tab === 'enrolled' ? courses.filter((c) => enrolledIds.has(c.id))
-      : courses;
-
-    if (search) list = list.filter((c) => c.title.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase()));
-    if (category !== 'All') list = list.filter((c) => c.category === category);
-    if (level !== 'All') list = list.filter((c) => c.level === level);
-    return list;
+    if (tab === 'my') return filter(myCourses);
+    if (tab === 'enrolled') return filter(exploreCourses.filter((c) => enrolledIds.has(c.id)));
+    // explore — published, non-hidden (already filtered by hook); owner can still see their own
+    return filter(exploreCourses);
   })();
+
+  const isLoading = tab === 'my' ? myLoading : exploreLoading;
 
   const handleEnroll = async (courseId: string) => {
     try {
@@ -328,9 +365,16 @@ export function CoursesPage() {
     }
   };
 
+  const tabs: { key: Tab; label: string; icon: string; count?: number }[] = [
+    { key: 'explore', label: 'Explore', icon: 'explore', count: exploreCourses.length },
+    { key: 'my', label: 'My Courses', icon: 'school', count: myCourses.length },
+    { key: 'enrolled', label: 'Enrolled', icon: 'check_circle', count: enrollments.length },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Hero header */}
+
+      {/* ── Hero ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 border-b border-gray-800">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl" />
@@ -346,7 +390,7 @@ export function CoursesPage() {
                 <span className="text-xs font-semibold text-blue-400 uppercase tracking-widest">Learning Hub</span>
               </div>
               <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1">Courses</h1>
-              <p className="text-gray-400 text-sm">Create and share free courses with your students.</p>
+              <p className="text-gray-400 text-sm">Discover, enroll, and learn from free courses.</p>
             </div>
             <Button onClick={() => setNewCourseOpen(true)} size="lg">
               <Icon name="add" size={18} />
@@ -355,14 +399,14 @@ export function CoursesPage() {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-4 mt-6 flex-wrap">
+          <div className="flex gap-3 mt-6 flex-wrap">
             {[
-              { label: 'Published', value: courses.filter((c) => c.is_published).length, icon: 'public' },
+              { label: 'Available', value: exploreCourses.length, icon: 'public' },
               { label: 'My Courses', value: myCourses.length, icon: 'school' },
               { label: 'Enrolled', value: enrollments.length, icon: 'check_circle' },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-2 px-3 py-2 bg-gray-800/60 border border-gray-700/50 rounded-xl">
-                <Icon name={s.icon} size={14} className="text-gray-400" />
+                <Icon name={s.icon} size={13} className="text-gray-400" />
                 <span className="text-sm font-bold text-white">{s.value}</span>
                 <span className="text-xs text-gray-500">{s.label}</span>
               </div>
@@ -371,27 +415,38 @@ export function CoursesPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* ── Sticky filter bar ── */}
       <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur-md border-b border-gray-800">
-        <div className="px-4 lg:px-8 py-3 max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Tabs */}
-            <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 gap-1 flex-shrink-0">
-              {([['all', 'All Courses'], ['my', 'My Courses'], ['enrolled', 'Enrolled']] as const).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setTab(key)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                    tab === key ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-200',
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        <div className="px-4 lg:px-8 max-w-6xl mx-auto">
+          {/* Tab row */}
+          <div className="flex items-center gap-1 pt-3 pb-0 overflow-x-auto">
+            {tabs.map(({ key, label, icon, count }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  'flex items-center gap-1.5 px-4 py-2.5 rounded-t-xl text-sm font-medium border-b-2 transition-all whitespace-nowrap flex-shrink-0',
+                  tab === key
+                    ? 'text-blue-400 border-blue-500 bg-blue-600/5'
+                    : 'text-gray-500 border-transparent hover:text-gray-300 hover:bg-gray-800/40',
+                )}
+              >
+                <Icon name={icon} size={14} />
+                {label}
+                {count !== undefined && count > 0 && (
+                  <span className={cn(
+                    'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                    tab === key ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-700 text-gray-400',
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
 
-            {/* Search */}
+          {/* Filter row */}
+          <div className="flex flex-col sm:flex-row gap-2 py-3">
             <div className="relative flex-1">
               <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
@@ -401,8 +456,6 @@ export function CoursesPage() {
                 className="w-full h-9 pl-9 pr-3 rounded-xl bg-gray-900 border border-gray-800 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors"
               />
             </div>
-
-            {/* Category */}
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -410,8 +463,6 @@ export function CoursesPage() {
             >
               {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
             </select>
-
-            {/* Level */}
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
@@ -423,37 +474,70 @@ export function CoursesPage() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div className="px-4 lg:px-8 py-6 max-w-6xl mx-auto">
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 animate-pulse">
-                <div className="aspect-video bg-gray-800" />
-                <div className="p-4 space-y-2">
-                  <div className="h-3 bg-gray-800 rounded w-3/4" />
-                  <div className="h-4 bg-gray-800 rounded" />
-                  <div className="h-4 bg-gray-800 rounded w-2/3" />
-                  <div className="h-8 bg-gray-800 rounded-xl mt-3" />
-                </div>
-              </div>
-            ))}
+
+        {/* Explore tab description */}
+        {tab === 'explore' && (
+          <div className="flex items-center gap-2 mb-5 text-sm text-gray-500">
+            <Icon name="explore" size={15} className="text-blue-400" />
+            Showing all published courses available to enroll
           </div>
+        )}
+
+        {tab === 'my' && (
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-sm text-gray-500 flex items-center gap-2">
+              <Icon name="school" size={15} className="text-blue-400" />
+              Your created courses (including drafts and hidden ones)
+            </p>
+            <Button size="sm" onClick={() => setNewCourseOpen(true)}>
+              <Icon name="add" size={13} />
+              New Course
+            </Button>
+          </div>
+        )}
+
+        {tab === 'enrolled' && (
+          <div className="flex items-center gap-2 mb-5 text-sm text-gray-500">
+            <Icon name="check_circle" size={15} className="text-emerald-400" />
+            Courses you have enrolled in
+          </div>
+        )}
+
+        {isLoading ? (
+          <SkeletonGrid />
         ) : displayCourses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 bg-gray-800/60 rounded-2xl flex items-center justify-center mb-4">
-              <Icon name="school" size={28} className="text-gray-600" />
+              <Icon name={tab === 'explore' ? 'explore' : tab === 'my' ? 'school' : 'check_circle'} size={28} className="text-gray-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-300 mb-2">
-              {tab === 'my' ? 'No courses created yet' : tab === 'enrolled' ? 'Not enrolled in any courses' : 'No courses found'}
+              {tab === 'my'
+                ? 'No courses created yet'
+                : tab === 'enrolled'
+                ? 'Not enrolled in any courses'
+                : search || category !== 'All' || level !== 'All'
+                ? 'No courses match your filters'
+                : 'No courses available yet'}
             </h3>
             <p className="text-gray-500 text-sm mb-5">
-              {tab === 'my' ? 'Create your first course to start teaching.' : 'Browse courses or create your own.'}
+              {tab === 'my'
+                ? 'Create your first course to start teaching.'
+                : tab === 'enrolled'
+                ? 'Explore the course catalog and enroll in something new.'
+                : 'Check back soon or create a course yourself.'}
             </p>
             {tab === 'my' && (
               <Button onClick={() => setNewCourseOpen(true)}>
                 <Icon name="add" size={16} />
                 Create Your First Course
+              </Button>
+            )}
+            {tab === 'enrolled' && (
+              <Button onClick={() => setTab('explore')}>
+                <Icon name="explore" size={16} />
+                Browse Courses
               </Button>
             )}
           </div>
