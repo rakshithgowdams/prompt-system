@@ -35,8 +35,9 @@ const CourseEditorPage  = lazy(() => import('./pages/CourseEditorPage').then((m)
 const CoursePlayerPage  = lazy(() => import('./pages/CoursePlayerPage').then((m) => ({ default: m.CoursePlayerPage })));
 const CertificatePage   = lazy(() => import('./pages/CertificatePage').then((m) => ({ default: m.CertificatePage })));
 const CourseSharePage   = lazy(() => import('./pages/CourseSharePage').then((m) => ({ default: m.CourseSharePage })));
-const LandingPage       = lazy(() => import('./pages/landing/LandingPage'));
-const PricingPage       = lazy(() => import('./pages/landing/PricingPage'));
+const LandingPage            = lazy(() => import('./pages/landing/LandingPage'));
+const PricingPage            = lazy(() => import('./pages/landing/PricingPage'));
+const ExplorePromptsPage     = lazy(() => import('./pages/ExplorePromptsPage').then((m) => ({ default: m.ExplorePromptsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,7 @@ export default function App() {
               {/* Public share pages — no auth required */}
               <Route path="/share/:shareId" element={<SharePage />} />
               <Route path="/courses/share/:shareId" element={<CourseSharePage />} />
+              <Route path="/explore" element={<ExplorePromptsPage />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

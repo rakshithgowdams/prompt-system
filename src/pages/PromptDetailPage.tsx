@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { usePrompt, usePromptMedia, useDeletePrompt } from '../hooks/usePrompts';
+import { usePrompt, usePromptMedia, useDeletePrompt, useTogglePublish } from '../hooks/usePrompts';
 import { Skeleton } from '../components/ui/Skeleton';
 import { StatusBadge, PlatformBadge, TagChip } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -43,6 +43,7 @@ export function PromptDetailPage() {
   const { data: prompt, isLoading } = usePrompt(id ?? '');
   const { data: mediaFiles = [] } = usePromptMedia(id ?? '');
   const deletePrompt = useDeletePrompt();
+  const togglePublish = useTogglePublish();
 
   const [mediaWithUrls, setMediaWithUrls] = useState<MediaWithUrl[]>([]);
   const [copied, setCopied] = useState(false);
@@ -291,6 +292,45 @@ export function PromptDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Publish toggle */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={async () => {
+          try {
+            await togglePublish.mutateAsync({ id: id!, is_published: !prompt.is_published });
+            toast.success(prompt.is_published ? 'Prompt set to private' : 'Prompt published to Explore!');
+          } catch {
+            toast.error('Failed to update visibility');
+          }
+        }}
+        onKeyDown={(e) => e.key === 'Enter' && togglePublish.mutate({ id: id!, is_published: !prompt.is_published })}
+        className={`flex items-center justify-between gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none ${
+          prompt.is_published
+            ? 'border-green-400 bg-green-50 hover:bg-green-100'
+            : 'border-ink-300 bg-white hover:border-ink-500 hover:bg-ink-100'
+        } ${togglePublish.isPending ? 'opacity-60 pointer-events-none' : ''}`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${prompt.is_published ? 'bg-green-500' : 'bg-ink-200'}`}>
+            <Icon name={prompt.is_published ? 'public' : 'lock'} size={18} className="text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className={`text-sm font-bold ${prompt.is_published ? 'text-green-800' : 'text-ink-900'}`}>
+              {prompt.is_published ? 'Published to Explore' : 'Private'}
+            </p>
+            <p className="text-xs text-ink-500 leading-snug">
+              {prompt.is_published
+                ? 'Anyone can discover this in the public Explore feed'
+                : 'Only you can see this prompt — click to publish'}
+            </p>
+          </div>
+        </div>
+        <div className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors duration-200 ${prompt.is_published ? 'bg-green-500' : 'bg-ink-300'}`}>
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${prompt.is_published ? 'translate-x-5' : 'translate-x-0'}`} />
+        </div>
+      </div>
 
       {/* Download all ZIP */}
       {mediaFiles.length > 0 && (

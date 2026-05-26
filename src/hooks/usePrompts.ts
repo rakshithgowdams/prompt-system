@@ -101,6 +101,43 @@ interface PromptInput {
   notes?: string | null;
   tags?: string[];
   status?: Prompt['status'];
+  is_published?: boolean;
+}
+
+export function usePublishedPrompts() {
+  return useQuery({
+    queryKey: ['prompts', 'published'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Prompt[];
+    },
+  });
+}
+
+export function useTogglePublish() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, is_published }: { id: string; is_published: boolean }) => {
+      const { data, error } = await supabase
+        .from('prompts')
+        .update({ is_published })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Prompt;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['prompt', data.id] });
+      qc.invalidateQueries({ queryKey: ['prompts'] });
+      qc.invalidateQueries({ queryKey: ['prompts', 'published'] });
+    },
+  });
 }
 
 export function useCreatePrompt() {

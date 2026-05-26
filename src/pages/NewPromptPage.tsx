@@ -30,6 +30,7 @@ export function NewPromptPage() {
   const createPrompt = useCreatePrompt();
   const [tags, setTags] = useState<string[]>([]);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [isPublished, setIsPublished] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -44,6 +45,7 @@ export function NewPromptPage() {
         project_id: project.id,
         tags,
         notes: data.notes || null,
+        is_published: isPublished,
       });
       setCreatedId(prompt.id);
       toast.success('Prompt created!');
@@ -110,6 +112,38 @@ export function NewPromptPage() {
           rows={4}
           {...register('notes')}
         />
+
+        {/* Publish toggle */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsPublished((v) => !v)}
+          onKeyDown={(e) => e.key === 'Enter' && setIsPublished((v) => !v)}
+          className={`flex items-center justify-between gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none ${
+            isPublished
+              ? 'border-green-400 bg-green-50'
+              : 'border-ink-300 bg-white hover:border-ink-500'
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isPublished ? 'bg-green-500' : 'bg-ink-200'}`}>
+              <Icon name={isPublished ? 'public' : 'lock'} size={18} className="text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className={`text-sm font-bold ${isPublished ? 'text-green-800' : 'text-ink-900'}`}>
+                {isPublished ? 'Published to Explore' : 'Private'}
+              </p>
+              <p className="text-xs text-ink-500 leading-snug">
+                {isPublished
+                  ? 'Anyone can discover this prompt in the Explore feed'
+                  : 'Only you can see this prompt'}
+              </p>
+            </div>
+          </div>
+          <div className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors duration-200 ${isPublished ? 'bg-green-500' : 'bg-ink-300'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${isPublished ? 'translate-x-5' : 'translate-x-0'}`} />
+          </div>
+        </div>
 
         {!createdId ? (
           <Button type="submit" className="w-full" size="lg" loading={isSubmitting}>

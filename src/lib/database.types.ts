@@ -112,6 +112,7 @@ export interface Database {
           notes: string | null;
           tags: string[];
           status: 'draft' | 'ready' | 'posted' | 'archived';
+          is_published: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -125,6 +126,7 @@ export interface Database {
           notes?: string | null;
           tags?: string[];
           status?: 'draft' | 'ready' | 'posted' | 'archived';
+          is_published?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -138,6 +140,7 @@ export interface Database {
           notes?: string | null;
           tags?: string[];
           status?: 'draft' | 'ready' | 'posted' | 'archived';
+          is_published?: boolean;
           created_at?: string;
           updated_at?: string;
         };
