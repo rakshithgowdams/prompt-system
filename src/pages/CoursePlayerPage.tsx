@@ -843,10 +843,12 @@ export function CoursePlayerPage() {
                             Get Certificate
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
-                            <Icon name="flag" size={14} className="text-emerald-500" />
-                            Course complete!
-                          </div>
+                          <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold shadow-sm shadow-amber-200 transition-all duration-200"
+                          >
+                            <Icon name="workspace_premium" size={16} fill />
+                            View Certificate
+                          </button>
                         )}
                       </div>
                     );
