@@ -221,7 +221,8 @@ export default function PricingPage() {
       )}
 
       {/* Hero */}
-      <section className="pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 text-center">
+      <section className="pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-4xl mx-auto">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">Pricing</p>
         </Reveal>
@@ -238,17 +239,18 @@ export default function PricingPage() {
             Sign up and lock in your username.
           </p>
         </Reveal>
+        </div>
       </section>
 
       {/* Billing toggle */}
-      <div className="flex justify-center px-4 sm:px-6 mb-8 sm:mb-12">
+      <div className="flex justify-center px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12">
         <Reveal>
           <BillingToggle value={billing} onChange={setBilling} />
         </Reveal>
       </div>
 
       {/* Cards */}
-      <section className="px-4 sm:px-6 pb-4">
+      <section className="px-4 sm:px-6 lg:px-8 pb-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 max-w-6xl mx-auto">
 
           {/* Free */}
@@ -434,7 +436,7 @@ export default function PricingPage() {
       </section>
 
       {/* Comparison table */}
-      <section className="px-4 sm:px-6 pb-16 sm:pb-20">
+      <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <ComparisonTable />
       </section>
 

@@ -122,7 +122,7 @@ export function BeforeAfterToggle() {
   const [active, setActive] = useState<'before' | 'after'>('before');
 
   return (
-    <section className="py-24 px-6 bg-white">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8 sm:mb-12">
           <Reveal>

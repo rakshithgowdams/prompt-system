@@ -270,7 +270,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 sm:pt-24 pb-12 sm:pb-16 px-4 sm:px-6">
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 sm:pt-24 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
       {/* Blobs — clamped so they don't overflow on mobile */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div ref={blobRef1} className="absolute -top-32 -left-32 w-[280px] sm:w-[400px] lg:w-[500px] h-[280px] sm:h-[400px] lg:h-[500px] bg-brand-200/30 rounded-full blur-3xl animate-blob" />

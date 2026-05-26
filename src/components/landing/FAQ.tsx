@@ -111,7 +111,7 @@ export function FAQ({ variant = 'landing' }: FAQProps) {
   }, []);
 
   return (
-    <section ref={sectionRef} id="faq" className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+    <section ref={sectionRef} id="faq" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <Reveal>

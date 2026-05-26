@@ -97,7 +97,7 @@ export function CoursesPreview() {
 
   return (
     <section id="courses" className="py-16 sm:py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-3">
@@ -127,7 +127,7 @@ export function CoursesPreview() {
 
       <div
         ref={stripRef}
-        className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 px-4 sm:px-6 snap-x snap-mandatory"
+        className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 px-4 sm:px-6 lg:px-8 snap-x snap-mandatory"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {COURSES.map((course, i) => (

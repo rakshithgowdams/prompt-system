@@ -38,7 +38,7 @@ function Block1() {
   }, []);
 
   return (
-    <div ref={sectionRef} className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+    <div ref={sectionRef} className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">Capture</p>
@@ -145,7 +145,7 @@ function Block2() {
   ];
 
   return (
-    <div className="py-16 sm:py-24 px-4 sm:px-6 bg-ink-900">
+    <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-ink-900">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
         {/* Mock course builder */}
         <div ref={progressRef} className="order-2 lg:order-1">
@@ -271,7 +271,7 @@ function ShareSVGLine() {
 
 function Block3() {
   return (
-    <div className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+    <div className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500 mb-4">Share</p>

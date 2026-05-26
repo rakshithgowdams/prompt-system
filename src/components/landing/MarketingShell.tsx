@@ -50,7 +50,7 @@ function Nav() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center flex-shrink-0">
           <motion.span
@@ -157,7 +157,7 @@ function Nav() {
             className="md:hidden bg-white border-t border-ink-300 overflow-hidden shadow-lg"
           >
             <motion.div
-              className="px-6 py-4 flex flex-col gap-1"
+              className="px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-1"
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06 } }, hidden: {} }}
@@ -213,7 +213,7 @@ function Nav() {
 function Footer() {
   return (
     <footer className="bg-ink-900 text-white">
-      <div className="max-w-7xl mx-auto px-6 pt-20 pb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-16 border-b border-white/10">
           {/* Brand */}
           <div>

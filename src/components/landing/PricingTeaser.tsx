@@ -27,7 +27,7 @@ const PRE_FEATURES = ['Everything in Standard', 'Team workspaces', 'Unlimited co
 
 export function PricingTeaser() {
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 bg-ink-100">
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-ink-100">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-16">
           <Reveal>

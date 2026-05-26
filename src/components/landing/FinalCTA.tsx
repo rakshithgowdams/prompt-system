@@ -48,7 +48,7 @@ export function FinalCTA() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative bg-ink-900 text-white py-20 sm:py-32 px-4 sm:px-6 overflow-hidden">
+    <section ref={sectionRef} className="relative bg-ink-900 text-white py-20 sm:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* Blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
