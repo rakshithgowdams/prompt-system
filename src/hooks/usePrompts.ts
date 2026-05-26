@@ -104,17 +104,19 @@ interface PromptInput {
   is_published?: boolean;
 }
 
+export type PublishedPrompt = Prompt & { media_files: MediaFile[] };
+
 export function usePublishedPrompts() {
   return useQuery({
     queryKey: ['prompts', 'published'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('prompts')
-        .select('*')
+        .select('*, media_files(*)')
         .eq('is_published', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as Prompt[];
+      return data as PublishedPrompt[];
     },
   });
 }
