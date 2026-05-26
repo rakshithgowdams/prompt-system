@@ -150,28 +150,27 @@ export function PortfolioPage() {
   });
 
   const handleStartEdit = () => {
-    if (!profile) return;
     form.reset({
-      display_name: profile.display_name ?? '',
-      headline: profile.headline ?? '',
-      bio: profile.bio ?? '',
-      location: profile.location ?? '',
-      website_url: profile.website_url ?? '',
-      linkedin_url: profile.linkedin_url ?? '',
-      github_url: profile.github_url ?? '',
-      twitter_url: profile.twitter_url ?? '',
-      instagram_url: profile.instagram_url ?? '',
-      college: profile.college ?? '',
-      school: profile.school ?? '',
-      college_year: profile.college_year ?? '',
-      school_year: profile.school_year ?? '',
-      degree: profile.degree ?? '',
-      experience_years: profile.experience_years ?? 0,
-      experience_title: profile.experience_title ?? '',
-      experience_company: profile.experience_company ?? '',
-      skills: (profile.skills ?? []).join(', '),
+      display_name: profile?.display_name ?? '',
+      headline: profile?.headline ?? '',
+      bio: profile?.bio ?? '',
+      location: profile?.location ?? '',
+      website_url: profile?.website_url ?? '',
+      linkedin_url: profile?.linkedin_url ?? '',
+      github_url: profile?.github_url ?? '',
+      twitter_url: profile?.twitter_url ?? '',
+      instagram_url: profile?.instagram_url ?? '',
+      college: profile?.college ?? '',
+      school: profile?.school ?? '',
+      college_year: profile?.college_year ?? '',
+      school_year: profile?.school_year ?? '',
+      degree: profile?.degree ?? '',
+      experience_years: profile?.experience_years ?? 0,
+      experience_title: profile?.experience_title ?? '',
+      experience_company: profile?.experience_company ?? '',
+      skills: (profile?.skills ?? []).join(', '),
     });
-    setSkillsInput((profile.skills ?? []).join(', '));
+    setSkillsInput((profile?.skills ?? []).join(', '));
     setEditingProfile(true);
   };
 

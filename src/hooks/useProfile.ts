@@ -69,11 +69,11 @@ export function useUpsertProfile() {
     mutationFn: async (input: ProfileUpsertInput) => {
       const { data, error } = await supabase
         .from('user_profiles')
-        .upsert({ id: user!.id, ...input, updated_at: new Date().toISOString() })
+        .upsert({ id: user!.id, ...input, updated_at: new Date().toISOString() }, { onConflict: 'id' })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data as UserProfile;
+      return data as UserProfile | null;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profile', user?.id] }),
   });
