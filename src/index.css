@@ -55,26 +55,26 @@ html.lenis body { height: auto; }
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Thin, minimal scrollbar — visible only on hover of its container */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: #f1f1f1;
+    border-radius: 99px;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.28);
     border-radius: 99px;
-    transition: background 0.2s ease;
+    border: 2px solid #f1f1f1;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.32);
+    background: rgba(0, 0, 0, 0.5);
   }
   /* Firefox */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0,0,0,0.12) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(0,0,0,0.28) #f1f1f1;
   }
 }
 
