@@ -88,7 +88,6 @@ export default function App() {
               {/* Standalone pages — no AppShell wrapper */}
               <Route path="/share/:shareId" element={<SharePage />} />
               <Route path="/courses/share/:shareId" element={<CourseSharePage />} />
-              <Route path="/explore" element={<ExplorePromptsPage />} />
               <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
 
               <Route element={<ProtectedRoute />}>
@@ -106,6 +105,7 @@ export default function App() {
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />
                 <Route path="/courses/:courseId/certificate" element={<CertificatePage />} />
+                <Route path="/explore" element={<ExplorePromptsPage />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

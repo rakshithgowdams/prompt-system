@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Globe, Lock, Copy, Check, Sparkles, Image, Video, X, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, Globe, Copy, Check, Sparkles, Image, Video, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePublishedPrompts, type PublishedPrompt } from '../hooks/usePrompts';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -145,11 +145,10 @@ function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
   return (
     <>
       <div className="rounded-xl overflow-hidden border border-ink-300">
-        {/* Primary image / video */}
         {loading ? (
           <div className="aspect-video bg-ink-100 animate-pulse" />
         ) : images.length > 0 && signedUrls[images[0].id] ? (
-          <div className={cn('grid gap-0.5', images.length === 1 ? 'grid-cols-1' : images.length === 2 ? 'grid-cols-2' : 'grid-cols-2')}>
+          <div className={cn('grid gap-0.5', images.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
             {images.slice(0, 3).map((img, i) => (
               <div
                 key={img.id}
@@ -165,7 +164,6 @@ function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
                   alt={img.file_name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                {/* "+N more" overlay on the last visible slot when there are more */}
                 {i === 2 && images.length > 3 && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <span className="text-white font-bold text-lg">+{images.length - 3}</span>
@@ -176,15 +174,9 @@ function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
             ))}
           </div>
         ) : videos.length > 0 && signedUrls[videos[0].id] ? (
-          <video
-            src={signedUrls[videos[0].id]}
-            controls
-            preload="metadata"
-            className="w-full max-h-56 bg-black"
-          />
+          <video src={signedUrls[videos[0].id]} controls preload="metadata" className="w-full max-h-56 bg-black" />
         ) : null}
 
-        {/* Media counts strip */}
         {(images.length > 0 || videos.length > 0) && !loading && (
           <div className="flex items-center gap-3 px-3 py-2 bg-ink-100 border-t border-ink-300">
             {images.length > 0 && (
@@ -203,7 +195,6 @@ function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
         )}
       </div>
 
-      {/* Lightbox */}
       <AnimatePresence>
         {lightboxIndex !== null && imageUrls.length > 0 && (
           <Lightbox
@@ -248,7 +239,6 @@ function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="bg-white border border-ink-300 rounded-2xl overflow-hidden hover:border-ink-500 hover:shadow-card-hover transition-all duration-200 flex flex-col"
     >
-      {/* Media section — shown at top if exists */}
       {hasMedia && (
         <div className="flex-shrink-0">
           <CardMedia mediaFiles={prompt.media_files} />
@@ -282,7 +272,7 @@ function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
           </span>
         </div>
 
-        {/* Prompt text — fixed height with y-scroll so full prompt is readable */}
+        {/* Prompt text — fixed height with y-scroll */}
         <div className="bg-ink-100 rounded-xl border border-ink-300 overflow-hidden">
           <div
             className="overflow-y-auto p-3.5"
@@ -357,10 +347,9 @@ function SkeletonCard() {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main page — renders inside AppShell ───────────────────────────────────────
 
 export function ExplorePromptsPage() {
-  const navigate = useNavigate();
   const { data: prompts = [], isLoading } = usePublishedPrompts();
   const [search, setSearch] = useState('');
   const [activePlatform, setActivePlatform] = useState<string>('All');
@@ -382,143 +371,84 @@ export function ExplorePromptsPage() {
   }, [prompts, search, activePlatform]);
 
   return (
-    // Full-screen standalone layout — no AppShell, no sidebar, no bottom nav
-    <div className="min-h-screen bg-ink-100 flex flex-col">
+    <div className="min-h-full bg-ink-100">
 
-      {/* Minimal branded top bar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-ink-300 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-          {/* Left: back button + logo */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center justify-center w-8 h-8 rounded-lg border border-ink-300 hover:bg-ink-100 hover:border-ink-500 text-ink-600 hover:text-ink-900 transition-all duration-150"
-              title="Go back"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <div className="w-px h-5 bg-ink-300" />
-            <Link to="/" className="flex items-center gap-2 group" title="Home">
-              <img
-                src="/aiwithrakshith-tech-logo copy.png"
-                alt="aiwithrakshith"
-                className="h-7 w-7 object-contain group-hover:scale-105 transition-transform"
-              />
-              <span
-                className="hidden sm:block font-display font-black text-ink-900 tracking-tight"
-                style={{ fontSize: '14px', letterSpacing: '-0.02em' }}
-              >
-                aiwithrakshith
-              </span>
-            </Link>
-          </div>
-
-          {/* Centre — search (desktop) */}
-          <div className="hidden sm:flex flex-1 max-w-sm mx-4 relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search prompts..."
-              className="w-full pl-8 pr-3 py-1.5 text-sm border border-ink-300 rounded-lg bg-ink-100 focus:outline-none focus:ring-2 focus:ring-ink-900 focus:border-transparent placeholder:text-ink-500 text-ink-900"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link
-              to="/login"
-              className="text-sm font-semibold text-ink-700 hover:text-ink-900 transition-colors px-3 py-1.5"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/signup"
-              className="text-sm font-bold bg-ink-900 text-white px-4 py-1.5 rounded-lg hover:bg-ink-700 transition-colors"
-            >
-              Get started
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <div className="bg-white border-b border-ink-300">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      {/* Page header — sticky inside the AppShell content area */}
+      <div className="sticky top-0 z-20 bg-white border-b border-ink-300">
+        {/* Title row */}
+        <div className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-center justify-between gap-4 flex-wrap"
           >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-ink-900 flex items-center justify-center">
-                <Sparkles size={14} className="text-white" />
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-ink-900 flex items-center justify-center flex-shrink-0">
+                <Sparkles size={16} className="text-white" />
               </div>
-              <span className="text-xs font-bold text-ink-500 uppercase tracking-wider">Community</span>
+              <div>
+                <h1 className="font-display font-black text-xl text-ink-900 tracking-tight leading-tight">
+                  Explore Prompts
+                </h1>
+                <p className="text-xs text-ink-500 mt-0.5">
+                  {isLoading ? 'Loading…' : `${prompts.length} public prompt${prompts.length !== 1 ? 's' : ''} from the community`}
+                </p>
+              </div>
             </div>
-            <h1 className="font-display font-black text-3xl sm:text-4xl text-ink-900 tracking-tight mb-2">
-              Explore Prompts
-            </h1>
-            <p className="text-ink-500 text-[15px] max-w-lg leading-relaxed">
-              Discover AI prompts shared by the community. Copy any prompt and use it instantly — or publish your own.
-            </p>
-            <div className="flex flex-wrap items-center gap-4 mt-5 text-sm text-ink-500">
-              <span className="flex items-center gap-1.5 font-semibold text-ink-900">
-                <Globe size={14} className="text-green-600" />
-                {isLoading ? '—' : prompts.length} public prompt{prompts.length !== 1 ? 's' : ''}
-              </span>
-              <span className="text-ink-300">·</span>
-              <Link
-                to="/dashboard"
-                className="flex items-center gap-1.5 hover:text-ink-900 transition-colors"
-              >
-                <Lock size={13} />
-                Manage your prompts
-              </Link>
+
+            {/* Desktop search */}
+            <div className="hidden sm:flex relative w-64">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search prompts…"
+                className="w-full pl-8 pr-3 py-2 text-sm border border-ink-300 rounded-xl bg-ink-100 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder:text-ink-500 text-ink-900"
+              />
             </div>
           </motion.div>
-        </div>
-      </div>
 
-      {/* Filter bar */}
-      <div className="sticky top-14 z-30 bg-white border-b border-ink-300">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col sm:flex-row gap-2.5">
           {/* Mobile search */}
-          <div className="sm:hidden relative">
+          <div className="sm:hidden mt-3 relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search prompts..."
-              className="w-full pl-8 pr-3 py-1.5 text-sm border border-ink-300 rounded-lg bg-ink-100 focus:outline-none focus:ring-2 focus:ring-ink-900 focus:border-transparent placeholder:text-ink-500 text-ink-900"
+              placeholder="Search prompts…"
+              className="w-full pl-8 pr-3 py-2 text-sm border border-ink-300 rounded-xl bg-ink-100 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder:text-ink-500 text-ink-900"
             />
           </div>
+        </div>
 
-          {/* Platform pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-            {PLATFORMS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setActivePlatform(p)}
-                className={cn(
-                  'whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-150 flex-shrink-0',
-                  activePlatform === p
-                    ? 'bg-ink-900 text-white border-ink-900'
-                    : 'bg-white text-ink-700 border-ink-300 hover:border-ink-700',
-                )}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+        {/* Platform filter pills */}
+        <div
+          className="flex items-center gap-1.5 px-4 sm:px-6 lg:px-8 pb-3 overflow-x-auto"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {PLATFORMS.map((p) => (
+            <button
+              key={p}
+              onClick={() => setActivePlatform(p)}
+              className={cn(
+                'whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-150 flex-shrink-0',
+                activePlatform === p
+                  ? 'bg-ink-900 text-white border-ink-900'
+                  : 'bg-white text-ink-700 border-ink-300 hover:border-ink-700 hover:text-ink-900',
+              )}
+            >
+              {p}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Grid */}
-      <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
@@ -554,7 +484,7 @@ export function ExplorePromptsPage() {
               {(search || activePlatform !== 'All') && ' found'}
             </p>
             <AnimatePresence mode="popLayout">
-              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filtered.map((prompt) => (
                   <PromptCard key={prompt.id} prompt={prompt} />
                 ))}
@@ -563,18 +493,6 @@ export function ExplorePromptsPage() {
           </>
         )}
       </div>
-
-      {/* Minimal footer */}
-      <footer className="border-t border-ink-300 bg-white mt-auto">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-ink-500">&copy; 2026 aiwithrakshith.tech</p>
-          <div className="flex items-center gap-5">
-            <Link to="/privacy" className="text-xs text-ink-500 hover:text-ink-900 transition-colors">Privacy</Link>
-            <Link to="/terms" className="text-xs text-ink-500 hover:text-ink-900 transition-colors">Terms</Link>
-            <Link to="/signup" className="text-xs font-semibold text-ink-900 hover:text-brand-500 transition-colors">Create account</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
