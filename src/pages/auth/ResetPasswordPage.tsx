@@ -30,23 +30,58 @@ export function ResetPasswordPage() {
   });
 
   useEffect(() => {
+    // Method 1: hash fragment — #access_token=...&type=recovery
     const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    const type = params.get('type');
+    const hashParams = new URLSearchParams(hash);
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    const hashType = hashParams.get('type');
 
-    if (!accessToken || !refreshToken || type !== 'recovery') {
-      setPageState('invalid');
+    if (accessToken && refreshToken && hashType === 'recovery') {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
+        if (error) { setPageState('invalid'); return; }
+        setRecoveryToken(accessToken);
+        window.history.replaceState(null, '', window.location.pathname);
+        setPageState('ready');
+      });
       return;
     }
 
-    supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
-      if (error) { setPageState('invalid'); return; }
-      setRecoveryToken(accessToken);
-      window.history.replaceState(null, '', window.location.pathname);
-      setPageState('ready');
+    // Method 2: query params — ?token_hash=...&type=recovery (PKCE flow)
+    const searchParams = new URLSearchParams(window.location.search);
+    const tokenHash = searchParams.get('token_hash');
+    const queryType = searchParams.get('type');
+
+    if (tokenHash && queryType === 'recovery') {
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }).then(({ data, error }) => {
+        if (error || !data.session) { setPageState('invalid'); return; }
+        setRecoveryToken(data.session.access_token);
+        window.history.replaceState(null, '', window.location.pathname);
+        setPageState('ready');
+      });
+      return;
+    }
+
+    // Method 3: let onAuthStateChange pick up PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        setRecoveryToken(session.access_token);
+        window.history.replaceState(null, '', window.location.pathname);
+        setPageState('ready');
+        subscription.unsubscribe();
+      }
     });
+
+    // Give it 3s before declaring invalid
+    const timer = setTimeout(() => {
+      subscription.unsubscribe();
+      setPageState('invalid');
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const onSubmit = async (data: FormData) => {

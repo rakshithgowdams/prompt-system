@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
 const schema = z.object({
   email: z.string({ error: 'Email is required' }).email('Enter a valid email'),
@@ -22,11 +23,21 @@ export function ForgotPasswordPage() {
   });
 
   const onSubmit = async (data: FormData) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) { toast.error(error.message); return; }
-    setSent(true);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-reset-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email }),
+      });
+      const json = await res.json();
+      if (!res.ok && json.error) {
+        toast.error(json.error);
+        return;
+      }
+      setSent(true);
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    }
   };
 
   return (
