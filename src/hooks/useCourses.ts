@@ -102,6 +102,17 @@ export interface CourseCertificate {
   user_id: string;
   certificate_number: string;
   issued_at: string;
+  department: string;
+  internship_from: string | null;
+  internship_to: string | null;
+  growth_area: string;
+  instructor_name: string;
+  student_name: string;
+  course_title: string;
+  course_category: string;
+  serial_number: string;
+  share_slug: string | null;
+  share_view_count: number;
 }
 
 // ── Course queries ────────────────────────────────────────────────────────────
@@ -600,6 +611,101 @@ export function useAllMyCertificates() {
       return data as CourseCertificate[];
     },
     enabled: !!user,
+  });
+}
+
+// ── Certificate Issuance ─────────────────────────────────────────────────────
+
+export interface IssueCertificateInput {
+  course_id: string;
+  department: string;
+  internship_from: string;
+  internship_to: string;
+  growth_area: string;
+  instructor_name?: string;
+}
+
+export function useIssueCertificate() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: IssueCertificateInput) => {
+      const { data: course } = await supabase
+        .from('courses')
+        .select('title, category')
+        .eq('id', p.course_id)
+        .maybeSingle();
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('display_name')
+        .eq('id', user!.id)
+        .maybeSingle();
+
+      const studentName = profile?.display_name
+        || user!.email!.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+
+      const { data, error } = await supabase
+        .from('course_certificates')
+        .insert({
+          course_id: p.course_id,
+          user_id: user!.id,
+          department: p.department,
+          internship_from: p.internship_from,
+          internship_to: p.internship_to,
+          growth_area: p.growth_area,
+          instructor_name: p.instructor_name ?? 'Rakshith',
+          student_name: studentName,
+          course_title: course?.title ?? '',
+          course_category: course?.category ?? '',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as CourseCertificate;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['my-certificate', vars.course_id] });
+      qc.invalidateQueries({ queryKey: ['all-my-certificates'] });
+    },
+  });
+}
+
+export function useCertificateBySlug(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['certificate-by-slug', slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      const { data, error } = await supabase
+        .from('course_certificates')
+        .select('id, certificate_number, issued_at, department, internship_from, internship_to, growth_area, instructor_name, student_name, course_title, course_category, serial_number, share_slug, share_view_count')
+        .eq('share_slug', slug)
+        .maybeSingle();
+      if (error) throw error;
+
+      if (data) {
+        supabase.rpc('increment_certificate_view', { slug }).catch(() => {});
+      }
+
+      return data as CourseCertificate | null;
+    },
+    enabled: !!slug,
+  });
+}
+
+const TEMPLATE_PATH = 'templates/certificates/mdn-internship-template.jpg';
+
+export function useCertificateTemplateUrl() {
+  return useQuery({
+    queryKey: ['certificate-template-url'],
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from('prompt-media')
+        .createSignedUrl(TEMPLATE_PATH, 60 * 60 * 24);
+      return data?.signedUrl ?? '';
+    },
+    staleTime: 60 * 60 * 1000,
   });
 }
 
