@@ -296,6 +296,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <>
       <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-800 flex-shrink-0">
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Icon name="lock" size={16} className="text-white" weight={400} fill />
+        </div>
         <span className="font-bold text-white text-lg">aiwithrakshith.tech</span>
       </div>
 
@@ -441,6 +444,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Icon name="menu" size={22} />
           </button>
           <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
+              <Icon name="lock" size={13} className="text-white" weight={400} fill />
+            </div>
             <span className="font-bold text-white">aiwithrakshith.tech</span>
           </div>
           <div className="w-9" />
