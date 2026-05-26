@@ -13,7 +13,7 @@ import type { Project } from '../../lib/database.types';
 
 // ── Project tree item in sidebar ──────────────────────────────────────────────
 
-function SidebarProjectTree({ project, isActive }: { project: Project; isActive: (href: string) => boolean }) {
+function SidebarProjectTree({ project, isActive, onClose }: { project: Project; isActive: (href: string) => boolean; onClose?: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -56,6 +56,7 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
   const navigateToFolder = (folderId: string) => {
     navigate(`${filesBase}?folder=${folderId}`);
     setExpandedFolders((prev) => new Set([...prev, folderId]));
+    onClose?.();
   };
 
   const rootFiles = allFiles.filter((f) => !f.folder_id);
@@ -106,7 +107,7 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
               {rootFiles.map((file) => (
                 <button
                   key={file.id}
-                  onClick={() => navigate(filesBase)}
+                  onClick={() => { navigate(filesBase); onClose?.(); }}
                   className={cn(
                     'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left',
                     isFilesActive && !activeFolderInUrl
@@ -182,7 +183,7 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                             folderFiles.map((file) => (
                               <button
                                 key={file.id}
-                                onClick={() => navigate(`${filesBase}?folder=${folder.id}`)}
+                                onClick={() => { navigate(`${filesBase}?folder=${folder.id}`); onClose?.(); }}
                                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-ink-500 hover:text-ink-900 hover:bg-ink-100 transition-colors text-left"
                                 title={file.file_name}
                               >
@@ -329,6 +330,7 @@ function SidebarNav({
                   key={project.id}
                   project={project}
                   isActive={isActive}
+                  onClose={onClose}
                 />
               ))}
             </div>
@@ -362,7 +364,7 @@ function SidebarNav({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 4, scale: 0.97 }}
                 transition={{ duration: 0.13 }}
-                className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-ink-300 rounded-lg shadow-card-hover overflow-hidden z-50"
+                className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-ink-300 rounded-lg shadow-card-hover overflow-hidden z-[80]"
               >
                 <button
                   onClick={handleSignOut}
@@ -441,19 +443,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AnimatePresence>
         {sidebarOpen && (
           <>
+            {/* Backdrop — sits behind sidebar, click closes */}
             <motion.div
+              key="sidebar-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
+            {/* Sidebar — sits above backdrop */}
             <motion.aside
+              key="sidebar-panel"
               initial={{ x: -288 }}
               animate={{ x: 0 }}
               exit={{ x: -288 }}
               transition={{ type: 'spring', damping: 32, stiffness: 260 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-50 flex flex-col lg:hidden shadow-2xl"
+              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-[70] flex flex-col lg:hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
             >
               <SidebarNav {...sidebarProps} onClose={() => setSidebarOpen(false)} />
             </motion.aside>
