@@ -250,7 +250,8 @@ export function CoursePlayerPage() {
     const idx = lessons.findIndex((l) => l.id === activeLesson.id);
     const isLastLesson = idx === lessons.length - 1;
     if (isLastLesson) {
-      toast.success('Course complete! Your certificate is ready to claim.', { duration: 5000 });
+      toast.success('Course complete! Generating your certificate...', { duration: 3000 });
+      setTimeout(() => navigate(`/courses/${courseId}/certificate`), 2000);
     } else {
       toast.success('Lesson marked complete!');
       setActiveLessonId(lessons[idx + 1].id);

@@ -1,36 +1,68 @@
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourse, useMyCertificate } from '../hooks/useCourses';
 import { CertificateView } from '../components/certificate/CertificateView';
 import { CertificateActions } from '../components/certificate/CertificateActions';
-import { CertificateGate } from '../components/certificate/CertificateGate';
 import { Icon } from '../components/ui/Icon';
-
-function isCertificateComplete(cert: { department: string; growth_area: string; internship_from: string | null; internship_to: string | null }) {
-  return cert.department.trim() !== '' && cert.growth_area.trim() !== '' && !!cert.internship_from && !!cert.internship_to;
-}
+import { supabase } from '../lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function CertificatePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: course } = useCourse(courseId ?? '');
   const { data: certificate, isLoading } = useMyCertificate(courseId ?? '');
+
+  // Auto-patch any stubs that have empty fields (from legacy flow)
+  useEffect(() => {
+    if (!certificate) return;
+    const needsPatch =
+      !certificate.department ||
+      !certificate.growth_area ||
+      !certificate.internship_from ||
+      !certificate.internship_to;
+    if (!needsPatch) return;
+
+    supabase.rpc('patch_incomplete_certificate', { p_cert_id: certificate.id })
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ['my-certificate', courseId] });
+      });
+  }, [certificate, courseId, qc]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-ink-100 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-ink-500">Loading your certificate...</p>
+        </div>
       </div>
     );
   }
 
-  // No cert at all, or it's a stub with empty required fields — show the gate form
-  if (!certificate || !isCertificateComplete(certificate)) {
+  if (!certificate) {
     return (
-      <CertificateGate
-        courseId={courseId!}
-        courseTitle={course?.title ?? ''}
-        existingStub={certificate}
-      />
+      <div className="min-h-screen bg-ink-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center space-y-6">
+          <div className="w-20 h-20 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center mx-auto">
+            <Icon name="workspace_premium" size={36} className="text-amber-500" fill />
+          </div>
+          <div>
+            <h1 className="text-xl font-display font-extrabold text-ink-900 mb-2">Certificate Not Yet Earned</h1>
+            <p className="text-sm text-ink-500 leading-relaxed">
+              Complete all lessons in <strong>{course?.title ?? 'this course'}</strong> to automatically receive your certificate.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(`/courses/${courseId}/learn`)}
+            className="inline-flex items-center gap-2 bg-ink-900 text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-ink-700 transition-colors"
+          >
+            <Icon name="play_arrow" size={16} />
+            Continue Learning
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -59,9 +91,10 @@ export function CertificatePage() {
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
           <Icon name="verified" size={22} className="text-green-600" fill />
           <div>
-            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Completion</p>
+            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Internship</p>
             <p className="text-xs text-ink-500">
-              Issued to {certificate.student_name} &middot; {new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              Issued to <strong>{certificate.student_name}</strong> &middot;{' '}
+              {new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
         </div>
