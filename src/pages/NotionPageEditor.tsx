@@ -428,7 +428,7 @@ export function NotionPageEditor() {
     }
   }, [page]);
 
-  // Auto-save debounced
+  // Auto-save debounced at 600ms — optimistic update is applied immediately in the mutation
   const scheduleSave = useCallback((newTitle: string, newBlocks: Block[]) => {
     setSaved(false);
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -440,7 +440,7 @@ export function NotionPageEditor() {
       } catch {
         toast.error('Auto-save failed');
       }
-    }, 1200);
+    }, 600);
   }, [pageId, updatePage]);
 
   const setTitleAndSave = (v: string) => {

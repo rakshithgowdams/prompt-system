@@ -1,10 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Prompt, MediaFile } from '../lib/database.types';
 import { useAuth } from '../contexts/AuthContext';
 
 export function usePrompts(projectId?: string) {
   const { user } = useAuth();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`prompts:user:${user.id}:${projectId ?? 'all'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'prompts', filter: `user_id=eq.${user.id}` },
+        () => { qc.invalidateQueries({ queryKey: ['prompts', projectId, user.id] }); },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, projectId, qc]);
+
   return useQuery({
     queryKey: ['prompts', projectId, user?.id],
     queryFn: async () => {
@@ -24,6 +42,25 @@ export function usePrompts(projectId?: string) {
 
 export function usePrompt(id: string) {
   const { user } = useAuth();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!user || !id) return;
+
+    const channel = supabase
+      .channel(`prompt:${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'prompts', filter: `id=eq.${id}` },
+        (payload) => {
+          qc.setQueryData(['prompt', id], payload.new as Prompt);
+        },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, id, qc]);
+
   return useQuery({
     queryKey: ['prompt', id],
     queryFn: async () => {
@@ -98,6 +135,15 @@ export function useUpdatePrompt() {
         .single();
       if (error) throw error;
       return data as Prompt;
+    },
+    onMutate: async ({ id, ...input }) => {
+      await qc.cancelQueries({ queryKey: ['prompt', id] });
+      const prev = qc.getQueryData<Prompt>(['prompt', id]);
+      qc.setQueryData(['prompt', id], (old: Prompt | undefined) => old ? { ...old, ...input } : old);
+      return { prev };
+    },
+    onError: (_err, { id }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['prompt', id], ctx.prev);
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['prompts'] });

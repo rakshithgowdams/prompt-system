@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Project } from '../lib/database.types';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,7 +18,6 @@ async function ensureDefaultProjects(userId: string): Promise<Project[]> {
 
   if (error) throw error;
 
-  // If defaults are missing (trigger may have failed), create them now
   const existingSlugs = (existing ?? []).map((p) => p.slug);
   const missing = DEFAULT_PROJECTS.filter((d) => !existingSlugs.includes(d.slug));
 
@@ -41,6 +41,23 @@ async function ensureDefaultProjects(userId: string): Promise<Project[]> {
 
 export function useProjects() {
   const { user } = useAuth();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`projects:user:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${user.id}` },
+        () => { qc.invalidateQueries({ queryKey: ['projects', user.id] }); },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, qc]);
+
   return useQuery({
     queryKey: ['projects', user?.id],
     queryFn: () => ensureDefaultProjects(user!.id),
