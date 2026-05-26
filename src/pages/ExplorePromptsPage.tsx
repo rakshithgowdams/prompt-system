@@ -95,260 +95,6 @@ function useSignedUrls(mediaFiles: MediaFile[]) {
   return { urls, loading };
 }
 
-// ── Image Carousel ────────────────────────────────────────────────────────────
-
-function ImageCarousel({
-  images,
-  urls,
-  loading,
-}: {
-  images: MediaFile[];
-  urls: Record<string, string>;
-  loading: boolean;
-}) {
-  const [active, setActive] = useState(0);
-  const [direction, setDirection] = useState<1 | -1>(1); // 1 = next, -1 = prev
-  const [fullscreen, setFullscreen] = useState(false);
-
-  useEffect(() => { setActive(0); }, [images.length]);
-
-  const prev = useCallback(() => {
-    setDirection(-1);
-    setActive((i) => (i - 1 + images.length) % images.length);
-  }, [images.length]);
-
-  const next = useCallback(() => {
-    setDirection(1);
-    setActive((i) => (i + 1) % images.length);
-  }, [images.length]);
-
-  // Touch swipe support
-  const touchStartX = useRef<number | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
-    touchStartX.current = null;
-  };
-
-  useEffect(() => {
-    if (!fullscreen) return;
-    const h = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreen(false);
-      if (e.key === 'ArrowLeft') prev();
-      if (e.key === 'ArrowRight') next();
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [fullscreen, prev, next]);
-
-  if (images.length === 0) return null;
-
-  const activeUrl = urls[images[active]?.id];
-
-  const slideVariants = {
-    enter: (dir: number) => ({ x: dir * 60, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir * -60, opacity: 0 }),
-  };
-
-  return (
-    <>
-      <div
-        className="relative rounded-2xl overflow-hidden select-none bg-[#111]"
-        style={{ minHeight: 260 }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Image stage */}
-        <div
-          className="relative cursor-zoom-in"
-          style={{ minHeight: 260 }}
-          onClick={() => activeUrl && setFullscreen(true)}
-        >
-          {loading ? (
-            <div className="absolute inset-0 animate-pulse bg-ink-100 rounded-2xl" style={{ minHeight: 260 }} />
-          ) : activeUrl ? (
-            <div className="relative overflow-hidden" style={{ minHeight: 260 }}>
-              <AnimatePresence mode="popLayout" custom={direction} initial={false}>
-                <motion.img
-                  key={active}
-                  custom={direction}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.28, ease: [0.32, 0, 0.18, 1] }}
-                  src={activeUrl}
-                  alt={images[active]?.file_name}
-                  className="w-full object-contain rounded-2xl"
-                  style={{ maxHeight: 380, display: 'block' }}
-                  draggable={false}
-                />
-              </AnimatePresence>
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-white/30">
-              <ImageIcon size={36} />
-            </div>
-          )}
-        </div>
-
-        {/* Gradient overlays for buttons */}
-        {images.length > 1 && (
-          <>
-            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/20 to-transparent pointer-events-none rounded-l-2xl" />
-            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/20 to-transparent pointer-events-none rounded-r-2xl" />
-          </>
-        )}
-
-        {/* Counter pill */}
-        <div className="absolute top-3 left-3 z-10 bg-black/55 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full tabular-nums">
-          {active + 1} / {images.length}
-        </div>
-
-        {/* Expand hint */}
-        {activeUrl && (
-          <div className="absolute top-3 right-3 z-10 bg-black/40 backdrop-blur-md text-white/80 text-[10px] px-2 py-1 rounded-full pointer-events-none">
-            tap to expand
-          </div>
-        )}
-
-        {/* Prev / Next */}
-        {images.length > 1 && (
-          <>
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={(e) => { e.stopPropagation(); prev(); }}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
-            >
-              <ChevronLeft size={17} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={(e) => { e.stopPropagation(); next(); }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
-            >
-              <ChevronRight size={17} />
-            </motion.button>
-          </>
-        )}
-
-        {/* Dot indicators */}
-        {images.length > 1 && images.length <= 8 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            {images.map((_, i) => (
-              <motion.button
-                key={i}
-                onClick={(e) => { e.stopPropagation(); setDirection(i > active ? 1 : -1); setActive(i); }}
-                animate={{ width: i === active ? 18 : 6, opacity: i === active ? 1 : 0.5 }}
-                transition={{ duration: 0.22 }}
-                className="h-1.5 rounded-full bg-white"
-                style={{ width: i === active ? 18 : 6 }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Thumbnails strip */}
-      {images.length > 1 && (
-        <div className="flex gap-2 mt-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {images.map((img, i) => (
-            <motion.button
-              key={img.id}
-              whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
-              onClick={() => { setDirection(i > active ? 1 : -1); setActive(i); }}
-              className={cn(
-                'flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200',
-                i === active
-                  ? 'border-ink-900 shadow-md opacity-100 ring-2 ring-ink-900/20'
-                  : 'border-transparent opacity-50 hover:opacity-80',
-              )}
-            >
-              {urls[img.id] ? (
-                <img src={urls[img.id]} alt="" className="w-full h-full object-cover" draggable={false} />
-              ) : (
-                <div className="w-full h-full bg-ink-100 flex items-center justify-center">
-                  <ImageIcon size={12} className="text-ink-300" />
-                </div>
-              )}
-            </motion.button>
-          ))}
-        </div>
-      )}
-
-      {/* Fullscreen lightbox */}
-      <AnimatePresence>
-        {fullscreen && activeUrl && (
-          <motion.div
-            key="fs"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-[200] bg-black/96 flex items-center justify-center"
-            onClick={() => setFullscreen(false)}
-          >
-            {/* Close */}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-              onClick={() => setFullscreen(false)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
-            >
-              <X size={18} />
-            </motion.button>
-
-            {images.length > 1 && (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.1, x: -2 }} whileTap={{ scale: 0.9 }}
-                  onClick={(e) => { e.stopPropagation(); prev(); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
-                >
-                  <ChevronLeft size={20} />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1, x: 2 }} whileTap={{ scale: 0.9 }}
-                  onClick={(e) => { e.stopPropagation(); next(); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
-                >
-                  <ChevronRight size={20} />
-                </motion.button>
-              </>
-            )}
-
-            <AnimatePresence mode="popLayout" custom={direction} initial={false}>
-              <motion.img
-                key={active}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3, ease: [0.32, 0, 0.18, 1] }}
-                src={activeUrl}
-                alt=""
-                className="max-w-[92vw] max-h-[88vh] object-contain rounded-xl shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-                draggable={false}
-              />
-            </AnimatePresence>
-
-            {/* Counter */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-xs tabular-nums"
-            >
-              {active + 1} / {images.length}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
 
 // ── Comment bubble ────────────────────────────────────────────────────────────
 
@@ -421,9 +167,11 @@ function DetailModal({
   const [copied, setCopied] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [activeTab, setActiveTab] = useState<'prompt' | 'comments'>('prompt');
+  const [activeImage, setActiveImage] = useState(0);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const imageScrollRef = useRef<HTMLDivElement>(null);
 
   const images = prompt.media_files.filter((f) => f.file_type === 'image');
   const videos = prompt.media_files.filter((f) => f.file_type === 'video');
@@ -497,16 +245,21 @@ function DetailModal({
         onClick={onClose}
       />
 
-      {/* Sheet — slides up from bottom, same animation on all screen sizes */}
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
-        className="fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-white md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl md:rounded-t-3xl rounded-t-3xl shadow-2xl"
-        style={{ maxHeight: '92dvh' }}
-        onClick={(e) => e.stopPropagation()}
+      {/* Centering wrapper — fixed full-screen flex container */}
+      <div
+        className="fixed inset-0 z-[60] flex items-end md:items-end justify-center pointer-events-none"
+        onClick={onClose}
       >
+        {/* Sheet — slides up from bottom, properly centered */}
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
+          className="pointer-events-auto w-full max-w-lg flex flex-col bg-white rounded-t-3xl shadow-2xl"
+          style={{ maxHeight: '92dvh' }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* ── Sticky header ── */}
         <div className="flex-shrink-0 pt-3 pb-0">
           {/* Drag pill */}
@@ -542,27 +295,103 @@ function DetailModal({
           className="flex-1 overflow-y-auto"
           style={{ overflowY: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
         >
-          {/* ── Images: plain inline display, no animation ── */}
-          {(images.length > 0 || videos.length > 0) && (
-            <div className="px-5 pt-4 space-y-3">
-              {images.map((img) => (
-                <div key={img.id} className="rounded-2xl overflow-hidden bg-ink-100">
-                  {urlsLoading ? (
-                    <div className="w-full aspect-[4/3] animate-pulse bg-ink-200" />
-                  ) : urls[img.id] ? (
-                    <img
-                      src={urls[img.id]}
-                      alt={img.file_name}
-                      className="w-full h-auto block"
-                      draggable={false}
-                    />
-                  ) : (
-                    <div className="w-full aspect-[4/3] flex items-center justify-center bg-ink-100">
-                      <ImageIcon size={28} className="text-ink-300" />
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* ── Images: horizontal scroll with nav arrows ── */}
+          {images.length > 0 && (
+            <div className="relative pt-4">
+              {/* Scroll container */}
+              <div
+                ref={imageScrollRef}
+                className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-5 pb-2"
+                style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                onScroll={() => {
+                  const el = imageScrollRef.current;
+                  if (!el) return;
+                  const idx = Math.round(el.scrollLeft / el.clientWidth);
+                  setActiveImage(Math.min(idx, images.length - 1));
+                }}
+              >
+                {images.map((img) => (
+                  <div key={img.id} className="flex-shrink-0 w-full snap-center rounded-2xl overflow-hidden bg-ink-100">
+                    {urlsLoading ? (
+                      <div className="w-full aspect-[4/3] animate-pulse bg-ink-200" />
+                    ) : urls[img.id] ? (
+                      <img
+                        src={urls[img.id]}
+                        alt={img.file_name}
+                        className="w-full h-auto block"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="w-full aspect-[4/3] flex items-center justify-center bg-ink-100">
+                        <ImageIcon size={28} className="text-ink-300" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Left / Right arrows */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() => {
+                      const el = imageScrollRef.current;
+                      if (!el) return;
+                      const prev = Math.max(0, activeImage - 1);
+                      el.scrollTo({ left: prev * el.clientWidth, behavior: 'smooth' });
+                      setActiveImage(prev);
+                    }}
+                    className={cn(
+                      'absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-ink-700 hover:bg-white transition-all active:scale-90',
+                      activeImage === 0 && 'opacity-0 pointer-events-none',
+                    )}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const el = imageScrollRef.current;
+                      if (!el) return;
+                      const next = Math.min(images.length - 1, activeImage + 1);
+                      el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' });
+                      setActiveImage(next);
+                    }}
+                    className={cn(
+                      'absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-ink-700 hover:bg-white transition-all active:scale-90',
+                      activeImage === images.length - 1 && 'opacity-0 pointer-events-none',
+                    )}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+
+                  {/* Dot indicators */}
+                  <div className="flex justify-center gap-1.5 pt-2 pb-1">
+                    {images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          const el = imageScrollRef.current;
+                          if (!el) return;
+                          el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+                          setActiveImage(i);
+                        }}
+                        className={cn(
+                          'rounded-full transition-all duration-200',
+                          i === activeImage
+                            ? 'w-5 h-1.5 bg-ink-900'
+                            : 'w-1.5 h-1.5 bg-ink-300 hover:bg-ink-400',
+                        )}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Videos */}
+          {videos.length > 0 && (
+            <div className="px-5 pt-3 space-y-3">
               {videos.map((vid) => urls[vid.id] && (
                 <video
                   key={vid.id}
@@ -735,6 +564,7 @@ function DetailModal({
           </button>
         </div>
       </motion.div>
+      </div>
     </>
   );
 }
