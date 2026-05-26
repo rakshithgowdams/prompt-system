@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -40,6 +40,186 @@ function ProgressRing({ pct, size = 40, stroke = 3.5 }: { pct: number; size?: nu
         strokeDasharray={circ} strokeDashoffset={circ * (1 - pct / 100)}
         strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
     </svg>
+  );
+}
+
+// ── Confetti particle ─────────────────────────────────────────────────────────
+
+interface Particle {
+  id: number;
+  x: number;
+  color: string;
+  size: number;
+  delay: number;
+  duration: number;
+  rotation: number;
+  shape: 'rect' | 'circle' | 'star';
+}
+
+const CONFETTI_COLORS = [
+  '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6',
+  '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4',
+];
+
+function generateParticles(count: number): Particle[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+    size: 6 + Math.random() * 8,
+    delay: Math.random() * 1.2,
+    duration: 2.5 + Math.random() * 2,
+    rotation: Math.random() * 720 - 360,
+    shape: (['rect', 'circle', 'star'] as const)[Math.floor(Math.random() * 3)],
+  }));
+}
+
+function ConfettiBlast({ active }: { active: boolean }) {
+  const particles = useRef(generateParticles(80));
+
+  if (!active) return null;
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+      {particles.current.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ x: `${p.x}vw`, y: -20, opacity: 1, rotate: 0 }}
+          animate={{ y: '110vh', opacity: [1, 1, 0.8, 0], rotate: p.rotation }}
+          transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: p.size,
+            height: p.shape === 'circle' ? p.size : p.size * 0.6,
+            backgroundColor: p.color,
+            borderRadius: p.shape === 'circle' ? '50%' : p.shape === 'rect' ? '2px' : '0',
+            clipPath: p.shape === 'star'
+              ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+              : undefined,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Course complete celebration popup ─────────────────────────────────────────
+
+function CourseCompletePopup({
+  courseName,
+  onViewCertificate,
+  onDismiss,
+}: {
+  courseName: string;
+  onViewCertificate: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0, y: 40 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.85, opacity: 0, y: 20 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 260, delay: 0.1 }}
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+      >
+        {/* Top gradient banner */}
+        <div className="relative h-36 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 flex flex-col items-center justify-center overflow-hidden">
+          {/* Decorative rings */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-48 h-48 rounded-full border-4 border-white/20 absolute" />
+            <div className="w-32 h-32 rounded-full border-4 border-white/20 absolute" />
+          </div>
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', damping: 14, stiffness: 200, delay: 0.3 }}
+            className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/40 shadow-lg"
+          >
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+            </svg>
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="relative z-10 mt-2 text-white/90 text-xs font-bold tracking-widest uppercase"
+          >
+            Course Complete!
+          </motion.p>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 pt-5 pb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h2 className="text-xl font-display font-extrabold text-ink-900 text-center leading-tight mb-1">
+              Congratulations!
+            </h2>
+            <p className="text-sm text-ink-500 text-center leading-relaxed mb-1">
+              You've successfully completed
+            </p>
+            <p className="text-sm font-bold text-ink-800 text-center leading-snug mb-5 line-clamp-2">
+              {courseName}
+            </p>
+
+            {/* Stats row */}
+            <div className="flex items-center justify-center gap-6 mb-5">
+              {[
+                { icon: '🏆', label: 'Completed' },
+                { icon: '📜', label: 'Certificate' },
+                { icon: '⭐', label: 'Achievement' },
+              ].map((item) => (
+                <div key={item.label} className="flex flex-col items-center gap-1">
+                  <span className="text-2xl">{item.icon}</span>
+                  <span className="text-[10px] font-semibold text-ink-500 uppercase tracking-wide">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={onViewCertificate}
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="white" strokeWidth="2"/>
+                <path d="M8 21h8M12 17v4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              View My Certificate
+            </button>
+            <button
+              onClick={onDismiss}
+              className="w-full mt-2.5 h-10 rounded-2xl text-ink-500 hover:text-ink-800 text-sm font-medium transition-colors"
+            >
+              Continue Exploring
+            </button>
+          </motion.div>
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onDismiss}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -204,8 +384,18 @@ export function CoursePlayerPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [completionBanner, setCompletionBanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerCelebration = useCallback(() => {
+    setShowConfetti(true);
+    setShowCelebration(true);
+    setCompletionBanner(true);
+    setTimeout(() => setShowConfetti(false), 5000);
+  }, []);
 
   const activeLesson = lessons.find((l) => l.id === activeLessonId) ?? null;
   const completedIds = new Set(progressList.filter((p) => p.completed).map((p) => p.lesson_id));
@@ -220,6 +410,10 @@ export function CoursePlayerPage() {
       setExpandedSections(new Set(sections.map((s) => s.id)));
     }
   }, [lessons.length]);
+
+  useEffect(() => {
+    if (certificate) setCompletionBanner(true);
+  }, [certificate?.id]);
 
   useEffect(() => {
     setVideoUrl(null);
@@ -253,8 +447,7 @@ export function CoursePlayerPage() {
     const allDone = lessons.length > 0 && nowCompleted.size >= lessons.length;
 
     if (allDone) {
-      toast.success('Course complete! Generating your certificate...', { duration: 3000 });
-      setTimeout(() => navigate(`/courses/${courseId}/certificate`), 2000);
+      triggerCelebration();
     } else {
       toast.success('Lesson marked complete!');
       const idx = lessons.findIndex((l) => l.id === activeLesson.id);
@@ -417,6 +610,66 @@ export function CoursePlayerPage() {
   return (
     // Standalone layout — no AppShell, no dashboard sidebar
     <div className="min-h-screen bg-white flex flex-col overflow-hidden">
+
+      {/* ── Confetti + popup ────────────────────────────────────────────────── */}
+      <ConfettiBlast active={showConfetti} />
+      <AnimatePresence>
+        {showCelebration && (
+          <CourseCompletePopup
+            courseName={course.title}
+            onViewCertificate={() => {
+              setShowCelebration(false);
+              navigate(`/courses/${courseId}/certificate`);
+            }}
+            onDismiss={() => setShowCelebration(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Course complete top banner ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {completionBanner && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden flex-shrink-0 sticky top-0 z-30"
+          >
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-xl flex-shrink-0">🎉</span>
+                <div className="min-w-0">
+                  <p className="text-white font-bold text-sm leading-tight">
+                    Congratulations! You completed this course!
+                  </p>
+                  <p className="text-white/80 text-xs hidden sm:block">Your certificate has been generated and is ready to download.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors backdrop-blur-sm"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="3" width="20" height="14" rx="2" stroke="white" strokeWidth="2"/>
+                    <path d="M8 21h8M12 17v4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Certificate
+                </button>
+                <button
+                  onClick={() => setCompletionBanner(false)}
+                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <header className="flex items-center gap-3 px-4 sm:px-5 h-14 bg-white border-b border-ink-300 flex-shrink-0 sticky top-0 z-30">
