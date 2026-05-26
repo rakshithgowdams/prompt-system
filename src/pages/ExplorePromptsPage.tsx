@@ -875,6 +875,121 @@ function MasonryGrid({ prompts, onSelect }: { prompts: PublishedPrompt[]; onSele
   );
 }
 
+// ── HoverPreview (cursor-following detail tooltip) ───────────────────────────
+
+function HoverPreview({
+  prompt,
+  stats,
+  platformMeta,
+  mouseX,
+  mouseY,
+}: {
+  prompt: PublishedPrompt;
+  stats: { like_count: number; view_count: number; comment_count: number; user_has_liked: boolean } | undefined;
+  platformMeta: { pill: string; icon: string };
+  mouseX: number;
+  mouseY: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x: mouseX, y: mouseY });
+  const targetRef = useRef({ x: mouseX, y: mouseY });
+
+  // Update target whenever prop changes
+  useEffect(() => {
+    targetRef.current = { x: mouseX, y: mouseY };
+  }, [mouseX, mouseY]);
+
+  // Single RAF loop — lerp toward target for smooth cursor follow
+  useEffect(() => {
+    let frame: number;
+    const loop = () => {
+      setPos((p) => ({
+        x: p.x + (targetRef.current.x - p.x) * 0.15,
+        y: p.y + (targetRef.current.y - p.y) * 0.15,
+      }));
+      frame = requestAnimationFrame(loop);
+    };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // Clamp so the card doesn't go off-screen
+  const W = ref.current?.offsetWidth ?? 260;
+  const H = ref.current?.offsetHeight ?? 200;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const ox = 18; // offset from cursor
+  const oy = 18;
+  let left = pos.x + ox;
+  let top = pos.y + oy;
+  if (left + W > vw - 12) left = pos.x - W - ox;
+  if (top + H > vh - 12) top = pos.y - H - oy;
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-[9999] pointer-events-none"
+      style={{ left, top, width: 264 }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 6 }}
+        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-ink-100 overflow-hidden"
+      >
+        {/* Platform + time */}
+        <div className="flex items-center justify-between px-3.5 pt-3.5 pb-2">
+          <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', platformMeta.pill)}>
+            {platformMeta.icon} {prompt.platform}
+          </span>
+          <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
+        </div>
+
+        {/* Title */}
+        <div className="px-3.5 pb-2">
+          <p className="text-[13px] font-bold text-ink-900 leading-snug line-clamp-2">{prompt.title}</p>
+        </div>
+
+        {/* Prompt snippet */}
+        <div className="mx-3.5 mb-3 bg-ink-50 rounded-xl px-3 py-2.5">
+          <p className="text-[11px] font-mono text-ink-600 leading-relaxed line-clamp-4 whitespace-pre-wrap break-words">
+            {prompt.prompt_text}
+          </p>
+        </div>
+
+        {/* Tags */}
+        {prompt.tags.length > 0 && (
+          <div className="px-3.5 pb-3 flex flex-wrap gap-1">
+            {prompt.tags.slice(0, 4).map((tag) => (
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-500 border border-ink-200">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Stats footer */}
+        <div className="flex items-center gap-4 px-3.5 py-2.5 border-t border-ink-100 bg-ink-50/60">
+          <span className="flex items-center gap-1 text-[11px] text-ink-500">
+            <Heart size={11} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
+            {formatCount(stats?.like_count ?? 0)}
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-ink-500">
+            <Eye size={11} />
+            {formatCount(stats?.view_count ?? 0)}
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-ink-500">
+            <MessageCircle size={11} />
+            {formatCount(stats?.comment_count ?? 0)}
+          </span>
+          <span className="ml-auto text-[10px] font-semibold text-ink-400">Click to open</span>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── MasonryCard ───────────────────────────────────────────────────────────────
 
 function MasonryCard({
@@ -892,6 +1007,11 @@ function MasonryCard({
   const platformMeta = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
   const { data: stats } = usePromptStats(prompt.id);
   const [hovered, setHovered] = useState(false);
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    setMouse({ x: e.clientX, y: e.clientY });
+  }, []);
 
   return (
     <motion.div
@@ -902,86 +1022,79 @@ function MasonryCard({
     >
       <motion.div
         onClick={onClick}
+        onMouseMove={handleMouseMove}
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
-        whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(0,0,0,0.13)' }}
+        whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(0,0,0,0.14)' }}
         whileTap={{ scale: 0.98 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 26 }}
         className="relative cursor-pointer rounded-2xl overflow-hidden bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
         style={{ willChange: 'transform' }}
       >
-        {/* Image */}
+        {/* ── Full image (natural aspect ratio, no crop) ── */}
         {firstImage ? (
-          <div className="relative overflow-hidden">
+          <div className="relative overflow-hidden bg-[#f0f0f0]">
             {loading ? (
-              <div className="w-full bg-ink-100 animate-pulse" style={{ paddingBottom: '75%' }} />
+              <div className="w-full animate-pulse bg-ink-100" style={{ paddingBottom: '75%' }} />
             ) : urls[firstImage.id] ? (
-              <motion.img
-                src={urls[firstImage.id]}
-                alt={prompt.title}
-                animate={{ scale: hovered ? 1.04 : 1 }}
-                transition={{ duration: 0.4, ease: [0.32, 0, 0.18, 1] }}
-                className="w-full object-cover"
-                loading="lazy"
-                draggable={false}
-              />
+              <>
+                <motion.img
+                  src={urls[firstImage.id]}
+                  alt={prompt.title}
+                  animate={{ scale: hovered ? 1.035 : 1 }}
+                  transition={{ duration: 0.45, ease: [0.32, 0, 0.18, 1] }}
+                  className="w-full h-auto block"
+                  loading="lazy"
+                  draggable={false}
+                />
+                {/* Gradient overlay on hover */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"
+                  animate={{ opacity: hovered ? 1 : 0 }}
+                  transition={{ duration: 0.22 }}
+                />
+                {/* Stats pill — bottom of image */}
+                <motion.div
+                  className="absolute bottom-0 inset-x-0 flex items-center gap-3 px-3 pb-3"
+                  animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <span className="flex items-center gap-1 text-[11px] text-white font-medium">
+                    <Heart size={11} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
+                    {formatCount(stats?.like_count ?? 0)}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-white">
+                    <Eye size={11} /> {formatCount(stats?.view_count ?? 0)}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-white">
+                    <MessageCircle size={11} /> {formatCount(stats?.comment_count ?? 0)}
+                  </span>
+                </motion.div>
+              </>
             ) : (
               <div className="w-full aspect-[4/3] bg-gradient-to-br from-ink-100 to-ink-200 flex items-center justify-center">
-                <Sparkles size={20} className="text-ink-300" />
+                <Sparkles size={24} className="text-ink-300" />
               </div>
             )}
-
-            {/* Dark overlay */}
-            <motion.div
-              className="absolute inset-0 bg-black"
-              animate={{ opacity: hovered ? 0.18 : 0 }}
-              transition={{ duration: 0.25 }}
-            />
 
             {/* Multi-image badge */}
             {images.length > 1 && (
-              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">
-                <ImageIcon size={9} />
-                {images.length}
+              <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">
+                <ImageIcon size={9} /> {images.length}
               </div>
             )}
-
-            {/* Stats overlay — slides up on hover */}
-            <motion.div
-              className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent px-3 pb-3 pt-8"
-              animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
-              transition={{ duration: 0.22 }}
-            >
-              <div className="flex items-center gap-3 text-white">
-                <span className="flex items-center gap-1 text-[11px] font-medium">
-                  <Heart size={11} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
-                  {formatCount(stats?.like_count ?? 0)}
-                </span>
-                <span className="flex items-center gap-1 text-[11px]">
-                  <Eye size={11} />
-                  {formatCount(stats?.view_count ?? 0)}
-                </span>
-                <span className="flex items-center gap-1 text-[11px]">
-                  <MessageCircle size={11} />
-                  {formatCount(stats?.comment_count ?? 0)}
-                </span>
-              </div>
-            </motion.div>
           </div>
         ) : (
           /* Text-only card */
-          <div className="p-4 bg-gradient-to-br from-ink-50 to-white min-h-[110px] flex flex-col justify-between">
-            <p className="text-[12px] text-ink-700 leading-relaxed font-mono line-clamp-5">
-              {prompt.prompt_text}
-            </p>
+          <div className="p-4 bg-gradient-to-br from-ink-50 to-white min-h-[100px] flex flex-col justify-between">
+            <p className="text-[12px] text-ink-700 leading-relaxed font-mono line-clamp-5">{prompt.prompt_text}</p>
             <div className="flex items-center gap-2 mt-3 text-[10px] text-ink-400">
               <span className="flex items-center gap-0.5">
                 <Heart size={9} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
                 {formatCount(stats?.like_count ?? 0)}
               </span>
               <span className="flex items-center gap-0.5">
-                <Eye size={9} />
-                {formatCount(stats?.view_count ?? 0)}
+                <Eye size={9} /> {formatCount(stats?.view_count ?? 0)}
               </span>
             </div>
           </div>
@@ -995,25 +1108,35 @@ function MasonryCard({
             </span>
             <span className="text-[10px] text-ink-400 flex-shrink-0 mt-0.5">{timeAgo(prompt.created_at)}</span>
           </div>
-          <h3 className="font-semibold text-ink-900 text-[12px] leading-snug line-clamp-2 mt-1">
-            {prompt.title}
-          </h3>
+          <h3 className="font-semibold text-ink-900 text-[12px] leading-snug line-clamp-2 mt-1">{prompt.title}</h3>
           <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-ink-100 text-[11px] text-ink-400">
             <span className="flex items-center gap-1">
               <Heart size={10} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
               {formatCount(stats?.like_count ?? 0)}
             </span>
             <span className="flex items-center gap-1">
-              <Eye size={10} />
-              {formatCount(stats?.view_count ?? 0)}
+              <Eye size={10} /> {formatCount(stats?.view_count ?? 0)}
             </span>
             <span className="flex items-center gap-1">
-              <MessageCircle size={10} />
-              {formatCount(stats?.comment_count ?? 0)}
+              <MessageCircle size={10} /> {formatCount(stats?.comment_count ?? 0)}
             </span>
           </div>
         </div>
       </motion.div>
+
+      {/* Cursor-following detail preview */}
+      <AnimatePresence>
+        {hovered && (
+          <HoverPreview
+            key="preview"
+            prompt={prompt}
+            stats={stats}
+            platformMeta={platformMeta}
+            mouseX={mouse.x}
+            mouseY={mouse.y}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
