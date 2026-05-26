@@ -417,11 +417,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // Close sidebar on route change
+  // Close sidebar on route change (pathname only — search changes must not re-trigger)
   useEffect(() => {
     setSidebarOpen(false);
     setUserMenuOpen(false);
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   // Lock body scroll while mobile sidebar is open
   useEffect(() => {
@@ -470,10 +470,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key="sidebar-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, pointerEvents: 'none' }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] lg:hidden"
-              onClick={() => setSidebarOpen(false)}
+              onClick={(e) => { e.stopPropagation(); setSidebarOpen(false); }}
             />
             {/* Sidebar — sits above backdrop */}
             <motion.aside
@@ -483,7 +483,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               exit={{ x: -288 }}
               transition={{ type: 'spring', damping: 36, stiffness: 320 }}
               className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-[70] flex flex-col lg:hidden shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
             >
               <SidebarNav {...sidebarProps} onClose={() => setSidebarOpen(false)} />
             </motion.aside>
