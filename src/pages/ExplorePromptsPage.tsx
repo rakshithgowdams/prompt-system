@@ -1095,28 +1095,6 @@ function MasonryCard({
           </div>
         )}
 
-        {/* Card footer */}
-        <div className="p-3">
-          <div className="flex items-start justify-between gap-1.5 mb-1">
-            <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md border flex-shrink-0', platformMeta.pill)}>
-              {platformMeta.icon} {prompt.platform}
-            </span>
-            <span className="text-[10px] text-ink-400 flex-shrink-0 mt-0.5">{timeAgo(prompt.created_at)}</span>
-          </div>
-          <h3 className="font-semibold text-ink-900 text-[12px] leading-snug line-clamp-2 mt-1">{prompt.title}</h3>
-          <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-ink-100 text-[11px] text-ink-400">
-            <span className="flex items-center gap-1">
-              <Heart size={10} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
-              {formatCount(stats?.like_count ?? 0)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Eye size={10} /> {formatCount(stats?.view_count ?? 0)}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle size={10} /> {formatCount(stats?.comment_count ?? 0)}
-            </span>
-          </div>
-        </div>
       </motion.div>
 
       {/* Cursor-following detail preview */}
