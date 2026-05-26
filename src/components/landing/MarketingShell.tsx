@@ -316,7 +316,7 @@ function Footer() {
               color: 'transparent',
             }}
           >
-            PromptVault
+            @aiwithrakshith
           </p>
         </motion.div>
 
