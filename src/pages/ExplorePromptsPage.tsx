@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Globe, Copy, Check, Sparkles, Image, Video, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -108,12 +108,19 @@ function Lightbox({
 
 // ── Media gallery inside a card ───────────────────────────────────────────────
 
-function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
+function CardMedia({
+  mediaFiles,
+  onHeightMeasured,
+}: {
+  mediaFiles: MediaFile[];
+  onHeightMeasured?: (h: number) => void;
+}) {
   const images = mediaFiles.filter((f) => f.file_type === 'image');
   const videos = mediaFiles.filter((f) => f.file_type === 'video');
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const mediaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const toLoad = [...images, ...videos];
@@ -138,47 +145,54 @@ function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
     return () => { cancelled = true; };
   }, [mediaFiles.map((f) => f.id).join(',')]);
 
+  // Report rendered height to parent so prompt scroll box can match it
+  useEffect(() => {
+    if (loading || !onHeightMeasured || !mediaRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (mediaRef.current) onHeightMeasured(mediaRef.current.offsetHeight);
+    });
+    observer.observe(mediaRef.current);
+    onHeightMeasured(mediaRef.current.offsetHeight);
+    return () => observer.disconnect();
+  }, [loading, onHeightMeasured]);
+
   if (images.length === 0 && videos.length === 0) return null;
 
   const imageUrls = images.map((f) => signedUrls[f.id]).filter(Boolean);
 
   return (
     <>
-      <div className="rounded-xl overflow-hidden border border-ink-300">
+      <div ref={mediaRef} className="overflow-hidden border-b border-ink-300">
         {loading ? (
           <div className="aspect-video bg-ink-100 animate-pulse" />
         ) : images.length > 0 && signedUrls[images[0].id] ? (
-          <div className={cn('grid gap-0.5', images.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+          /* Stack images vertically — each image shows full height, no cropping */
+          <div className="flex flex-col gap-0.5">
             {images.slice(0, 3).map((img, i) => (
               <div
                 key={img.id}
-                className={cn(
-                  'relative overflow-hidden cursor-pointer group',
-                  images.length === 1 ? 'aspect-video' : 'aspect-square',
-                  images.length === 3 && i === 0 ? 'row-span-2 aspect-auto' : '',
-                )}
+                className="relative cursor-pointer group bg-ink-100"
                 onClick={() => setLightboxIndex(i)}
               >
                 <img
                   src={signedUrls[img.id]}
                   alt={img.file_name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-auto block group-hover:opacity-90 transition-opacity duration-200"
                 />
                 {i === 2 && images.length > 3 && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <span className="text-white font-bold text-lg">+{images.length - 3}</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               </div>
             ))}
           </div>
         ) : videos.length > 0 && signedUrls[videos[0].id] ? (
-          <video src={signedUrls[videos[0].id]} controls preload="metadata" className="w-full max-h-56 bg-black" />
+          <video src={signedUrls[videos[0].id]} controls preload="metadata" className="w-full bg-black" />
         ) : null}
 
         {(images.length > 0 || videos.length > 0) && !loading && (
-          <div className="flex items-center gap-3 px-3 py-2 bg-ink-100 border-t border-ink-300">
+          <div className="flex items-center gap-3 px-3 py-1.5 bg-ink-100 border-t border-ink-300">
             {images.length > 0 && (
               <span className="flex items-center gap-1.5 text-xs text-ink-500 font-medium">
                 <Image size={12} />
@@ -214,6 +228,7 @@ function CardMedia({ mediaFiles }: { mediaFiles: MediaFile[] }) {
 
 function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
   const [copied, setCopied] = useState(false);
+  const [mediaHeight, setMediaHeight] = useState<number>(0);
 
   const handleCopy = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -230,6 +245,9 @@ function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
   const platformColor = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
   const hasMedia = prompt.media_files.length > 0;
 
+  // Prompt scroll box height: matches image section height when available, else 160px default
+  const promptScrollHeight = hasMedia && mediaHeight > 0 ? mediaHeight : 160;
+
   return (
     <motion.article
       layout
@@ -241,7 +259,7 @@ function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
     >
       {hasMedia && (
         <div className="flex-shrink-0">
-          <CardMedia mediaFiles={prompt.media_files} />
+          <CardMedia mediaFiles={prompt.media_files} onHeightMeasured={setMediaHeight} />
         </div>
       )}
 
@@ -272,12 +290,12 @@ function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
           </span>
         </div>
 
-        {/* Prompt text — fixed height with y-scroll */}
+        {/* Prompt text — scrollable, height matches the image section height */}
         <div className="bg-ink-100 rounded-xl border border-ink-300 overflow-hidden">
           <div
             className="overflow-y-auto p-3.5"
             style={{
-              height: hasMedia ? '180px' : '160px',
+              height: `${promptScrollHeight}px`,
               scrollbarWidth: 'thin',
               scrollbarColor: '#D1D7DC transparent',
             }}
