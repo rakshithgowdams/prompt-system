@@ -38,7 +38,7 @@ function Nav() {
             <Lock className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="font-display font-extrabold text-ink-900 text-base tracking-tight">
-            PromptVault
+            aiwithrakshith
           </span>
         </Link>
 
