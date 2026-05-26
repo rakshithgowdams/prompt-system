@@ -130,6 +130,7 @@ export function ProjectFilesPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'file' | 'folder'; item: ProjectFile | Folder } | null>(null);
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
+  const dragCounterRef = useRef(0);
   const [lightboxImages, setLightboxImages] = useState<(ProjectFile & { signedUrl: string })[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [previewFile, setPreviewFile] = useState<(ProjectFile & { signedUrl: string }) | null>(null);
@@ -257,8 +258,29 @@ export function ProjectFilesPage() {
     e.target.value = '';
   }, [uploadBatch]);
 
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) setDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
+    dragCounterRef.current = 0;
     setDragging(false);
     try {
       const entries = await extractEntries(e.dataTransfer);
@@ -420,7 +442,13 @@ export function ProjectFilesPage() {
   if (!project) return <div className="p-8 text-center text-ink-500">Project not found.</div>;
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-white">
+    <div
+      className="flex flex-col h-full min-h-screen bg-white"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
 
       {/* ── Header ── */}
       <div className={cn(
@@ -659,28 +687,26 @@ export function ProjectFilesPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Content area ── */}
-      <div
-        className="flex-1 relative"
-        onDrop={handleDrop}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }}
-      >
-        <AnimatePresence>
-          {dragging && (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-20 bg-blue-50 border-2 border-dashed border-blue-400 flex items-center justify-center pointer-events-none"
-            >
-              <div className="text-center">
-                <Icon name="cloud_upload" size={56} className="text-blue-400 mx-auto mb-3" />
-                <p className="text-blue-600 text-xl font-bold">Drop files or folders here</p>
-                <p className="text-blue-500 text-sm mt-1">Folder structure will be preserved</p>
+      {/* ── Full-page drag overlay ── */}
+      <AnimatePresence>
+        {dragging && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-blue-500/10 backdrop-blur-[2px] border-4 border-dashed border-blue-400 flex items-center justify-center pointer-events-none"
+          >
+            <div className="text-center bg-white/90 rounded-3xl px-12 py-10 shadow-2xl border border-blue-200">
+              <div className="w-20 h-20 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center mx-auto mb-4">
+                <Icon name="cloud_upload" size={40} className="text-blue-500" />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <p className="text-blue-700 text-2xl font-extrabold">Drop to upload</p>
+              <p className="text-blue-500 text-sm mt-1.5 font-medium">Files and folders — structure preserved</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      {/* ── Content area ── */}
+      <div className="flex-1 relative">
         <div className="p-4 lg:p-8">
           {foldersLoading || filesLoading ? (
             viewMode === 'grid' ? <FileGridSkeleton count={12} /> : <ListRowSkeleton count={8} />
