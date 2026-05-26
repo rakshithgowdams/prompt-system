@@ -128,6 +128,12 @@ function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
 
 type LessonTab = 'content' | 'resources';
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function LessonEditor({
   lesson,
   onSave,
@@ -150,59 +156,104 @@ function LessonEditor({
   const [durationMin, setDurationMin] = useState(String(lesson.video_duration_minutes || ''));
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadLabel, setUploadLabel] = useState('');
   const [resources, setResources] = useState(lesson.resources ?? []);
+
+  // Signed URLs for already-uploaded content
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imgInputRef = useRef<HTMLInputElement>(null);
+  const mainFileInputRef = useRef<HTMLInputElement>(null);
   const resInputRef = useRef<HTMLInputElement>(null);
 
-  const handleVideoUpload = async (file: File) => {
-    if (!file.type.startsWith('video/')) { toast.error('Please select a video file'); return; }
-    const MAX_VIDEO = 500 * 1024 * 1024;
-    if (file.size > MAX_VIDEO) { toast.error('Video must be under 500 MB'); return; }
+  // Load signed URLs for existing uploaded content
+  useEffect(() => {
+    if (lesson.video_path && lessonType === 'video') {
+      supabase.storage.from('prompt-media').createSignedUrl(lesson.video_path, 3600)
+        .then(({ data }) => data?.signedUrl && setVideoPreviewUrl(data.signedUrl))
+        .catch(() => {});
+    }
+  }, [lesson.video_path, lessonType]);
+
+  // For image lessons: video_path stores the image path
+  useEffect(() => {
+    if (lesson.video_path && lessonType === 'image') {
+      supabase.storage.from('prompt-media').createSignedUrl(lesson.video_path, 3600)
+        .then(({ data }) => data?.signedUrl && setImagePreviewUrl(data.signedUrl))
+        .catch(() => {});
+    }
+  }, [lesson.video_path, lessonType]);
+
+  const doUpload = async (file: File, path: string, label: string): Promise<string> => {
     setUploading(true);
     setUploadProgress(10);
+    setUploadLabel(label);
     try {
-      const path = `${user!.id}/courses/${lesson.course_id}/lessons/${lesson.id}/${safeName(file.name)}`;
-      setUploadProgress(30);
       const { error } = await supabase.storage.from('prompt-media').upload(path, file, {
-        upsert: true,
-        contentType: file.type,
+        upsert: true, contentType: file.type,
       });
       if (error) throw new Error(error.message);
-      setUploadProgress(100);
-      onSave({ video_path: path, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0 });
-      toast.success('Video uploaded');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
+      setUploadProgress(90);
+      return path;
     } finally {
       setUploading(false);
       setUploadProgress(0);
+      setUploadLabel('');
     }
   };
 
+  const handleVideoUpload = async (file: File) => {
+    if (!file.type.startsWith('video/')) { toast.error('Please select a video file'); return; }
+    if (file.size > 500 * 1024 * 1024) { toast.error('Video must be under 500 MB'); return; }
+    try {
+      const path = `${user!.id}/courses/${lesson.course_id}/lessons/${lesson.id}/${safeName(file.name)}`;
+      await doUpload(file, path, 'Uploading video');
+      const { data: signed } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
+      if (signed?.signedUrl) setVideoPreviewUrl(signed.signedUrl);
+      onSave({ video_path: path, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0 });
+      toast.success('Video uploaded');
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 100 * 1024 * 1024) { toast.error('Image must be under 100 MB'); return; }
+    try {
+      const path = `${user!.id}/courses/${lesson.course_id}/images/${lesson.id}/${safeName(file.name)}`;
+      await doUpload(file, path, 'Uploading image');
+      const { data: signed } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
+      if (signed?.signedUrl) setImagePreviewUrl(signed.signedUrl);
+      // We store image path in video_path column (repurposed for non-video media)
+      onSave({ video_path: path, title, description, lesson_type: 'image', content, is_preview: isPreview });
+      toast.success('Image uploaded');
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
+  const handleMainFileUpload = async (file: File) => {
+    if (file.size > 100 * 1024 * 1024) { toast.error('File must be under 100 MB'); return; }
+    try {
+      const path = `${user!.id}/courses/${lesson.course_id}/files/${lesson.id}/${safeName(file.name)}`;
+      await doUpload(file, path, 'Uploading file');
+      // Store the main file as a resource too so it shows in the resources list
+      const newRes = [{ name: file.name, path, size: file.size, mime_type: file.type }, ...resources.filter((r) => r.path !== path)];
+      setResources(newRes);
+      onSave({ video_path: path, title, description, lesson_type: 'resource', content, is_preview: isPreview, resources: newRes });
+      toast.success('File uploaded');
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
+  };
+
   const handleResourceUpload = async (file: File) => {
-    const MAX_RES = 100 * 1024 * 1024;
-    if (file.size > MAX_RES) { toast.error('Resource file must be under 100 MB'); return; }
-    setUploading(true);
-    setUploadProgress(10);
+    if (file.size > 100 * 1024 * 1024) { toast.error('Resource file must be under 100 MB'); return; }
     try {
       const path = `${user!.id}/courses/${lesson.course_id}/resources/${lesson.id}/${safeName(file.name)}`;
-      setUploadProgress(30);
-      const { error } = await supabase.storage.from('prompt-media').upload(path, file, {
-        upsert: true,
-        contentType: file.type,
-      });
-      if (error) throw new Error(error.message);
-      setUploadProgress(100);
+      await doUpload(file, path, 'Uploading resource');
       const newRes = [...resources, { name: file.name, path, size: file.size, mime_type: file.type }];
       setResources(newRes);
       onSave({ resources: newRes });
       toast.success('Resource uploaded');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Upload failed'); }
   };
 
   const removeResource = (idx: number) => {
@@ -216,6 +267,52 @@ function LessonEditor({
     content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0,
     resources,
   });
+
+  const UploadZone = ({ onClick, accept, icon, label, sublabel, color = 'blue' }: {
+    onClick: () => void; accept: string; icon: string; label: string; sublabel: string; color?: string;
+  }) => (
+    <button
+      type="button"
+      onClick={() => !uploading && onClick()}
+      disabled={uploading}
+      className={cn(
+        'w-full border-2 border-dashed rounded-2xl transition-all flex flex-col items-center justify-center gap-2 py-6 px-4 disabled:opacity-50 disabled:cursor-not-allowed',
+        color === 'blue' ? 'border-gray-700 hover:border-blue-500/60 hover:bg-blue-600/5' :
+        color === 'emerald' ? 'border-gray-700 hover:border-emerald-500/60 hover:bg-emerald-600/5' :
+        'border-gray-700 hover:border-amber-500/60 hover:bg-amber-600/5',
+      )}
+    >
+      {uploading ? (
+        <>
+          <Spinner size={20} />
+          <span className="text-sm font-medium text-gray-300">{uploadLabel}…</span>
+          <div className="w-36 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-blue-400 rounded-full"
+              initial={{ width: '0%' }}
+              animate={{ width: `${uploadProgress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={cn(
+            'w-11 h-11 rounded-2xl flex items-center justify-center',
+            color === 'blue' ? 'bg-blue-500/15 text-blue-400' :
+            color === 'emerald' ? 'bg-emerald-500/15 text-emerald-400' :
+            'bg-amber-500/15 text-amber-400',
+          )}>
+            <Icon name={icon} size={22} />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-200">{label}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{sublabel}</p>
+          </div>
+        </>
+      )}
+    </button>
+  );
 
   return (
     <div className="flex flex-col h-full bg-gray-900 border-l border-gray-800">
@@ -247,6 +344,7 @@ function LessonEditor({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {tab === 'content' && (
           <>
+            {/* Title */}
             <div>
               <label className="text-xs font-medium text-gray-400 mb-1 block">Title</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)}
@@ -254,8 +352,9 @@ function LessonEditor({
                 placeholder="Lesson title" />
             </div>
 
+            {/* Type selector */}
             <div>
-              <label className="text-xs font-medium text-gray-400 mb-1 block">Type</label>
+              <label className="text-xs font-medium text-gray-400 mb-1.5 block">Lesson Type</label>
               <div className="grid grid-cols-4 gap-1.5">
                 {([
                   ['video', 'smart_display', 'Video'],
@@ -264,42 +363,52 @@ function LessonEditor({
                   ['resource', 'attach_file', 'File'],
                 ] as const).map(([type, icon, label]) => (
                   <button key={type} onClick={() => setLessonType(type)}
-                    className={cn('flex flex-col items-center gap-1 py-2 rounded-xl border text-xs font-medium transition-all',
-                      lessonType === type ? 'bg-blue-600/20 border-blue-500/50 text-blue-300' : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-200'
+                    className={cn('flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                      lessonType === type
+                        ? 'bg-blue-600/20 border-blue-500/50 text-blue-300'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-200'
                     )}>
-                    <Icon name={icon} size={14} />
+                    <Icon name={icon} size={15} />
                     {label}
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* ── VIDEO type ── */}
             {lessonType === 'video' && (
               <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-400 mb-1 block">External Video URL</label>
-                  <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
-                    className="w-full h-9 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="YouTube / Vimeo URL" />
-                </div>
-                <p className="text-xs text-gray-600 text-center">or</p>
-                <button onClick={() => !uploading && fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="w-full border border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-xs text-gray-500 hover:text-gray-300 transition-colors flex flex-col items-center justify-center gap-1.5 py-3 disabled:opacity-60 disabled:cursor-not-allowed">
-                  {uploading ? (
-                    <>
-                      <Spinner size={14} />
-                      <span>Uploading… {uploadProgress}%</span>
-                      <div className="w-28 h-1 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
-                      </div>
-                    </>
-                  ) : (
-                    <><Icon name="upload" size={14} /><span>Upload Video File · Max 500 MB</span></>
-                  )}
-                </button>
+                {/* Existing uploaded video preview */}
+                {videoPreviewUrl && !uploading && (
+                  <div className="rounded-xl overflow-hidden bg-black aspect-video">
+                    <video src={videoPreviewUrl} controls className="w-full h-full" />
+                  </div>
+                )}
+
+                <UploadZone
+                  onClick={() => fileInputRef.current?.click()}
+                  accept="video/*"
+                  icon="smart_display"
+                  label={lesson.video_path ? 'Replace Video' : 'Upload Video'}
+                  sublabel="MP4, MOV, WEBM · Max 500 MB"
+                  color="blue"
+                />
                 <input ref={fileInputRef} type="file" accept="video/*" className="hidden"
                   onChange={(e) => e.target.files?.[0] && handleVideoUpload(e.target.files[0])} />
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-800" />
+                  <span className="text-xs text-gray-600 font-medium">or paste a link</span>
+                  <div className="flex-1 h-px bg-gray-800" />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-400 mb-1 block">YouTube / Vimeo URL</label>
+                  <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
+                    className="w-full h-9 px-3 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://youtube.com/watch?v=..." />
+                </div>
+
                 <div>
                   <label className="text-xs font-medium text-gray-400 mb-1 block">Duration (minutes)</label>
                   <input value={durationMin} onChange={(e) => setDurationMin(e.target.value)} type="number" min="0"
@@ -309,68 +418,187 @@ function LessonEditor({
               </div>
             )}
 
-            {(lessonType === 'text' || lessonType === 'image') && (
-              <div>
-                <label className="text-xs font-medium text-gray-400 mb-1 block">
-                  {lessonType === 'text' ? 'Lesson Content (Markdown)' : 'Description / Caption'}
-                </label>
-                <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={8}
-                  className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder={lessonType === 'text' ? '# Your lesson content\n\nWrite in markdown...' : 'Caption or notes...'} />
+            {/* ── IMAGE type ── */}
+            {lessonType === 'image' && (
+              <div className="space-y-3">
+                {/* Current image preview */}
+                {imagePreviewUrl && !uploading ? (
+                  <div className="relative rounded-2xl overflow-hidden bg-gray-800 group">
+                    <img src={imagePreviewUrl} alt="Lesson" className="w-full object-contain max-h-64" />
+                    <button
+                      onClick={() => imgInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    >
+                      <div className="flex flex-col items-center gap-1.5 text-white">
+                        <Icon name="edit" size={20} />
+                        <span className="text-xs font-semibold">Replace Image</span>
+                      </div>
+                    </button>
+                  </div>
+                ) : (
+                  <UploadZone
+                    onClick={() => imgInputRef.current?.click()}
+                    accept="image/*"
+                    icon="add_photo_alternate"
+                    label="Upload Image"
+                    sublabel="JPG, PNG, GIF, WEBP · Max 100 MB"
+                    color="emerald"
+                  />
+                )}
+                <input ref={imgInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+
+                <div>
+                  <label className="text-xs font-medium text-gray-400 mb-1 block">Caption / Notes</label>
+                  <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3}
+                    className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Add a caption or context for this image..." />
+                </div>
               </div>
             )}
 
+            {/* ── TEXT type ── */}
+            {lessonType === 'text' && (
+              <div>
+                <label className="text-xs font-medium text-gray-400 mb-1 block">Lesson Content</label>
+                <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={12}
+                  className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono leading-relaxed"
+                  placeholder={'# Lesson Title\n\nWrite your lesson content here...\n\n## Section\n\nSupports markdown formatting.'} />
+              </div>
+            )}
+
+            {/* ── FILE / RESOURCE type ── */}
+            {lessonType === 'resource' && (
+              <div className="space-y-3">
+                {/* Show current main file if any */}
+                {lesson.video_path && !uploading && (
+                  <div className="flex items-center gap-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+                    <div className="w-9 h-9 bg-amber-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Icon name="description" size={17} className="text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-200 truncate">
+                        {lesson.video_path.split('/').pop()}
+                      </p>
+                      <p className="text-[10px] text-amber-400/70 mt-0.5">Main lesson file</p>
+                    </div>
+                    <button
+                      onClick={() => mainFileInputRef.current?.click()}
+                      className="text-xs text-gray-500 hover:text-gray-200 transition-colors flex-shrink-0"
+                    >
+                      Replace
+                    </button>
+                  </div>
+                )}
+
+                {!lesson.video_path && (
+                  <UploadZone
+                    onClick={() => mainFileInputRef.current?.click()}
+                    accept="*/*"
+                    icon="upload_file"
+                    label="Upload Main File"
+                    sublabel="PDF, ZIP, DOCX, PPTX, or any file · Max 100 MB"
+                    color="amber"
+                  />
+                )}
+                <input ref={mainFileInputRef} type="file" className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleMainFileUpload(e.target.files[0])} />
+
+                <div>
+                  <label className="text-xs font-medium text-gray-400 mb-1 block">Description / Instructions</label>
+                  <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={4}
+                    className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Describe what this file is and how students should use it..." />
+                </div>
+              </div>
+            )}
+
+            {/* Description (all types) */}
             <div>
-              <label className="text-xs font-medium text-gray-400 mb-1 block">Description</label>
+              <label className="text-xs font-medium text-gray-400 mb-1 block">Lesson Summary</label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
                 className="w-full px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                placeholder="Brief lesson description" />
+                placeholder="Brief one-line description of this lesson" />
             </div>
 
-            <label className="flex items-center gap-2.5 cursor-pointer">
-              <div className={cn('w-9 h-5 rounded-full relative transition-colors', isPreview ? 'bg-blue-600' : 'bg-gray-700')}
-                onClick={() => setIsPreview((v) => !v)}>
+            {/* Free preview toggle */}
+            <button
+              onClick={() => setIsPreview((v) => !v)}
+              className={cn(
+                'w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left',
+                isPreview
+                  ? 'bg-teal-500/10 border-teal-500/30'
+                  : 'bg-gray-800 border-gray-700 hover:border-gray-600',
+              )}
+            >
+              <div className={cn('w-9 h-5 rounded-full relative transition-colors flex-shrink-0', isPreview ? 'bg-teal-500' : 'bg-gray-600')}>
                 <div className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform', isPreview ? 'translate-x-4' : 'translate-x-0.5')} />
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-300">Free Preview</span>
-                <p className="text-xs text-gray-500">Visible before enrollment</p>
+                <span className="text-sm font-medium text-gray-200">Free Preview</span>
+                <p className="text-xs text-gray-500">Non-enrolled students can view this lesson</p>
               </div>
-            </label>
+            </button>
           </>
         )}
 
+        {/* ── Resources tab ── */}
         {tab === 'resources' && (
           <div className="space-y-3">
-            <p className="text-xs text-gray-500">Attach downloadable files (PDFs, ZIPs, code, etc.)</p>
+            <div>
+              <p className="text-sm font-semibold text-gray-200 mb-0.5">Attachments</p>
+              <p className="text-xs text-gray-500">Downloadable files for students (PDFs, ZIPs, code, etc.)</p>
+            </div>
+
             <button onClick={() => !uploading && resInputRef.current?.click()}
               disabled={uploading}
-              className="w-full border border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-xs text-gray-500 hover:text-gray-300 transition-colors flex flex-col items-center justify-center gap-1.5 py-3 disabled:opacity-60 disabled:cursor-not-allowed">
+              className="w-full border-2 border-dashed border-gray-700 hover:border-blue-500/60 hover:bg-blue-600/5 rounded-2xl text-xs transition-all flex flex-col items-center justify-center gap-2 py-5 disabled:opacity-50 disabled:cursor-not-allowed">
               {uploading ? (
                 <>
-                  <Spinner size={14} />
-                  <span>Uploading… {uploadProgress}%</span>
-                  <div className="w-28 h-1 bg-gray-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                  <Spinner size={18} />
+                  <span className="text-sm text-gray-300">{uploadLabel}…</span>
+                  <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <motion.div className="h-full bg-blue-400 rounded-full" animate={{ width: `${uploadProgress}%` }} transition={{ duration: 0.3 }} />
                   </div>
                 </>
               ) : (
-                <><Icon name="attach_file" size={14} /><span>Upload Resource · Max 100 MB</span></>
+                <>
+                  <div className="w-9 h-9 bg-blue-500/15 text-blue-400 rounded-xl flex items-center justify-center">
+                    <Icon name="attach_file" size={18} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-200">Add Attachment</p>
+                    <p className="text-gray-500 text-xs mt-0.5">Any file type · Max 100 MB</p>
+                  </div>
+                </>
               )}
             </button>
             <input ref={resInputRef} type="file" className="hidden"
               onChange={(e) => e.target.files?.[0] && handleResourceUpload(e.target.files[0])} />
 
             {resources.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-6 italic">No resources attached</p>
+              <div className="text-center py-8">
+                <Icon name="folder_open" size={28} className="text-gray-700 mx-auto mb-2" />
+                <p className="text-xs text-gray-600">No attachments yet</p>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {resources.map((res, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2.5 bg-gray-800 rounded-xl">
-                    <Icon name="attach_file" size={13} className="text-gray-400 flex-shrink-0" />
-                    <span className="text-xs text-gray-300 truncate flex-1">{res.name}</span>
-                    <button onClick={() => removeResource(i)} className="text-gray-600 hover:text-red-400 transition-colors flex-shrink-0">
-                      <Icon name="close" size={12} />
+                  <div key={i} className="flex items-center gap-2.5 p-3 bg-gray-800 hover:bg-gray-700/70 rounded-xl transition-colors group">
+                    <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Icon name={
+                        res.mime_type?.startsWith('image/') ? 'image' :
+                        res.mime_type?.startsWith('video/') ? 'smart_display' :
+                        res.mime_type === 'application/pdf' ? 'picture_as_pdf' :
+                        res.mime_type?.includes('zip') ? 'folder_zip' : 'description'
+                      } size={14} className="text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-200 truncate">{res.name}</p>
+                      <p className="text-[10px] text-gray-500">{formatBytes(res.size)}</p>
+                    </div>
+                    <button onClick={() => removeResource(i)} className="text-gray-600 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100">
+                      <Icon name="delete" size={14} />
                     </button>
                   </div>
                 ))}
