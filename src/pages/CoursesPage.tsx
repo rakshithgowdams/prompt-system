@@ -26,18 +26,32 @@ const LEVEL_COLORS: Record<string, string> = {
 
 function CourseCover({ course, className = '' }: { course: Course; className?: string }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!course.cover_image) return;
+    setFailed(false);
     supabase.storage.from('prompt-media').createSignedUrl(course.cover_image, 3600)
-      .then(({ data }) => data?.signedUrl && setUrl(data.signedUrl))
-      .catch(() => {});
+      .then(({ data, error }) => {
+        if (error || !data?.signedUrl) { setFailed(true); return; }
+        setUrl(data.signedUrl);
+      })
+      .catch(() => setFailed(true));
   }, [course.cover_image]);
 
-  if (url) return <img src={url} alt={course.title} className={`w-full h-full object-cover ${className}`} />;
+  if (url && !failed) {
+    return (
+      <img
+        src={url}
+        alt={course.title}
+        className={`w-full h-full object-cover ${className}`}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
   return (
-    <div className={`w-full h-full flex items-center justify-center bg-ink-100 ${className}`}>
-      <Icon name="school" size={32} className="text-ink-300" />
+    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-ink-100 to-ink-200 ${className}`}>
+      <Icon name="school" size={32} className="text-ink-400" />
     </div>
   );
 }
