@@ -18,37 +18,12 @@ import { FileGridSkeleton, ListRowSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/Modal';
 import { FileShareModal } from '../components/files/FileShareModal';
+import { FileTypeIcon } from '../components/files/FileTypeIcon';
 import { Lightbox } from '../components/prompts/Lightbox';
 import { uploadProjectFile, getSignedUrl, downloadFile, getFileCategory, formatFileSize } from '../lib/storage';
 import { cn, PROJECT_COLORS } from '../lib/utils';
 import { formatRelative } from '../lib/utils';
 import type { Folder, ProjectFile, FileType } from '../lib/database.types';
-
-// ── File icon & color helpers ─────────────────────────────────────────────────
-
-function fileIconName(ft: FileType | string, mimeType?: string | null): string {
-  const m = mimeType ?? '';
-  if (ft === 'image') return 'image';
-  if (ft === 'video') return 'smart_display';
-  if (ft === 'audio') return 'music_note';
-  if (ft === 'document') {
-    if (m === 'application/pdf') return 'picture_as_pdf';
-    if (m.includes('spreadsheet') || m.includes('excel')) return 'table_chart';
-    if (m.includes('presentation') || m.includes('powerpoint')) return 'slideshow';
-    return 'description';
-  }
-  return 'attach_file';
-}
-
-function fileColor(ft: FileType | string): string {
-  switch (ft) {
-    case 'image': return 'text-emerald-400 bg-emerald-400/10';
-    case 'video': return 'text-blue-400 bg-blue-400/10';
-    case 'audio': return 'text-pink-400 bg-pink-400/10';
-    case 'document': return 'text-amber-400 bg-amber-400/10';
-    default: return 'text-gray-400 bg-gray-700/50';
-  }
-}
 
 // ── Upload queue item ─────────────────────────────────────────────────────────
 
@@ -592,8 +567,8 @@ export function ProjectFilesPage() {
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', fileColor(previewFile.file_type))}>
-                    <Icon name={fileIconName(previewFile.file_type, previewFile.mime_type)} size={16} />
+                  <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+                    <FileTypeIcon mimeType={previewFile.mime_type} fileName={previewFile.file_name} fileType={previewFile.file_type} size={18} />
                   </div>
                   <p className="text-sm font-medium text-white truncate">{previewFile.file_name}</p>
                 </div>
@@ -626,10 +601,10 @@ export function ProjectFilesPage() {
                   <iframe src={previewFile.signedUrl} className="w-full h-[70vh] rounded-xl" title={previewFile.file_name} />
                 ) : (
                   <div className="flex flex-col items-center gap-4 py-12">
-                    <div className={cn('w-20 h-20 rounded-2xl flex items-center justify-center', fileColor(previewFile.file_type))}>
-                      <Icon name={fileIconName(previewFile.file_type, previewFile.mime_type)} size={36} />
+                    <div className="w-24 h-24 rounded-2xl bg-gray-800 flex items-center justify-center">
+                      <FileTypeIcon mimeType={previewFile.mime_type} fileName={previewFile.file_name} fileType={previewFile.file_type} size={52} />
                     </div>
-                    <p className="text-gray-400 text-sm">Preview not available</p>
+                    <p className="text-gray-400 text-sm">Preview not available for this file type</p>
                     <Button onClick={() => handleDownload(previewFile)} size="sm">
                       <Icon name="download" size={14} />
                       Download file
@@ -759,10 +734,10 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
                 <img src={thumbUrls[file.id]} alt={file.file_name} className="w-full h-full object-cover" />
               ) : (
                 <div className="flex flex-col items-center gap-2 p-3">
-                  <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', fileColor(file.file_type))}>
-                    <Icon name={fileIconName(file.file_type, file.mime_type)} size={24} />
+                  <div className="w-12 h-12 rounded-xl bg-gray-800/60 flex items-center justify-center">
+                    <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={28} />
                   </div>
-                  <span className="text-xs text-gray-400 font-medium truncate w-full text-center">
+                  <span className="text-xs text-gray-500 font-medium truncate w-full text-center">
                     {file.file_name.split('.').pop()?.toUpperCase() ?? 'FILE'}
                   </span>
                 </div>
@@ -857,8 +832,8 @@ function ListView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           className="group relative grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-xl hover:bg-gray-800/60 transition-colors"
         >
           <button onClick={() => onPreviewFile(file)} className="contents">
-            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', fileColor(file.file_type))}>
-              <Icon name={fileIconName(file.file_type, file.mime_type)} size={16} />
+            <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+              <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={17} />
             </div>
             <div className="min-w-0 text-left">
               <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white">{file.file_name}</p>
