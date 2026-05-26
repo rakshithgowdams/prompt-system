@@ -851,7 +851,7 @@ export function CourseEditorPage() {
   if (course.user_id !== user?.id) return <div className="p-8 text-center text-ink-500">Access denied.</div>;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
       {/* Top bar */}
       <div className="sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6 py-3 bg-white/95 backdrop-blur-md border-b border-ink-300 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -907,13 +907,13 @@ export function CourseEditorPage() {
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 lg:overflow-hidden">
 
         {/* ── Curriculum tab ── */}
         {activeTab === 'structure' && (
-          <div className="flex flex-1 min-w-0 overflow-hidden">
+          <div className="flex flex-1 min-w-0 lg:overflow-hidden">
             {/* Section/lesson tree */}
-            <div className={cn('flex flex-col bg-white border-r border-ink-300 overflow-y-auto', editingLesson ? 'w-80 flex-shrink-0 hidden lg:flex' : 'flex-1')}>
+            <div className={cn('flex flex-col bg-white border-r border-ink-300 lg:overflow-y-auto', editingLesson ? 'w-80 flex-shrink-0 hidden lg:flex' : 'flex-1')}>
               <div className="p-4 border-b border-ink-300 flex items-center justify-between flex-shrink-0">
                 <div>
                   <h2 className="text-sm font-semibold text-ink-900">Curriculum</h2>
@@ -925,7 +925,7 @@ export function CourseEditorPage() {
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              <div className="flex-1 lg:overflow-y-auto p-3 space-y-2">
                 {sections.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
                     <Icon name="auto_awesome_mosaic" size={32} className="text-ink-300" />
@@ -1026,7 +1026,7 @@ export function CourseEditorPage() {
 
         {/* ── Details tab ── */}
         {activeTab === 'details' && (
-          <div className="flex-1 overflow-y-auto p-4 lg:p-8">
+          <div className="flex-1 lg:overflow-y-auto p-4 lg:p-8">
             <div className="max-w-2xl mx-auto space-y-6">
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* Cover */}
@@ -1120,7 +1120,7 @@ export function CourseEditorPage() {
 
         {/* ── Settings tab ── */}
         {activeTab === 'settings' && (
-          <div className="flex-1 overflow-y-auto p-4 lg:p-8">
+          <div className="flex-1 lg:overflow-y-auto p-4 lg:p-8">
             <div className="max-w-lg mx-auto space-y-4">
               <h2 className="text-base font-semibold text-ink-900 mb-4">Course Settings</h2>
 
