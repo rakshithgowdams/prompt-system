@@ -20,7 +20,7 @@ import { CourseReviews } from '../components/courses/CourseReviews';
 import { cn } from '../lib/utils';
 import type { CourseLesson } from '../hooks/useCourses';
 
-const SIDEBAR_W = 288;
+const SIDEBAR_W = 300;
 const HEADER_H = 56;
 
 const YOUTUBE_EMBED = (url: string) => {
@@ -425,7 +425,6 @@ export function CoursePlayerPage() {
   const savePosition = useSaveWatchPosition();
 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'discussion' | 'qna' | 'notes' | 'resources'>('discussion');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -528,8 +527,6 @@ export function CoursePlayerPage() {
   const prevLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
   const nextLesson = lessonIndex < lessons.length - 1 ? lessons[lessonIndex + 1] : null;
 
-  // How far from the left edge the main content starts
-  const contentLeft = sidebarOpen ? SIDEBAR_W : 0;
 
   return (
     <>
@@ -546,25 +543,28 @@ export function CoursePlayerPage() {
 
       {/* ── Fixed header ─────────────────────────────────────────────────────── */}
       <header
-        className="fixed top-0 right-0 z-30 bg-white border-b border-ink-200 flex items-center gap-3 px-4 sm:px-5"
-        style={{ left: contentLeft, height: HEADER_H, transition: 'left 0.22s cubic-bezier(0.22,1,0.36,1)' }}
+        className="fixed top-0 right-0 z-30 bg-white border-b border-ink-200 flex items-center gap-3 px-4"
+        style={{
+          left: 0,
+          height: HEADER_H,
+        }}
       >
-        {/* Logo only when sidebar is hidden (desktop) or always on mobile */}
-        {(!sidebarOpen) && (
-          <>
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0 hidden lg:flex">
-              <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
-              <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
-            </Link>
-            <div className="w-px h-5 bg-ink-200 flex-shrink-0 hidden lg:block" />
-          </>
-        )}
+        {/* Hamburger — always visible, opens sidebar drawer on all screen sizes */}
+        <button
+          onClick={() => setMobileSidebarOpen(true)}
+          className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
+          aria-label="Open course lessons"
+        >
+          <Icon name="menu" size={20} />
+        </button>
+
+        <div className="w-px h-5 bg-ink-200 flex-shrink-0" />
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-display font-bold text-ink-900 truncate leading-tight">{course.title}</p>
           {enrollment && (
-            <div className="hidden sm:flex items-center gap-2 mt-0.5">
-              <div className="h-1 w-28 bg-ink-100 rounded-full overflow-hidden">
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="h-1 w-24 bg-ink-100 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
               </div>
               <span className="text-[10px] text-ink-400 font-medium">{pct}%</span>
@@ -588,201 +588,76 @@ export function CoursePlayerPage() {
               <Icon name="edit" size={16} />
             </button>
           )}
-          {/* Desktop sidebar toggle */}
-          <button onClick={() => setSidebarOpen((v) => !v)}
-            className="hidden lg:flex p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
-          >
-            <Icon name={sidebarOpen ? 'menu_open' : 'menu'} size={20} />
-          </button>
-          {/* Mobile sidebar open */}
-          <button onClick={() => setMobileSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
-          >
-            <Icon name="menu" size={20} />
-          </button>
         </div>
       </header>
 
-      {/* ── Fixed sidebar (desktop) ───────────────────────────────────────────── */}
-      <AnimatePresence initial={false}>
-        {sidebarOpen && (
-          <motion.aside
-            initial={{ x: -SIDEBAR_W }} animate={{ x: 0 }} exit={{ x: -SIDEBAR_W }}
-            transition={{ duration: 0.22, ease: [0.22,1,0.36,1] }}
-            className="hidden lg:flex fixed left-0 z-20 bg-white border-r border-ink-200 flex-col"
-            style={{ top: 0, bottom: 0, width: SIDEBAR_W }}
-          >
-            {/* Sidebar header with logo */}
-            <div className="flex items-center gap-2.5 px-4 border-b border-ink-200 flex-shrink-0" style={{ height: HEADER_H }}>
-              <Link to="/" className="flex items-center gap-2">
-                <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
-                <span className="font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
-              </Link>
-            </div>
-
-            {/* Progress */}
-            <div className="px-4 py-4 border-b border-ink-200 flex-shrink-0">
-              <div className="flex items-center gap-3 mb-3">
-                <ProgressRing pct={pct} size={44} stroke={4} />
-                <div className="min-w-0">
-                  <p className="text-sm font-display font-bold text-ink-900">{pct}% Complete</p>
-                  <p className="text-xs text-ink-500">{completedIds.size} of {lessons.length} lessons</p>
-                </div>
-              </div>
-              <div className="h-1.5 w-full bg-ink-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-
-            {/* Course label */}
-            <div className="px-4 py-2.5 border-b border-ink-200 flex-shrink-0">
-              <p className="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-0.5">Course</p>
-              <p className="text-xs font-display font-bold text-ink-900 leading-snug line-clamp-2">{course.title}</p>
-            </div>
-
-            {/* Lesson list — this inner div scrolls independently */}
-            <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
-              {sections.map((section, si) => {
-                const sLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
-                const isExpanded = expandedSections.has(section.id);
-                const sCompleted = sLessons.filter((l) => completedIds.has(l.id)).length;
-                return (
-                  <div key={section.id} className={cn('border-b border-ink-200', si === 0 && 'border-t')}>
-                    <button onClick={() => toggleSection(section.id)}
-                      className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-ink-50 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0 pr-2">
-                        <p className="text-xs font-bold text-ink-900 leading-snug line-clamp-1">{section.title}</p>
-                        <p className="text-[10px] text-ink-400 mt-0.5">{sCompleted}/{sLessons.length} completed</p>
-                      </div>
-                      <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }} className="inline-flex text-ink-400 flex-shrink-0">
-                        <Icon name="expand_more" size={18} />
-                      </motion.span>
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                          transition={{ duration: 0.18 }} className="overflow-hidden bg-ink-50"
-                        >
-                          {sLessons.map((lesson, li) => {
-                            const done = completedIds.has(lesson.id);
-                            const active = activeLessonId === lesson.id;
-                            const accessible = isOwner || !!enrollment || lesson.is_preview;
-                            return (
-                              <button key={lesson.id}
-                                onClick={() => accessible && selectLesson(lesson.id)}
-                                disabled={!accessible}
-                                className={cn(
-                                  'w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-ink-200/60',
-                                  active ? 'bg-emerald-50 border-l-2 border-l-emerald-500' : 'hover:bg-white',
-                                  !accessible && 'opacity-40 cursor-not-allowed',
-                                )}
-                              >
-                                <div className="flex-shrink-0 mt-0.5">
-                                  {done ? (
-                                    <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-                                      <Icon name="check" size={11} className="text-emerald-600" />
-                                    </div>
-                                  ) : (
-                                    <div className={cn(
-                                      'w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold',
-                                      active ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-ink-300 text-ink-500'
-                                    )}>
-                                      {li + 1}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className={cn(
-                                    'text-xs font-semibold leading-snug line-clamp-2',
-                                    active ? 'text-emerald-700' : done ? 'text-ink-400' : 'text-ink-900'
-                                  )}>
-                                    {lesson.title}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    <span className={cn('inline-flex items-center gap-1 text-[10px] font-medium', active ? 'text-emerald-600' : 'text-ink-400')}>
-                                      <Icon name={lessonIcon(lesson.lesson_type)} size={10} />
-                                      {lesson.lesson_type}
-                                    </span>
-                                    {lesson.video_duration_minutes > 0 && (
-                                      <span className="text-[10px] text-ink-400">{lesson.video_duration_minutes}m</span>
-                                    )}
-                                    {lesson.is_preview && !enrollment && (
-                                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">FREE</span>
-                                    )}
-                                    {!accessible && <Icon name="lock" size={10} className="text-ink-400" />}
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Certificate */}
-            {certificate && (
-              <div className="px-4 pt-3 pb-1 flex-shrink-0 border-t border-ink-200">
-                <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                  className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-100 transition-all duration-200 group"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center flex-shrink-0">
-                    <Icon name="workspace_premium" size={18} className="text-white" fill />
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest leading-none mb-0.5">Your Certificate</p>
-                    <p className="text-sm font-extrabold text-white leading-tight truncate">View &amp; Download</p>
-                  </div>
-                  <Icon name="chevron_right" size={16} className="text-white/70 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                </button>
-              </div>
-            )}
-
-            {/* Back */}
-            <div className="px-4 py-3 border-t border-ink-200 flex-shrink-0">
-              <Link to="/courses" className="flex items-center gap-2 text-xs font-semibold text-ink-400 hover:text-ink-900 transition-colors">
-                <Icon name="arrow_back" size={14} />
-                Back to all courses
-              </Link>
-            </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
-
-      {/* ── Mobile sidebar drawer ─────────────────────────────────────────────── */}
+      {/* ── Sidebar drawer — shared for all screen sizes ─────────────────────── */}
       <AnimatePresence>
         {mobileSidebarOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40"
               onClick={() => setMobileSidebarOpen(false)}
             />
+            {/* Drawer */}
             <motion.aside
-              initial={{ x: -SIDEBAR_W }} animate={{ x: 0 }} exit={{ x: -SIDEBAR_W }}
-              transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-              className="fixed inset-y-0 left-0 z-50 bg-white border-r border-ink-200 shadow-2xl lg:hidden flex flex-col"
-              style={{ width: SIDEBAR_W }}
+              initial={{ x: -SIDEBAR_W - 20 }} animate={{ x: 0 }} exit={{ x: -SIDEBAR_W - 20 }}
+              transition={{ type: 'spring', damping: 32, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 z-50 bg-white border-r border-ink-200 shadow-2xl flex flex-col"
+              style={{ width: Math.min(SIDEBAR_W, typeof window !== 'undefined' ? window.innerWidth * 0.85 : SIDEBAR_W) }}
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-ink-200 flex-shrink-0">
-                <p className="text-sm font-display font-bold text-ink-900">Lessons</p>
-                <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 transition-colors">
+              {/* Drawer header */}
+              <div className="flex items-center gap-2.5 px-4 border-b border-ink-200 flex-shrink-0" style={{ height: HEADER_H }}>
+                <Link to="/" className="flex items-center gap-2 flex-1 min-w-0" onClick={() => setMobileSidebarOpen(false)}>
+                  <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain flex-shrink-0" />
+                  <span className="font-display font-black text-ink-900 tracking-tight text-[13px] truncate">aiwithrakshith</span>
+                </Link>
+                <button
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
+                >
                   <Icon name="close" size={18} />
                 </button>
               </div>
+
+              {/* Progress */}
+              <div className="px-4 py-4 border-b border-ink-200 flex-shrink-0">
+                <div className="flex items-center gap-3 mb-3">
+                  <ProgressRing pct={pct} size={44} stroke={4} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-display font-bold text-ink-900">{pct}% Complete</p>
+                    <p className="text-xs text-ink-500">{completedIds.size} of {lessons.length} lessons</p>
+                  </div>
+                </div>
+                <div className="h-1.5 w-full bg-ink-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+
+              {/* Course label */}
+              <div className="px-4 py-2.5 border-b border-ink-200 flex-shrink-0">
+                <p className="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-0.5">Course</p>
+                <p className="text-xs font-display font-bold text-ink-900 leading-snug line-clamp-2">{course.title}</p>
+              </div>
+
+              {/* Lesson list */}
               <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
                 {sections.map((section, si) => {
                   const sLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
                   const isExpanded = expandedSections.has(section.id);
+                  const sCompleted = sLessons.filter((l) => completedIds.has(l.id)).length;
                   return (
                     <div key={section.id} className={cn('border-b border-ink-200', si === 0 && 'border-t')}>
                       <button onClick={() => toggleSection(section.id)}
                         className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-ink-50 transition-colors"
                       >
-                        <p className="text-xs font-bold text-ink-900 leading-snug line-clamp-1 flex-1 pr-2">{section.title}</p>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-xs font-bold text-ink-900 leading-snug line-clamp-1">{section.title}</p>
+                          <p className="text-[10px] text-ink-400 mt-0.5">{sCompleted}/{sLessons.length} completed</p>
+                        </div>
                         <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }} className="inline-flex text-ink-400 flex-shrink-0">
                           <Icon name="expand_more" size={18} />
                         </motion.span>
@@ -801,7 +676,7 @@ export function CoursePlayerPage() {
                                   onClick={() => accessible && selectLesson(lesson.id)}
                                   disabled={!accessible}
                                   className={cn(
-                                    'w-full flex items-start gap-3 px-4 py-3 text-left border-b border-ink-200/60',
+                                    'w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-ink-200/60',
                                     active ? 'bg-emerald-50 border-l-2 border-l-emerald-500' : 'hover:bg-white',
                                     !accessible && 'opacity-40 cursor-not-allowed',
                                   )}
@@ -815,13 +690,32 @@ export function CoursePlayerPage() {
                                       <div className={cn(
                                         'w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold',
                                         active ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-ink-300 text-ink-500'
-                                      )}>{li + 1}</div>
+                                      )}>
+                                        {li + 1}
+                                      </div>
                                     )}
                                   </div>
-                                  <p className={cn(
-                                    'text-xs font-semibold leading-snug line-clamp-2',
-                                    active ? 'text-emerald-700' : done ? 'text-ink-400' : 'text-ink-900'
-                                  )}>{lesson.title}</p>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={cn(
+                                      'text-xs font-semibold leading-snug line-clamp-2',
+                                      active ? 'text-emerald-700' : done ? 'text-ink-400' : 'text-ink-900'
+                                    )}>
+                                      {lesson.title}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      <span className={cn('inline-flex items-center gap-1 text-[10px] font-medium', active ? 'text-emerald-600' : 'text-ink-400')}>
+                                        <Icon name={lessonIcon(lesson.lesson_type)} size={10} />
+                                        {lesson.lesson_type}
+                                      </span>
+                                      {lesson.video_duration_minutes > 0 && (
+                                        <span className="text-[10px] text-ink-400">{lesson.video_duration_minutes}m</span>
+                                      )}
+                                      {lesson.is_preview && !enrollment && (
+                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">FREE</span>
+                                      )}
+                                      {!accessible && <Icon name="lock" size={10} className="text-ink-400" />}
+                                    </div>
+                                  </div>
                                 </button>
                               );
                             })}
@@ -832,22 +726,41 @@ export function CoursePlayerPage() {
                   );
                 })}
               </div>
+
+              {/* Certificate */}
+              {certificate && (
+                <div className="px-4 pt-3 pb-1 flex-shrink-0 border-t border-ink-200">
+                  <button onClick={() => { navigate(`/courses/${courseId}/certificate`); setMobileSidebarOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-100 transition-all duration-200 group"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center flex-shrink-0">
+                      <Icon name="workspace_premium" size={18} className="text-white" fill />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest leading-none mb-0.5">Your Certificate</p>
+                      <p className="text-sm font-extrabold text-white leading-tight truncate">View &amp; Download</p>
+                    </div>
+                    <Icon name="chevron_right" size={16} className="text-white/70 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                  </button>
+                </div>
+              )}
+
+              {/* Back */}
+              <div className="px-4 py-3 border-t border-ink-200 flex-shrink-0">
+                <Link to="/courses" onClick={() => setMobileSidebarOpen(false)} className="flex items-center gap-2 text-xs font-semibold text-ink-400 hover:text-ink-900 transition-colors">
+                  <Icon name="arrow_back" size={14} />
+                  Back to all courses
+                </Link>
+              </div>
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      {/*
-        ── Main scrollable content ───────────────────────────────────────────────
-        Normal document flow. margin-left pushes it right of the fixed sidebar.
-        padding-top clears the fixed header.
-        The PAGE itself scrolls — no overflow container needed.
-      */}
+      {/* ── Main content — always full width ─────────────────────────────────── */}
       <main
         style={{
-          marginLeft: contentLeft,
           paddingTop: HEADER_H,
-          transition: 'margin-left 0.22s cubic-bezier(0.22,1,0.36,1)',
           minHeight: '100vh',
           background: '#f9f9f9',
         }}
