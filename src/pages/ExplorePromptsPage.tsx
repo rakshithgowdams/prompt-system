@@ -170,22 +170,24 @@ function ImageCarousel({
           {loading ? (
             <div className="absolute inset-0 animate-pulse bg-ink-100 rounded-2xl" style={{ minHeight: 260 }} />
           ) : activeUrl ? (
-            <AnimatePresence mode="popLayout" custom={direction} initial={false}>
-              <motion.img
-                key={active}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.28, ease: [0.32, 0, 0.18, 1] }}
-                src={activeUrl}
-                alt={images[active]?.file_name}
-                className="w-full object-contain rounded-2xl"
-                style={{ maxHeight: 380, display: 'block' }}
-                draggable={false}
-              />
-            </AnimatePresence>
+            <div className="relative overflow-hidden" style={{ minHeight: 260 }}>
+              <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+                <motion.img
+                  key={active}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.28, ease: [0.32, 0, 0.18, 1] }}
+                  src={activeUrl}
+                  alt={images[active]?.file_name}
+                  className="w-full object-contain rounded-2xl"
+                  style={{ maxHeight: 380, display: 'block' }}
+                  draggable={false}
+                />
+              </AnimatePresence>
+            </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-white/30">
               <ImageIcon size={36} />
@@ -673,150 +675,141 @@ function DetailModal({
     </>
   );
 
+  // Detect mobile via window width for animation choice — avoids rendering two modals
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   return (
     <AnimatePresence>
       {/* ── Backdrop ── */}
       <motion.div
-        key="bd"
+        key="modal-backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 bg-black/65 backdrop-blur-[3px]"
         onClick={onClose}
       />
 
-      {/* ── MOBILE: full-screen bottom sheet (< md) ── */}
+      {/* ── Single modal — mobile: bottom sheet / md+: centred overlay ── */}
       <motion.div
-        key="mobile-sheet"
-        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 32, stiffness: 320 }}
-        className="md:hidden fixed inset-x-0 bottom-0 z-[60] bg-white rounded-t-3xl shadow-2xl"
-        style={{ maxHeight: '95dvh', display: 'flex', flexDirection: 'column' }}
-        onClick={(e) => e.stopPropagation()}
+        key="modal-panel"
+        initial={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 10 }}
+        animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 10 }}
+        transition={isMobile
+          ? { type: 'spring', damping: 32, stiffness: 320 }
+          : { type: 'spring', damping: 30, stiffness: 340 }}
+        className={cn(
+          'fixed z-[60]',
+          // Mobile: bottom sheet
+          'inset-x-0 bottom-0 md:inset-0',
+          // md+: centred flex container
+          'md:flex md:items-center md:justify-center md:p-4 lg:md:p-8',
+        )}
+        onClick={onClose}
       >
-        {/* Drag handle */}
-        <div className="flex-shrink-0 flex flex-col items-center pt-3 pb-2">
-          <div className="w-10 h-1 rounded-full bg-ink-200" />
-        </div>
-
-        {/* Header */}
-        <div className="flex-shrink-0 flex items-start justify-between gap-3 px-4 pb-3 border-b border-ink-100">
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-bold text-ink-900 leading-snug line-clamp-1">{prompt.title}</p>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
-                {platformMeta.icon} {prompt.platform}
-              </span>
-              <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
-            </div>
-            <div className="mt-2">{StatsRow}</div>
-          </div>
-          <button onClick={onClose}
-            className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600">
-            <X size={15} />
-          </button>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ overflowY: 'auto' }}>
-          {/* Media */}
-          {hasMedia && <div className="space-y-3">{MediaContent}</div>}
-
-          {/* Tabs */}
-          <div className="flex border-b border-ink-100">
-            {(['prompt', 'comments'] as const).map((tab) => (
-              <button key={tab} onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'flex-1 py-2 text-[12px] font-semibold capitalize transition-colors',
-                  activeTab === tab ? 'text-ink-900 border-b-2 border-ink-900' : 'text-ink-400',
-                )}
-              >
-                {tab}
-                {tab === 'comments' && (stats?.comment_count ?? 0) > 0 && (
-                  <span className="ml-1 text-[10px] bg-ink-100 text-ink-600 px-1.5 py-0.5 rounded-full">
-                    {stats!.comment_count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {activeTab === 'prompt' ? PromptTextPanel : CommentsPanel}
-        </div>
-
-        {/* Sticky footer */}
-        <div className="flex-shrink-0 border-t border-ink-100 px-4 py-3 space-y-2.5 bg-white"
-          style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-          {CommentInputBar}
-          {CopyBtn}
-        </div>
-      </motion.div>
-
-      {/* ── TABLET + DESKTOP: centred modal (≥ md) ── */}
-      <motion.div
-        key="desk-modal"
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
-        transition={{ type: 'spring', damping: 30, stiffness: 340 }}
-        className="hidden md:flex fixed inset-0 z-[60] items-center justify-center p-4 lg:p-8 pointer-events-none"
-      >
+        {/* Inner white card */}
         <div
-          className="pointer-events-auto w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row"
-          style={{ maxWidth: 960, height: 'min(90vh, 700px)', minHeight: 0 }}
+          className={cn(
+            'bg-white w-full overflow-hidden',
+            // Mobile: rounded top sheet
+            'rounded-t-3xl md:rounded-3xl',
+            // md+: max-width, fixed height, side-by-side
+            'md:flex md:flex-col lg:flex-row md:shadow-2xl',
+          )}
+          style={{
+            maxHeight: isMobile ? '95dvh' : 'min(90vh, 700px)',
+            maxWidth: isMobile ? undefined : 960,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ── LEFT: media panel ── */}
-          <div
-            className="lg:w-[52%] flex-shrink-0 bg-[#f3f3f3] flex flex-col"
-            style={{ minHeight: 0 }}
-          >
-            {/* Top bar */}
-            <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-black/[0.06]">
-              <span className="text-[12px] font-semibold text-ink-500">
-                {images.length + videos.length > 0
-                  ? `${images.length + videos.length} media file${images.length + videos.length !== 1 ? 's' : ''}`
-                  : 'No media'}
-              </span>
-              <button onClick={onClose}
-                className="w-8 h-8 rounded-full bg-black/[0.06] hover:bg-black/[0.12] flex items-center justify-center transition-colors text-ink-700">
-                <X size={14} />
-              </button>
+
+          {/* ── MOBILE HEADER (drag handle + title + close) ── */}
+          <div className="md:hidden flex-shrink-0">
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-ink-200" />
             </div>
-            {/* Scrollable media */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3"
-              style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ddd transparent', minHeight: 0 }}>
-              {MediaContent}
+            <div className="flex items-start justify-between gap-3 px-4 pb-3 border-b border-ink-100">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-bold text-ink-900 leading-snug line-clamp-1">{prompt.title}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
+                    {platformMeta.icon} {prompt.platform}
+                  </span>
+                  <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
+                </div>
+                <div className="mt-2">{StatsRow}</div>
+              </div>
+              <button onClick={onClose}
+                className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600">
+                <X size={15} />
+              </button>
             </div>
           </div>
 
-          {/* ── RIGHT: info panel ── */}
-          <div
-            className="flex-1 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-ink-100"
-            style={{ minHeight: 0 }}
-          >
-            {/* Author + stats header */}
-            <div className="flex-shrink-0 px-5 pt-5 pb-4 border-b border-ink-100">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-ink-200 flex items-center justify-center flex-shrink-0">
-                    <User size={17} className="text-ink-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-bold text-ink-900 leading-tight line-clamp-2">{prompt.title}</p>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
-                        {platformMeta.icon} {prompt.platform}
-                      </span>
-                      <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
-                    </div>
-                  </div>
-                </div>
+          {/* ── DESKTOP/TABLET layout: flex row on lg ── */}
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+
+            {/* ── LEFT / TOP: media panel ── */}
+            <div
+              className="lg:w-[52%] flex-shrink-0 bg-[#f3f3f3] flex flex-col"
+              style={{ minHeight: 0 }}
+            >
+              {/* Media panel header — desktop only */}
+              <div className="hidden md:flex flex-shrink-0 items-center justify-between px-4 py-3 border-b border-black/[0.06]">
+                <span className="text-[12px] font-semibold text-ink-500">
+                  {images.length + videos.length > 0
+                    ? `${images.length + videos.length} media file${images.length + videos.length !== 1 ? 's' : ''}`
+                    : 'No media'}
+                </span>
                 <button onClick={onClose}
-                  className="flex-shrink-0 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600 transition-colors">
+                  className="w-8 h-8 rounded-full bg-black/[0.06] hover:bg-black/[0.12] flex items-center justify-center transition-colors text-ink-700">
                   <X size={14} />
                 </button>
               </div>
-              <div className="mt-3">{StatsRow}</div>
+              {/* Scrollable media */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3"
+                style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ddd transparent', minHeight: 0, maxHeight: '40vh' }}>
+                {hasMedia ? MediaContent : (
+                  <div className="flex flex-col items-center justify-center py-16 text-ink-300">
+                    <Sparkles size={32} className="mb-2" />
+                    <span className="text-sm">No media</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* ── RIGHT / BOTTOM: info panel ── */}
+            <div
+              className="flex-1 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-ink-100"
+              style={{ minHeight: 0 }}
+            >
+              {/* Desktop header */}
+              <div className="hidden md:block flex-shrink-0 px-5 pt-5 pb-4 border-b border-ink-100">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-10 h-10 rounded-full bg-ink-200 flex items-center justify-center flex-shrink-0">
+                      <User size={17} className="text-ink-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-bold text-ink-900 leading-tight line-clamp-2">{prompt.title}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', platformMeta.pill)}>
+                          {platformMeta.icon} {prompt.platform}
+                        </span>
+                        <span className="text-[10px] text-ink-400">{timeAgo(prompt.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={onClose}
+                    className="flex-shrink-0 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600 transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="mt-3">{StatsRow}</div>
+              </div>
 
             {/* Tabs */}
             <div className="flex-shrink-0 flex border-b border-ink-100">
@@ -838,18 +831,20 @@ function DetailModal({
             </div>
 
             {/* Scrollable tab body */}
-            <div className="flex-1 overflow-y-auto p-5"
+            <div className="flex-1 overflow-y-auto p-4 md:p-5"
               style={{ overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#ddd transparent', minHeight: 0 }}>
               {activeTab === 'prompt' ? PromptTextPanel : CommentsPanel}
             </div>
 
             {/* Sticky footer: comment + copy */}
-            <div className="flex-shrink-0 border-t border-ink-100 px-5 py-4 space-y-2.5 bg-white">
+            <div className="flex-shrink-0 border-t border-ink-100 px-4 md:px-5 py-3 md:py-4 space-y-2.5 bg-white"
+              style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
               {CommentInputBar}
               {CopyBtn}
             </div>
-          </div>
-        </div>
+            </div>{/* end right panel */}
+          </div>{/* end flex row */}
+        </div>{/* end white card */}
       </motion.div>
     </AnimatePresence>
   );
@@ -1289,11 +1284,9 @@ export function ExplorePromptsPage() {
       </div>
 
       {/* Detail modal */}
-      <AnimatePresence>
-        {selected && (
-          <DetailModal key={selected.id} prompt={selected} onClose={() => setSelected(null)} />
-        )}
-      </AnimatePresence>
+      {selected && (
+        <DetailModal key={selected.id} prompt={selected} onClose={() => setSelected(null)} />
+      )}
     </>
   );
 }
