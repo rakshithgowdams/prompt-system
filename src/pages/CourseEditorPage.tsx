@@ -13,7 +13,7 @@ import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import { CourseShareModal } from '../components/courses/CourseShareModal';
-import type { CourseSection, CourseLesson } from '../hooks/useCourses';
+import type { CourseSection, CourseLesson, TimelineMarker } from '../hooks/useCourses';
 
 
 // ── Safe filename helper ──────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
 
 // ── Lesson editor ─────────────────────────────────────────────────────────────
 
-type LessonTab = 'content' | 'resources';
+type LessonTab = 'content' | 'resources' | 'timeline';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -157,6 +157,9 @@ function LessonEditor({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadLabel, setUploadLabel] = useState('');
   const [resources, setResources] = useState(lesson.resources ?? []);
+  const [markers, setMarkers] = useState<TimelineMarker[]>(lesson.timeline_markers ?? []);
+  const [newMarkerTime, setNewMarkerTime] = useState('');
+  const [newMarkerLabel, setNewMarkerLabel] = useState('');
 
   // Signed URLs for already-uploaded content
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -264,8 +267,8 @@ function LessonEditor({
   const save = () => onSave({
     title, description, lesson_type: lessonType, video_url: videoUrl || null,
     content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0,
-    resources,
-  });
+    resources, timeline_markers: markers,
+  } as Partial<CourseLesson>);
 
   const UploadZone = ({ onClick, accept, icon, label, sublabel, color = 'blue' }: {
     onClick: () => void; accept: string; icon: string; label: string; sublabel: string; color?: string;
@@ -330,7 +333,7 @@ function LessonEditor({
 
       {/* Tabs */}
       <div className="flex border-b border-ink-300 flex-shrink-0">
-        {([['content', 'Content'], ['resources', 'Resources']] as const).map(([key, label]) => (
+        {([['content', 'Content'], ['resources', 'Resources'], ...(lessonType === 'video' ? [['timeline', 'Timeline'] as const] : [])] as [LessonTab, string][]).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             className={cn('flex-1 py-2.5 text-xs font-medium transition-colors border-b-2',
               tab === key ? 'text-brand-400 border-brand-400' : 'text-ink-500 border-transparent hover:text-ink-700'
@@ -601,6 +604,92 @@ function LessonEditor({
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Timeline tab ── */}
+        {tab === 'timeline' && lessonType === 'video' && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-ink-900 mb-0.5">Timeline Markers</p>
+              <p className="text-xs text-ink-500">Add chapter markers that appear on the video progress bar for students to jump to key sections.</p>
+            </div>
+
+            {/* Add marker form */}
+            <div className="p-3 bg-ink-50 rounded-lg border border-ink-200 space-y-2.5">
+              <div className="grid grid-cols-[80px_1fr] gap-2">
+                <div>
+                  <label className="text-[10px] font-medium text-ink-500 mb-0.5 block">Time</label>
+                  <input
+                    value={newMarkerTime}
+                    onChange={(e) => setNewMarkerTime(e.target.value)}
+                    className="w-full h-8 px-2 rounded-md bg-white border border-ink-300 text-ink-900 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-100"
+                    placeholder="0:30"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-ink-500 mb-0.5 block">Label</label>
+                  <input
+                    value={newMarkerLabel}
+                    onChange={(e) => setNewMarkerLabel(e.target.value)}
+                    className="w-full h-8 px-2 rounded-md bg-white border border-ink-300 text-ink-900 text-xs focus:outline-none focus:ring-2 focus:ring-brand-100"
+                    placeholder="e.g. Introduction"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!newMarkerLabel.trim() || !newMarkerTime.trim()) return;
+                  const parts = newMarkerTime.split(':').map(Number);
+                  let seconds = 0;
+                  if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                  else if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
+                  else seconds = parts[0] || 0;
+                  if (isNaN(seconds) || seconds < 0) { toast.error('Invalid time format. Use m:ss or h:mm:ss'); return; }
+                  setMarkers((prev) => [...prev, { time_seconds: seconds, label: newMarkerLabel.trim() }].sort((a, b) => a.time_seconds - b.time_seconds));
+                  setNewMarkerTime('');
+                  setNewMarkerLabel('');
+                }}
+                disabled={!newMarkerLabel.trim() || !newMarkerTime.trim()}
+                className="w-full h-8 rounded-md bg-ink-900 hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors"
+              >
+                Add Marker
+              </button>
+            </div>
+
+            {/* Markers list */}
+            {markers.length === 0 ? (
+              <div className="text-center py-8">
+                <Icon name="flag" size={28} className="text-ink-200 mx-auto mb-2" />
+                <p className="text-xs text-ink-400">No markers yet. Add timestamps so students can navigate easily.</p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {markers.map((m, i) => {
+                  const h = Math.floor(m.time_seconds / 3600);
+                  const min = Math.floor((m.time_seconds % 3600) / 60);
+                  const sec = m.time_seconds % 60;
+                  const timeStr = h > 0
+                    ? `${h}:${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+                    : `${min}:${sec.toString().padStart(2, '0')}`;
+                  return (
+                    <div key={i} className="flex items-center gap-2.5 p-2.5 bg-amber-50 border border-amber-200/60 rounded-lg group">
+                      <div className="w-7 h-7 bg-amber-100 rounded-md flex items-center justify-center flex-shrink-0">
+                        <Icon name="flag" size={12} className="text-amber-600" />
+                      </div>
+                      <span className="text-xs font-mono font-bold text-amber-700 flex-shrink-0 w-12">{timeStr}</span>
+                      <p className="flex-1 text-xs font-medium text-ink-800 truncate">{m.label}</p>
+                      <button
+                        onClick={() => setMarkers((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="text-ink-300 hover:text-red-400 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                      >
+                        <Icon name="close" size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

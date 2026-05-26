@@ -42,6 +42,11 @@ export interface LessonResource {
   mime_type?: string;
 }
 
+export interface TimelineMarker {
+  time_seconds: number;
+  label: string;
+}
+
 export interface CourseLesson {
   id: string;
   course_id: string;
@@ -57,6 +62,7 @@ export interface CourseLesson {
   position: number;
   is_preview: boolean;
   resources: LessonResource[];
+  timeline_markers: TimelineMarker[];
   created_at: string;
   updated_at: string;
 }

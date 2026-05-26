@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
+import { VideoPlayer } from '../components/courses/VideoPlayer';
 import { cn } from '../lib/utils';
 import type { CourseLesson } from '../hooks/useCourses';
 
@@ -251,13 +252,6 @@ export function CoursePlayerPage() {
     if (idx < lessons.length - 1) setActiveLessonId(lessons[idx + 1].id);
   };
 
-  const handleVideoTimeUpdate = useCallback(() => {
-    if (!videoRef.current || !activeLesson || !courseId) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      savePosition.mutate({ lessonId: activeLesson.id, courseId, seconds: Math.floor(videoRef.current!.currentTime) });
-    }, 5000);
-  }, [activeLesson?.id, courseId]);
 
   const getEmbedUrl = (url: string) => YOUTUBE_EMBED(url) || VIMEO_EMBED(url) || null;
 
@@ -570,15 +564,19 @@ export function CoursePlayerPage() {
                         />
                       </div>
                     ) : (
-                      <div className="relative aspect-video bg-black">
-                        <video
-                          ref={videoRef}
-                          src={videoUrl}
-                          controls
-                          className="w-full h-full"
-                          onTimeUpdate={handleVideoTimeUpdate}
-                        />
-                      </div>
+                      <VideoPlayer
+                        src={videoUrl}
+                        title={activeLesson.title}
+                        markers={activeLesson.timeline_markers ?? []}
+                        videoRef={videoRef as React.RefObject<HTMLVideoElement>}
+                        onTimeUpdate={(s) => {
+                          if (saveTimer.current) clearTimeout(saveTimer.current);
+                          saveTimer.current = setTimeout(() => {
+                            savePosition.mutate({ lessonId: activeLesson.id, courseId: courseId!, seconds: s });
+                          }, 5000);
+                        }}
+                        initialTime={progressList.find((p) => p.lesson_id === activeLesson.id)?.watch_position_seconds}
+                      />
                     )
                   )}
 
