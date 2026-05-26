@@ -457,10 +457,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 lg:ml-64 min-w-0 w-full">
         {/* Mobile top bar */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 h-14 bg-white border-b border-ink-300">
+        <header className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center gap-2 px-4 h-14 bg-white border-b border-ink-300">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 -ml-1 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
+            className="p-2 -ml-1 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
             aria-label="Open menu"
           >
             <Icon name="menu" size={22} />
@@ -469,7 +469,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <img src="/aiwithrakshith-tech-logo copy.png" alt="aiwithrakshith.tech" className="h-7 w-7 object-contain flex-shrink-0" />
             <span className="font-display font-black text-ink-900 tracking-tight leading-none" style={{ fontSize: '12px', letterSpacing: '-0.02em' }}>aiwithrakshith</span>
           </Link>
-          <div className="w-9" />
         </header>
 
         <main className="overflow-x-hidden w-full min-w-0 lg:pt-0 pt-14 pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0">
