@@ -58,15 +58,43 @@ export function PublicCertificatePage() {
   if (isError || !cert) {
     return (
       <div className="min-h-screen bg-ink-100 flex items-center justify-center p-8">
-        <div className="text-center space-y-4 max-w-md">
+        <div className="text-center space-y-5 max-w-md">
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto border border-ink-300">
-            <Icon name="error_outline" size={32} className="text-ink-500" />
+            <Icon name="search_off" size={32} className="text-ink-500" />
           </div>
-          <h1 className="text-2xl font-bold text-ink-900">Certificate not found</h1>
-          <p className="text-ink-500">This certificate link may be invalid or has been revoked.</p>
-          <Link to="/" className="inline-block text-ink-900 font-semibold hover:underline">
-            Go to home
-          </Link>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-ink-900">Certificate not found</h1>
+            <p className="text-ink-500">
+              We couldn't find a certificate with this link. It may have been revoked, or the link may be incorrect.
+            </p>
+            {slug && (
+              <p className="text-xs text-ink-500 font-mono break-all bg-ink-50 border border-ink-300 rounded-md px-3 py-2 mt-2">
+                Searched for: <span className="text-ink-700">{slug}</span>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 justify-center bg-ink-900 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-ink-700 transition-colors text-sm"
+            >
+              <Icon name="refresh" size={16} />
+              Try again
+            </button>
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center border border-ink-300 text-ink-900 px-5 py-2.5 rounded-lg font-semibold hover:bg-ink-100 transition-colors text-sm"
+            >
+              Go to home
+            </Link>
+          </div>
+          <p className="text-xs text-ink-500 pt-2">
+            If this is your certificate and you believe this is a mistake, please{' '}
+            <a href="mailto:hello@aiwithrakshith.tech" className="underline text-ink-700">
+              contact support
+            </a>
+            .
+          </p>
         </div>
       </div>
     );

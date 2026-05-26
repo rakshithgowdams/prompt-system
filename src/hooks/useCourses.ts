@@ -710,22 +710,47 @@ export function useCertificateBySlug(slug: string | undefined) {
     queryKey: ['certificate-by-slug', slug],
     queryFn: async () => {
       if (!slug) return null;
+
       const { data, error } = await supabase
         .from('course_certificates')
-        .select('id, user_id, course_id, certificate_number, issued_at, department, internship_from, internship_to, growth_area, instructor_name, student_name, course_title, course_category, serial_number, share_slug, share_view_count')
+        .select(
+          'id, user_id, course_id, certificate_number, issued_at, ' +
+          'department, internship_from, internship_to, growth_area, ' +
+          'instructor_name, student_name, course_title, course_category, ' +
+          'serial_number, share_slug, share_view_count'
+        )
         .eq('share_slug', slug)
         .maybeSingle();
-      if (error) throw error;
 
-      if (data) {
-        supabase.rpc('increment_certificate_view', { slug }).catch(() => {});
+      if (error) {
+        console.error('[cert-by-slug] supabase error', {
+          slug,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        throw error;
       }
 
-      return data as CourseCertificate | null;
+      if (!data) {
+        console.warn('[cert-by-slug] no row returned for slug', slug);
+        return null;
+      }
+
+      // Fire-and-forget view counter — never block render on this
+      supabase
+        .rpc('increment_certificate_view', { slug })
+        .then(({ error: rpcErr }) => {
+          if (rpcErr) console.warn('[cert-by-slug] view increment failed', rpcErr.message);
+        });
+
+      return data as CourseCertificate;
     },
     enabled: !!slug,
-    staleTime: 0,
-    retry: 3,
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 }
 

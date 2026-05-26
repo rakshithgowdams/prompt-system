@@ -15,7 +15,8 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
   const [busy, setBusy] = useState<'pdf' | 'png' | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
 
-  const shareUrl = `${window.location.origin}/c/${certificate.share_slug}`;
+  const hasValidSlug = !!certificate.share_slug && certificate.share_slug.length > 0;
+  const shareUrl = hasValidSlug ? `${window.location.origin}/c/${certificate.share_slug}` : '';
   const shareText = `I've earned my Certificate of Course Completion from MyDesignNexus!\n\nView my verified certificate:`;
 
   async function renderToCanvas(): Promise<HTMLCanvasElement> {
@@ -151,58 +152,70 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
       {/* Share panel */}
       {shareOpen && (
         <div className="border-t border-ink-300 p-4 sm:p-5 space-y-4 bg-ink-50">
-          {/* LinkedIn CTA — prominent */}
-          <a
-            href={shareLinks.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3.5 rounded-xl text-white font-bold text-sm transition-opacity hover:opacity-90"
-            style={{ background: '#0A66C2' }}
-          >
-            <SocialIcon icon="linkedin" size={22} />
-            <div>
-              <div>Add to LinkedIn Profile</div>
-              <div className="text-xs font-normal opacity-80">Share as a certification on your LinkedIn profile</div>
+          {!hasValidSlug ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
+              <p className="font-semibold mb-1">Share link not ready</p>
+              <p className="text-amber-800 text-xs leading-relaxed">
+                This certificate doesn't have a public share link yet. Please refresh the page in a moment.
+                If the problem persists, contact support.
+              </p>
             </div>
-            <Icon name="open_in_new" size={16} className="ml-auto opacity-70" />
-          </a>
+          ) : (
+            <>
+              {/* LinkedIn CTA — prominent */}
+              <a
+                href={shareLinks.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3.5 rounded-xl text-white font-bold text-sm transition-opacity hover:opacity-90"
+                style={{ background: '#0A66C2' }}
+              >
+                <SocialIcon icon="linkedin" size={22} />
+                <div>
+                  <div>Add to LinkedIn Profile</div>
+                  <div className="text-xs font-normal opacity-80">Share as a certification on your LinkedIn profile</div>
+                </div>
+                <Icon name="open_in_new" size={16} className="ml-auto opacity-70" />
+              </a>
 
-          {/* Copy link */}
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              readOnly
-              value={shareUrl}
-              onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="flex-1 px-3 py-2.5 bg-white border border-ink-300 rounded-lg text-xs font-mono text-ink-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ink-400"
-            />
-            <button
-              onClick={copyLink}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-ink-300 bg-white text-ink-700 hover:bg-ink-100 text-xs font-semibold transition-colors whitespace-nowrap"
-            >
-              <Icon name="content_copy" size={14} />
-              Copy Link
-            </button>
-          </div>
+              {/* Copy link */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 px-3 py-2.5 bg-white border border-ink-300 rounded-lg text-xs font-mono text-ink-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ink-400"
+                />
+                <button
+                  onClick={copyLink}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-ink-300 bg-white text-ink-700 hover:bg-ink-100 text-xs font-semibold transition-colors whitespace-nowrap"
+                >
+                  <Icon name="content_copy" size={14} />
+                  Copy Link
+                </button>
+              </div>
 
-          {/* Other social buttons */}
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-            <SocialButton href={shareLinks.twitter} label="X / Twitter" bg="#000" icon="twitter" />
-            <SocialButton href={shareLinks.whatsapp} label="WhatsApp" bg="#25D366" icon="whatsapp" />
-            <SocialButton href={shareLinks.facebook} label="Facebook" bg="#1877F2" icon="facebook" />
-            <SocialButton href={shareLinks.telegram} label="Telegram" bg="#0088CC" icon="telegram" />
-            <button
-              onClick={nativeShare}
-              className="flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl bg-ink-800 hover:bg-ink-700 text-white text-[11px] font-semibold transition-colors col-span-1 sm:col-span-1"
-            >
-              <Icon name="ios_share" size={20} />
-              More
-            </button>
-          </div>
+              {/* Other social buttons */}
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                <SocialButton href={shareLinks.twitter} label="X / Twitter" bg="#000" icon="twitter" />
+                <SocialButton href={shareLinks.whatsapp} label="WhatsApp" bg="#25D366" icon="whatsapp" />
+                <SocialButton href={shareLinks.facebook} label="Facebook" bg="#1877F2" icon="facebook" />
+                <SocialButton href={shareLinks.telegram} label="Telegram" bg="#0088CC" icon="telegram" />
+                <button
+                  onClick={nativeShare}
+                  className="flex flex-col items-center justify-center gap-1 p-2.5 rounded-xl bg-ink-800 hover:bg-ink-700 text-white text-[11px] font-semibold transition-colors col-span-1 sm:col-span-1"
+                >
+                  <Icon name="ios_share" size={20} />
+                  More
+                </button>
+              </div>
 
-          <p className="text-xs text-ink-500 leading-relaxed">
-            Anyone with this link can view your verified certificate. You can add it to your LinkedIn profile, resume, or portfolio.
-          </p>
+              <p className="text-xs text-ink-500 leading-relaxed">
+                Anyone with this link can view your verified certificate. You can add it to your LinkedIn profile, resume, or portfolio.
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>
