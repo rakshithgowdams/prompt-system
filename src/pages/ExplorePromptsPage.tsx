@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Globe, Lock, Copy, Check, Sparkles, Image, Video, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Globe, Lock, Copy, Check, Sparkles, Image, Video, X, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePublishedPrompts, type PublishedPrompt } from '../hooks/usePrompts';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -282,14 +282,20 @@ function PromptCard({ prompt }: { prompt: PublishedPrompt }) {
           </span>
         </div>
 
-        {/* Prompt text */}
-        <div className="bg-ink-100 rounded-xl p-3.5 border border-ink-300 relative">
-          <p className="text-[13px] text-ink-700 leading-relaxed line-clamp-4 font-mono whitespace-pre-wrap break-words">
-            {prompt.prompt_text}
-          </p>
-          {prompt.prompt_text.length > 240 && (
-            <div className="absolute bottom-0 inset-x-0 h-7 bg-gradient-to-t from-ink-100 to-transparent rounded-b-xl pointer-events-none" />
-          )}
+        {/* Prompt text — fixed height with y-scroll so full prompt is readable */}
+        <div className="bg-ink-100 rounded-xl border border-ink-300 overflow-hidden">
+          <div
+            className="overflow-y-auto p-3.5"
+            style={{
+              height: hasMedia ? '180px' : '160px',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#D1D7DC transparent',
+            }}
+          >
+            <p className="text-[13px] text-ink-700 leading-relaxed font-mono whitespace-pre-wrap break-words">
+              {prompt.prompt_text}
+            </p>
+          </div>
         </div>
 
         {/* Notes */}
@@ -354,6 +360,7 @@ function SkeletonCard() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function ExplorePromptsPage() {
+  const navigate = useNavigate();
   const { data: prompts = [], isLoading } = usePublishedPrompts();
   const [search, setSearch] = useState('');
   const [activePlatform, setActivePlatform] = useState<string>('All');
@@ -381,19 +388,30 @@ export function ExplorePromptsPage() {
       {/* Minimal branded top bar */}
       <header className="sticky top-0 z-40 bg-white border-b border-ink-300 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <img
-              src="/aiwithrakshith-tech-logo copy.png"
-              alt="aiwithrakshith"
-              className="h-8 w-8 object-contain group-hover:scale-105 transition-transform"
-            />
-            <span
-              className="hidden sm:block font-display font-black text-ink-900 tracking-tight"
-              style={{ fontSize: '14px', letterSpacing: '-0.02em' }}
+          {/* Left: back button + logo */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-ink-300 hover:bg-ink-100 hover:border-ink-500 text-ink-600 hover:text-ink-900 transition-all duration-150"
+              title="Go back"
             >
-              aiwithrakshith
-            </span>
-          </Link>
+              <ArrowLeft size={16} />
+            </button>
+            <div className="w-px h-5 bg-ink-300" />
+            <Link to="/" className="flex items-center gap-2 group" title="Home">
+              <img
+                src="/aiwithrakshith-tech-logo copy.png"
+                alt="aiwithrakshith"
+                className="h-7 w-7 object-contain group-hover:scale-105 transition-transform"
+              />
+              <span
+                className="hidden sm:block font-display font-black text-ink-900 tracking-tight"
+                style={{ fontSize: '14px', letterSpacing: '-0.02em' }}
+              >
+                aiwithrakshith
+              </span>
+            </Link>
+          </div>
 
           {/* Centre — search (desktop) */}
           <div className="hidden sm:flex flex-1 max-w-sm mx-4 relative">
