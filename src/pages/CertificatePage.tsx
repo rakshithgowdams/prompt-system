@@ -5,6 +5,10 @@ import { CertificateActions } from '../components/certificate/CertificateActions
 import { CertificateGate } from '../components/certificate/CertificateGate';
 import { Icon } from '../components/ui/Icon';
 
+function isCertificateComplete(cert: { department: string; growth_area: string; internship_from: string | null; internship_to: string | null }) {
+  return cert.department.trim() !== '' && cert.growth_area.trim() !== '' && !!cert.internship_from && !!cert.internship_to;
+}
+
 export function CertificatePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
@@ -20,8 +24,15 @@ export function CertificatePage() {
     );
   }
 
-  if (!certificate) {
-    return <CertificateGate courseId={courseId!} courseTitle={course?.title ?? ''} />;
+  // No certificate at all, or it's a stub with empty required fields — show the gate form
+  if (!certificate || !isCertificateComplete(certificate)) {
+    return (
+      <CertificateGate
+        courseId={courseId!}
+        courseTitle={course?.title ?? ''}
+        existingStub={certificate}
+      />
+    );
   }
 
   return (
@@ -36,13 +47,28 @@ export function CertificatePage() {
             <Icon name="arrow_back" size={18} />
             Back to course
           </button>
-          <h1 className="text-sm font-bold text-ink-900">Your Certificate</h1>
+          <div className="flex items-center gap-2">
+            <Icon name="workspace_premium" size={18} className="text-amber-500" fill />
+            <h1 className="text-sm font-bold text-ink-900">Your Certificate</h1>
+          </div>
           <div className="w-24" />
         </div>
       </div>
 
       {/* Certificate display */}
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+        {/* Verified badge */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+          <Icon name="verified" size={22} className="text-green-600" fill />
+          <div>
+            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Completion</p>
+            <p className="text-xs text-ink-500">
+              Issued to {certificate.student_name} on {new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-ink-300">
           {templateUrl && (
             <CertificateView cert={certificate} templateUrl={templateUrl} />
@@ -70,7 +96,7 @@ function MetaCell({ label, value, mono }: { label: string; value: string; mono?:
   return (
     <div>
       <div className="text-[10px] uppercase tracking-widest text-ink-500 font-semibold">{label}</div>
-      <div className={`text-sm font-semibold text-ink-900 mt-0.5 ${mono ? 'font-mono' : ''}`}>{value}</div>
+      <div className={`text-sm font-semibold text-ink-900 mt-0.5 ${mono ? 'font-mono' : ''}`}>{value || '—'}</div>
     </div>
   );
 }

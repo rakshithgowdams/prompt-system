@@ -645,22 +645,53 @@ export function useIssueCertificate() {
       const studentName = profile?.display_name
         || user!.email!.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
 
-      const { data, error } = await supabase
+      // Check if a stub already exists (created by the RPC after course completion)
+      const { data: existing } = await supabase
         .from('course_certificates')
-        .insert({
-          course_id: p.course_id,
-          user_id: user!.id,
-          department: p.department,
-          internship_from: p.internship_from,
-          internship_to: p.internship_to,
-          growth_area: p.growth_area,
-          instructor_name: p.instructor_name ?? 'Rakshith',
-          student_name: studentName,
-          course_title: course?.title ?? '',
-          course_category: course?.category ?? '',
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('course_id', p.course_id)
+        .eq('user_id', user!.id)
+        .maybeSingle();
+
+      let data, error;
+
+      if (existing) {
+        // Update the existing stub with the user-supplied details
+        ({ data, error } = await supabase
+          .from('course_certificates')
+          .update({
+            department: p.department,
+            internship_from: p.internship_from,
+            internship_to: p.internship_to,
+            growth_area: p.growth_area,
+            instructor_name: p.instructor_name ?? 'Rakshith',
+            student_name: studentName,
+            course_title: course?.title ?? '',
+            course_category: course?.category ?? '',
+          })
+          .eq('course_id', p.course_id)
+          .eq('user_id', user!.id)
+          .select()
+          .single());
+      } else {
+        // No stub yet — fresh insert
+        ({ data, error } = await supabase
+          .from('course_certificates')
+          .insert({
+            course_id: p.course_id,
+            user_id: user!.id,
+            department: p.department,
+            internship_from: p.internship_from,
+            internship_to: p.internship_to,
+            growth_area: p.growth_area,
+            instructor_name: p.instructor_name ?? 'Rakshith',
+            student_name: studentName,
+            course_title: course?.title ?? '',
+            course_category: course?.category ?? '',
+          })
+          .select()
+          .single());
+      }
 
       if (error) throw error;
       return data as CourseCertificate;
