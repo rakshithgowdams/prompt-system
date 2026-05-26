@@ -85,10 +85,11 @@ export default function App() {
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/refund" element={<RefundPolicyPage />} />
 
-              {/* Public share pages — no auth required */}
+              {/* Standalone pages — no AppShell wrapper */}
               <Route path="/share/:shareId" element={<SharePage />} />
               <Route path="/courses/share/:shareId" element={<CourseSharePage />} />
               <Route path="/explore" element={<ExplorePromptsPage />} />
+              <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
@@ -104,7 +105,6 @@ export default function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />
-                <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
                 <Route path="/courses/:courseId/certificate" element={<CertificatePage />} />
               </Route>
 
