@@ -447,7 +447,10 @@ function DetailModal({
                   IMAGE · {images.length > 0 ? images.length : 1}
                 </span>
               </div>
-              <div className="text-[13.5px] text-ink-800 leading-[1.75] whitespace-pre-wrap break-words">
+              <div
+                className="text-[13.5px] text-ink-800 leading-[1.75] whitespace-pre-wrap break-words overflow-y-auto overscroll-contain"
+                style={{ maxHeight: '250px', scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}
+              >
                 {prompt.prompt_text}
               </div>
             </div>
