@@ -7,9 +7,16 @@ import {
   useFolders,
   useProjectFiles,
   useCreateFolder,
-  useDeleteFolder,
+  useDeleteFolderRecursive,
   useAddProjectFile,
   useDeleteProjectFile,
+  useRenameFile,
+  useRenameFolder,
+  useMoveFileToFolder,
+  useBulkDeleteFiles,
+  useFolderPath,
+  type Folder,
+  type ProjectFile,
 } from '../hooks/useProjectFiles';
 import { useAuth } from '../contexts/AuthContext';
 import { Icon } from '../components/ui/Icon';
@@ -19,13 +26,16 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/Modal';
 import { FileShareModal } from '../components/files/FileShareModal';
 import { FileTypeIcon } from '../components/files/FileTypeIcon';
+import { FilePreview } from '../components/files/FilePreview';
+import { MoveToModal } from '../components/files/MoveToModal';
 import { Lightbox } from '../components/prompts/Lightbox';
-import { uploadProjectFile, getSignedUrl, downloadFile, getFileCategory, formatFileSize } from '../lib/storage';
-import { cn, PROJECT_COLORS } from '../lib/utils';
-import { formatRelative } from '../lib/utils';
-import type { Folder, ProjectFile, FileType } from '../lib/database.types';
+import { uploadProjectFile, getSignedUrl, downloadFile } from '../lib/storage';
+import { detectFileType, formatFileSize } from '../lib/fileTypes';
+import { extractEntries, extractFromInput, splitPath, type UploadEntry } from '../lib/folderUpload';
+import { cn, PROJECT_COLORS, formatRelative } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
-// ── Upload queue item ─────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface UploadItem {
   id: string;
@@ -36,9 +46,44 @@ interface UploadItem {
   error?: string;
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
 type ViewMode = 'grid' | 'list';
+type FilterType = 'image' | 'video' | 'audio' | 'document' | 'other' | '';
+
+// ── Breadcrumb ────────────────────────────────────────────────────────────────
+
+function Breadcrumb({ projectName, path, onNavigate }: {
+  projectName: string;
+  path: Folder[];
+  onNavigate: (folderId: string | null) => void;
+}) {
+  return (
+    <nav className="flex items-center gap-1 text-sm overflow-x-auto pb-0.5 scrollbar-none flex-nowrap">
+      <button
+        onClick={() => onNavigate(null)}
+        className="font-semibold text-white hover:text-white/80 transition-colors whitespace-nowrap flex-shrink-0"
+      >
+        {projectName}
+      </button>
+      {path.map((folder, i) => (
+        <span key={folder.id} className="flex items-center gap-1 flex-shrink-0">
+          <Icon name="chevron_right" size={14} className="text-white/40" />
+          {i === path.length - 1 ? (
+            <span className="font-semibold text-white whitespace-nowrap">{folder.name}</span>
+          ) : (
+            <button
+              onClick={() => onNavigate(folder.id)}
+              className="text-white/70 hover:text-white transition-colors whitespace-nowrap"
+            >
+              {folder.name}
+            </button>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export function ProjectFilesPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -48,41 +93,38 @@ export function ProjectFilesPage() {
 
   const { data: project, isLoading: projectLoading } = useProject(slug ?? '');
 
-  // Read folder from URL query param — this is how the sidebar navigates into a folder
   const folderParam = searchParams.get('folder');
   const [activeFolderId, setActiveFolderId] = useState<string | null>(folderParam);
 
-  // Keep URL in sync when activeFolderId changes programmatically (breadcrumb click, folder open)
   const setFolder = useCallback((id: string | null) => {
     setActiveFolderId(id);
-    if (id) {
-      setSearchParams({ folder: id }, { replace: true });
-    } else {
-      setSearchParams({}, { replace: true });
-    }
+    setSelectedIds(new Set());
+    if (id) setSearchParams({ folder: id }, { replace: true });
+    else setSearchParams({}, { replace: true });
   }, [setSearchParams]);
 
-  // Sync if the URL changes externally (sidebar navigation)
   useEffect(() => {
-    const param = searchParams.get('folder');
-    setActiveFolderId(param);
+    setActiveFolderId(searchParams.get('folder'));
   }, [searchParams]);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<FileType | ''>('');
 
   // Data
-  const { data: folders = [], isLoading: foldersLoading } = useFolders(project?.id ?? '');
+  const { data: folders = [], isLoading: foldersLoading } = useFolders(project?.id ?? '', activeFolderId);
   const { data: files = [], isLoading: filesLoading } = useProjectFiles(project?.id ?? '', activeFolderId);
-  const activeFolder = folders.find((f) => f.id === activeFolderId) ?? null;
+  const { data: folderPath = [] } = useFolderPath(project?.id ?? '', activeFolderId);
 
   // Mutations
   const createFolder = useCreateFolder();
-  const deleteFolder = useDeleteFolder();
+  const deleteFolder = useDeleteFolderRecursive();
   const addFile = useAddProjectFile();
   const deleteFile = useDeleteProjectFile();
+  const renameFile = useRenameFile();
+  const renameFolder = useRenameFolder();
+  const bulkDelete = useBulkDeleteFiles();
 
   // UI state
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<FilterType>('');
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'file' | 'folder'; item: ProjectFile | Folder } | null>(null);
@@ -92,73 +134,159 @@ export function ProjectFilesPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [previewFile, setPreviewFile] = useState<(ProjectFile & { signedUrl: string }) | null>(null);
   const [shareTarget, setShareTarget] = useState<{ type: 'project' | 'file' | 'folder'; file?: ProjectFile; folder?: Folder } | null>(null);
+  const [moveTarget, setMoveTarget] = useState<{ targets: { type: 'file' | 'folder'; id: string }[]; forbiddenIds: string[] } | null>(null);
+  const [renameTarget, setRenameTarget] = useState<{ type: 'file' | 'folder'; item: ProjectFile | Folder } | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const [newMenuOpen, setNewMenuOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // Filtered files
+  // Filtered view
+  const visibleFolders = folders.filter((f) =>
+    !search || f.name.toLowerCase().includes(search.toLowerCase())
+  );
   const visibleFiles = files.filter((f) => {
     const matchSearch = !search || f.file_name.toLowerCase().includes(search.toLowerCase());
     const matchType = !filterType || f.file_type === filterType;
     return matchSearch && matchType;
   });
+  const totalItems = visibleFolders.length + visibleFiles.length;
 
-  const visibleFolders = !activeFolderId
-    ? folders.filter((f) => !search || f.name.toLowerCase().includes(search.toLowerCase()))
-    : [];
-
-  // ── Upload logic ──────────────────────────────────────────────────────────
+  // ── Upload helpers ─────────────────────────────────────────────────────────
 
   const updateUpload = useCallback((id: string, patch: Partial<UploadItem>) => {
     setUploads((prev) => prev.map((u) => u.id === id ? { ...u, ...patch } : u));
   }, []);
 
-  const processUpload = useCallback(async (file: File) => {
+  const processSingleFileUpload = useCallback(async (
+    file: File,
+    targetFolderId: string | null,
+    displayName?: string,
+  ) => {
     if (!project || !user) return;
     const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setUploads((prev) => [...prev, { id: uid, name: file.name, size: file.size, progress: 0, status: 'uploading' }]);
-
+    const name = displayName || file.name;
+    setUploads((prev) => [...prev, { id: uid, name, size: file.size, progress: 0, status: 'uploading' }]);
     try {
       updateUpload(uid, { progress: 30 });
       const path = await uploadProjectFile(user.id, project.id, file);
-      updateUpload(uid, { progress: 80 });
-
-      const category = getFileCategory(file.type);
+      updateUpload(uid, { progress: 75 });
+      const info = detectFileType(file.name, file.type);
       await addFile.mutateAsync({
         project_id: project.id,
-        folder_id: activeFolderId,
+        folder_id: targetFolderId,
         file_path: path,
-        file_name: file.name,
-        file_type: category,
+        file_name: name,
+        file_type: info.dbType,
         file_size: file.size,
         mime_type: file.type,
       });
-
       updateUpload(uid, { progress: 100, status: 'done' });
-      setTimeout(() => setUploads((prev) => prev.filter((u) => u.id !== uid)), 2000);
+      setTimeout(() => setUploads((prev) => prev.filter((u) => u.id !== uid)), 2500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed';
       updateUpload(uid, { status: 'error', error: msg });
-      toast.error(`Failed to upload ${file.name}`);
     }
-  }, [project, user, activeFolderId, addFile, updateUpload]);
+  }, [project, user, addFile, updateUpload]);
 
-  const handleFiles = (list: FileList | File[]) => Array.from(list).forEach(processUpload);
+  const uploadBatch = useCallback(async (entries: UploadEntry[]) => {
+    if (!project || !user) return;
 
-  // ── Create folder ─────────────────────────────────────────────────────────
+    const folderCache = new Map<string, string | null>();
+    folderCache.set('', activeFolderId);
+
+    async function ensureFolder(parts: string[]): Promise<string | null> {
+      const key = parts.join('/');
+      if (folderCache.has(key)) return folderCache.get(key)!;
+      if (parts.length === 0) return activeFolderId;
+
+      const parent = await ensureFolder(parts.slice(0, -1));
+      const name = parts[parts.length - 1];
+
+      try {
+        const created = await createFolder.mutateAsync({
+          projectId: project!.id,
+          name,
+          parentFolderId: parent,
+        });
+        folderCache.set(key, created.id);
+        return created.id;
+      } catch (e: any) {
+        if (e?.code === '23505' || /duplicate/i.test(e?.message ?? '')) {
+          const { data } = await supabase
+            .from('folders')
+            .select('id, name, parent_folder_id')
+            .eq('project_id', project!.id)
+            .eq('user_id', user!.id);
+          const existing = (data ?? []).find(
+            (f: any) => f.name.toLowerCase() === name.toLowerCase() && f.parent_folder_id === parent
+          );
+          const id = existing?.id ?? null;
+          folderCache.set(key, id);
+          return id;
+        }
+        throw e;
+      }
+    }
+
+    for (const entry of entries) {
+      const { folders: folderParts, fileName } = splitPath(entry.relativePath);
+      if (!fileName) continue;
+      try {
+        const targetFolderId = await ensureFolder(folderParts);
+        await processSingleFileUpload(entry.file, targetFolderId, fileName);
+      } catch (e) {
+        console.error('[folder-upload] failed for', entry.relativePath, e);
+      }
+    }
+  }, [project, user, activeFolderId, createFolder, processSingleFileUpload]);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    const entries = extractFromInput(e.target.files);
+    uploadBatch(entries);
+    e.target.value = '';
+  }, [uploadBatch]);
+
+  const handleFolderInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    const entries = extractFromInput(e.target.files);
+    uploadBatch(entries);
+    e.target.value = '';
+  }, [uploadBatch]);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    try {
+      const entries = await extractEntries(e.dataTransfer);
+      if (entries.length > 0) uploadBatch(entries);
+    } catch {
+      toast.error('Drop failed');
+    }
+  }, [uploadBatch]);
+
+  // ── Create folder ──────────────────────────────────────────────────────────
 
   const handleCreateFolder = async () => {
     if (!project || !newFolderName.trim()) return;
     try {
-      await createFolder.mutateAsync({ projectId: project.id, name: newFolderName.trim() });
+      await createFolder.mutateAsync({
+        projectId: project.id,
+        name: newFolderName.trim(),
+        parentFolderId: activeFolderId,
+      });
       toast.success('Folder created');
       setNewFolderName('');
       setNewFolderOpen(false);
-    } catch {
-      toast.error('Failed to create folder');
+    } catch (e: any) {
+      toast.error(e.message ?? 'Failed to create folder');
     }
   };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // ── Delete ─────────────────────────────────────────────────────────────────
 
   const handleDelete = async () => {
     if (!deleteTarget || !project) return;
@@ -170,7 +298,7 @@ export function ProjectFilesPage() {
       } else {
         const f = deleteTarget.item as Folder;
         await deleteFolder.mutateAsync({ id: f.id, projectId: project.id });
-        toast.success('Folder deleted');
+        toast.success('Folder and all contents deleted');
       }
       setDeleteTarget(null);
     } catch {
@@ -178,45 +306,112 @@ export function ProjectFilesPage() {
     }
   };
 
-  // ── Preview ───────────────────────────────────────────────────────────────
+  const handleBulkDelete = async () => {
+    if (!project || selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} selected items? This cannot be undone.`)) return;
+    const selectedFiles = visibleFiles.filter((f) => selectedIds.has(f.id));
+    try {
+      await bulkDelete.mutateAsync({ projectId: project.id, files: selectedFiles.map((f) => ({ id: f.id, file_path: f.file_path })) });
+      toast.success(`Deleted ${selectedFiles.length} files`);
+      setSelectedIds(new Set());
+    } catch {
+      toast.error('Bulk delete failed');
+    }
+  };
+
+  // ── Rename ─────────────────────────────────────────────────────────────────
+
+  const openRename = (type: 'file' | 'folder', item: ProjectFile | Folder) => {
+    setRenameTarget({ type, item });
+    setRenameName(type === 'file' ? (item as ProjectFile).file_name : (item as Folder).name);
+  };
+
+  const handleRename = async () => {
+    if (!renameTarget || !project || !renameName.trim()) return;
+    try {
+      if (renameTarget.type === 'file') {
+        await renameFile.mutateAsync({ id: renameTarget.item.id, projectId: project.id, name: renameName });
+      } else {
+        await renameFolder.mutateAsync({ id: renameTarget.item.id, projectId: project.id, name: renameName });
+      }
+      toast.success('Renamed');
+      setRenameTarget(null);
+    } catch (e: any) {
+      toast.error(e.message ?? 'Rename failed');
+    }
+  };
+
+  // ── Move ───────────────────────────────────────────────────────────────────
+
+  const openMoveFile = (file: ProjectFile) => setMoveTarget({
+    targets: [{ type: 'file', id: file.id }],
+    forbiddenIds: [],
+  });
+
+  const openMoveFolder = (folder: Folder) => setMoveTarget({
+    targets: [{ type: 'folder', id: folder.id }],
+    forbiddenIds: [folder.id],
+  });
+
+  const openBulkMove = () => {
+    const selectedFiles = visibleFiles.filter((f) => selectedIds.has(f.id));
+    setMoveTarget({
+      targets: selectedFiles.map((f) => ({ type: 'file' as const, id: f.id })),
+      forbiddenIds: [],
+    });
+  };
+
+  // ── Preview ────────────────────────────────────────────────────────────────
 
   const openPreview = async (file: ProjectFile) => {
     try {
       const signedUrl = await getSignedUrl(file.file_path, 3600);
-      const enriched = { ...file, signedUrl };
-
-      if (file.file_type === 'image') {
-        const imageFiles = visibleFiles.filter((f) => f.file_type === 'image');
+      const info = detectFileType(file.file_name, file.mime_type);
+      if (info.category === 'image') {
+        const imageFiles = visibleFiles.filter((f) => detectFileType(f.file_name, f.mime_type).category === 'image');
         const withUrls = await Promise.all(
-          imageFiles.map(async (f) => {
-            const url = f.id === file.id ? signedUrl : await getSignedUrl(f.file_path, 3600).catch(() => '');
-            return { ...f, signedUrl: url };
-          }),
+          imageFiles.map(async (f) => ({
+            ...f,
+            signedUrl: f.id === file.id ? signedUrl : await getSignedUrl(f.file_path, 3600).catch(() => ''),
+          }))
         );
         const idx = withUrls.findIndex((f) => f.id === file.id);
         setLightboxImages(withUrls.filter((f) => f.signedUrl));
         setLightboxIndex(idx >= 0 ? idx : 0);
       } else {
-        setPreviewFile(enriched);
+        setPreviewFile({ ...file, signedUrl });
       }
     } catch {
       toast.error('Could not open preview');
     }
   };
 
-  const handleDownload = async (file: ProjectFile) => {
+  const handleDownload = async (file: ProjectFile | (ProjectFile & { signedUrl: string })) => {
     try {
       await downloadFile(file.file_path, file.file_name);
-      toast.success('Downloaded');
     } catch {
       toast.error('Download failed');
     }
   };
 
+  // ── Selection ──────────────────────────────────────────────────────────────
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(visibleFiles.map((f) => f.id)));
+  };
+
   if (projectLoading) {
     return (
       <div className="p-4 lg:p-8 space-y-4">
-        <div className="h-40 rounded-lg bg-ink-100 animate-pulse" />
+        <div className="h-40 rounded-xl bg-ink-100 animate-pulse" />
         <FileGridSkeleton count={12} />
       </div>
     );
@@ -224,57 +419,38 @@ export function ProjectFilesPage() {
 
   if (!project) return <div className="p-8 text-center text-ink-500">Project not found.</div>;
 
-  const totalItems = visibleFolders.length + visibleFiles.length;
-
   return (
     <div className="flex flex-col h-full min-h-screen bg-white">
-      {/* ── Top bar ── */}
+
+      {/* ── Header ── */}
       <div className={cn(
         'px-4 lg:px-8 py-5 bg-gradient-to-r text-white relative overflow-hidden',
         PROJECT_COLORS[project.color] ?? PROJECT_COLORS.gray,
       )}>
         <div className="absolute inset-0 bg-black/30" />
-        <div className="relative z-10 flex flex-col gap-4">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-sm text-white/80 overflow-x-auto scrollbar-none flex-nowrap min-w-0">
-            <button onClick={() => navigate('/dashboard')} className="hover:text-white transition-colors whitespace-nowrap">
-              My Drive
-            </button>
-            <span className="opacity-50 flex-shrink-0">/</span>
-            <button
-              onClick={() => navigate(`/projects/${slug}`)}
-              className="hover:text-white transition-colors truncate max-w-[120px] xs:max-w-[180px]"
-            >
-              {project.name}
-            </button>
-            <span className="opacity-50 flex-shrink-0">/</span>
-            {activeFolder ? (
-              <>
-                <button
-                  onClick={() => setFolder(null)}
-                  className="hover:text-white transition-colors whitespace-nowrap"
-                >
-                  Files
-                </button>
-                <span className="opacity-50 flex-shrink-0">/</span>
-                <span className="text-white font-semibold truncate max-w-[120px] xs:max-w-[200px]">{activeFolder.name}</span>
-              </>
-            ) : (
-              <span className="text-white font-semibold whitespace-nowrap">Files</span>
-            )}
-          </div>
+        <div className="relative z-10 flex flex-col gap-3">
+          {/* Breadcrumb navigation */}
+          <Breadcrumb
+            projectName={project.name}
+            path={folderPath}
+            onNavigate={setFolder}
+          />
 
-          {/* Title row */}
+          {/* Title + actions row */}
           <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
-                onClick={() => activeFolder ? setFolder(null) : navigate(`/projects/${slug}`)}
+                onClick={() => activeFolderId ? setFolder(activeFolderId ? (folderPath[folderPath.length - 2]?.id ?? null) : null) : navigate(`/projects/${slug}`)}
                 className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex-shrink-0"
               >
                 <Icon name="arrow_back" size={18} className="text-white" />
               </button>
-              <h1 className="text-lg sm:text-xl font-bold truncate">{activeFolder ? activeFolder.name : `${project.name} — Files`}</h1>
-              <span className="text-xs sm:text-sm text-white/60 flex-shrink-0">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold truncate">
+                  {folderPath.length > 0 ? folderPath[folderPath.length - 1].name : `${project.name} — Files`}
+                </h1>
+                <p className="text-xs text-white/60">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -285,30 +461,60 @@ export function ProjectFilesPage() {
               >
                 <Icon name={viewMode === 'grid' ? 'view_list' : 'grid_view'} size={18} />
               </button>
-              {!activeFolderId && (
-                <button
-                  onClick={() => setNewFolderOpen(true)}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
-                >
-                  <Icon name="create_new_folder" size={16} />
-                  New Folder
-                </button>
-              )}
               <button
                 onClick={() => setShareTarget({ type: 'project' })}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
-                title="Share"
               >
                 <Icon name="share" size={16} />
                 <span className="hidden sm:inline">Share</span>
               </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white text-ink-900 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
-              >
-                <Icon name="upload" size={16} />
-                Upload
-              </button>
+
+              {/* "+ New" dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setNewMenuOpen((o) => !o)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white text-ink-900 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg"
+                >
+                  <Icon name="add" size={16} />
+                  New
+                  <Icon name="expand_more" size={14} />
+                </button>
+                <AnimatePresence>
+                  {newMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setNewMenuOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="absolute right-0 top-full mt-1 z-20 bg-white border border-ink-200 rounded-xl shadow-2xl py-1.5 min-w-[180px] overflow-hidden"
+                      >
+                        <button
+                          onClick={() => { setNewMenuOpen(false); setNewFolderOpen(true); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-700 hover:bg-ink-50 transition-colors"
+                        >
+                          <Icon name="create_new_folder" size={16} className="text-amber-500" />
+                          New folder
+                        </button>
+                        <button
+                          onClick={() => { setNewMenuOpen(false); fileInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-700 hover:bg-ink-50 transition-colors"
+                        >
+                          <Icon name="upload_file" size={16} className="text-blue-500" />
+                          Upload files
+                        </button>
+                        <button
+                          onClick={() => { setNewMenuOpen(false); folderInputRef.current?.click(); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-700 hover:bg-ink-50 transition-colors"
+                        >
+                          <Icon name="drive_folder_upload" size={16} className="text-emerald-500" />
+                          Upload folder
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
@@ -319,14 +525,14 @@ export function ProjectFilesPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search files..."
-                className="w-full h-9 pl-9 pr-3 rounded-md bg-white/10 border border-white/10 text-white placeholder-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-colors"
+                placeholder="Search files and folders..."
+                className="w-full h-9 pl-9 pr-3 rounded-lg bg-white/10 border border-white/10 text-white placeholder-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/15 transition-colors"
               />
             </div>
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value as FileType | '')}
-              className="h-9 px-3 rounded-md bg-white/10 border border-white/10 text-white text-sm focus:outline-none"
+              onChange={(e) => setFilterType(e.target.value as FilterType)}
+              className="h-9 px-3 rounded-lg bg-white/10 border border-white/10 text-white text-sm focus:outline-none"
             >
               <option value="">All types</option>
               <option value="image">Images</option>
@@ -339,7 +545,6 @@ export function ProjectFilesPage() {
         </div>
       </div>
 
-      {/* ── Upload progress bar strip ── */}
       {/* ── Upload progress strip ── */}
       <AnimatePresence>
         {uploads.length > 0 && (
@@ -347,8 +552,7 @@ export function ProjectFilesPage() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="bg-white backdrop-blur-sm border-b border-ink-300 overflow-hidden"
+            className="bg-white border-b border-ink-200 overflow-hidden"
           >
             <div className="px-4 lg:px-8 py-3 space-y-2">
               <AnimatePresence mode="popLayout">
@@ -356,77 +560,56 @@ export function ProjectFilesPage() {
                   <motion.div
                     key={u.id}
                     layout
-                    initial={{ opacity: 0, x: -16, scale: 0.97 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 16, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 12 }}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2 rounded-md border transition-colors',
-                      u.status === 'error' ? 'bg-red-500/5 border-red-500/20'
-                      : u.status === 'done' ? 'bg-emerald-500/5 border-emerald-500/20'
-                      : 'bg-ink-100 border-ink-300',
+                      'flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors',
+                      u.status === 'error' ? 'bg-red-50 border-red-200'
+                      : u.status === 'done' ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-ink-50 border-ink-200',
                     )}
                   >
-                    {/* Animated status icon */}
                     <div className={cn(
-                      'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
-                      u.status === 'error' ? 'bg-red-500/20 text-red-400'
-                      : u.status === 'done' ? 'bg-emerald-500/20 text-emerald-400'
-                      : 'bg-blue-500/20 text-blue-400',
+                      'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
+                      u.status === 'error' ? 'bg-red-100 text-red-500'
+                      : u.status === 'done' ? 'bg-emerald-100 text-emerald-500'
+                      : 'bg-blue-100 text-blue-500',
                     )}>
-                      <AnimatePresence mode="wait" initial={false}>
-                        {u.status === 'uploading' && (
-                          <motion.span key="up" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                            <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          </motion.span>
-                        )}
-                        {u.status === 'done' && (
-                          <motion.span key="done" initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 400 }}>
-                            <Icon name="check_circle" size={14} fill />
-                          </motion.span>
-                        )}
-                        {u.status === 'error' && (
-                          <motion.span key="err" initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                            <Icon name="error" size={14} fill />
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      {u.status === 'uploading' && (
+                        <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                      )}
+                      {u.status === 'done' && <Icon name="check_circle" size={14} fill />}
+                      {u.status === 'error' && <Icon name="error" size={14} fill />}
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs text-ink-900 truncate font-medium">{u.name}</p>
                         <span className="text-xs text-ink-500 flex-shrink-0">{formatFileSize(u.size)}</span>
                       </div>
                       {u.status === 'uploading' && (
-                        <div className="mt-1 h-0.5 bg-ink-300 rounded-full overflow-hidden">
+                        <div className="mt-1 h-0.5 bg-ink-200 rounded-full overflow-hidden">
                           <motion.div
-                            className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-400"
+                            className="h-full rounded-full bg-blue-400"
                             initial={{ width: '0%' }}
                             animate={{ width: `${u.progress}%` }}
-                            transition={{ duration: 0.35, ease: 'easeOut' }}
+                            transition={{ duration: 0.3, ease: 'easeOut' }}
                           />
                         </div>
                       )}
-                      {u.status === 'error' && <p className="text-xs text-red-400 mt-0.5">{u.error}</p>}
+                      {u.status === 'error' && <p className="text-xs text-red-500 mt-0.5">{u.error}</p>}
                     </div>
-
-                    <AnimatePresence>
-                      {(u.status === 'error' || u.status === 'done') && (
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0 }}
-                          onClick={() => setUploads((p) => p.filter((x) => x.id !== u.id))}
-                          className="text-ink-500 hover:text-ink-900 flex-shrink-0 p-1 rounded-lg hover:bg-ink-100 transition-colors"
-                        >
-                          <Icon name="close" size={12} />
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
+                    {(u.status === 'error' || u.status === 'done') && (
+                      <button
+                        onClick={() => setUploads((p) => p.filter((x) => x.id !== u.id))}
+                        className="text-ink-400 hover:text-ink-700 p-1 rounded-md hover:bg-ink-100 transition-colors"
+                      >
+                        <Icon name="close" size={12} />
+                      </button>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -435,25 +618,64 @@ export function ProjectFilesPage() {
         )}
       </AnimatePresence>
 
+      {/* ── Bulk action bar ── */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-ink-900 text-white overflow-hidden flex-shrink-0"
+          >
+            <div className="px-4 lg:px-8 py-2.5 flex items-center gap-3">
+              <span className="text-sm font-semibold">{selectedIds.size} selected</span>
+              <div className="flex items-center gap-2 ml-auto">
+                <button onClick={selectAll} className="text-xs text-white/70 hover:text-white transition-colors px-2 py-1">
+                  Select all ({visibleFiles.length})
+                </button>
+                <button
+                  onClick={openBulkMove}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg transition-colors"
+                >
+                  <Icon name="drive_file_move" size={14} />
+                  Move
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
+                >
+                  <Icon name="delete" size={14} />
+                  Delete
+                </button>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="p-1.5 hover:bg-white/15 rounded-lg transition-colors"
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Content area ── */}
       <div
         className="flex-1 relative"
-        onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+        onDrop={handleDrop}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }}
       >
-        {/* Drag overlay */}
         <AnimatePresence>
           {dragging && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-20 bg-brand-50 border-2 border-dashed border-brand-400 rounded-none flex items-center justify-center"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 z-20 bg-blue-50 border-2 border-dashed border-blue-400 flex items-center justify-center pointer-events-none"
             >
               <div className="text-center">
-                <Icon name="cloud_upload" size={48} className="text-brand-400 mx-auto mb-3" />
-                <p className="text-brand-400 text-lg font-semibold">Drop files here to upload</p>
+                <Icon name="cloud_upload" size={56} className="text-blue-400 mx-auto mb-3" />
+                <p className="text-blue-600 text-xl font-bold">Drop files or folders here</p>
+                <p className="text-blue-500 text-sm mt-1">Folder structure will be preserved</p>
               </div>
             </motion.div>
           )}
@@ -464,15 +686,17 @@ export function ProjectFilesPage() {
             viewMode === 'grid' ? <FileGridSkeleton count={12} /> : <ListRowSkeleton count={8} />
           ) : totalItems === 0 ? (
             <EmptyState
-              icon={<Icon name="folder_open" size={28} className="text-ink-500" />}
+              icon={<Icon name="folder_open" size={32} className="text-ink-400" />}
               title={activeFolderId ? 'This folder is empty' : 'No files yet'}
-              description={activeFolderId ? 'Upload files to this folder.' : 'Upload files or create folders to get started.'}
+              description="Drop files here, or click New to upload."
               action={{ label: 'Upload files', onClick: () => fileInputRef.current?.click() }}
             />
           ) : viewMode === 'grid' ? (
             <GridView
               folders={visibleFolders}
               files={visibleFiles}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
               onOpenFolder={(f) => setFolder(f.id)}
               onPreviewFile={openPreview}
               onDownloadFile={handleDownload}
@@ -480,11 +704,17 @@ export function ProjectFilesPage() {
               onDeleteFile={(f) => setDeleteTarget({ type: 'file', item: f })}
               onShareFolder={(f) => setShareTarget({ type: 'folder', folder: f })}
               onShareFile={(f) => setShareTarget({ type: 'file', file: f })}
+              onRenameFile={(f) => openRename('file', f)}
+              onRenameFolder={(f) => openRename('folder', f)}
+              onMoveFile={openMoveFile}
+              onMoveFolder={openMoveFolder}
             />
           ) : (
             <ListView
               folders={visibleFolders}
               files={visibleFiles}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
               onOpenFolder={(f) => setFolder(f.id)}
               onPreviewFile={openPreview}
               onDownloadFile={handleDownload}
@@ -492,61 +722,67 @@ export function ProjectFilesPage() {
               onDeleteFile={(f) => setDeleteTarget({ type: 'file', item: f })}
               onShareFolder={(f) => setShareTarget({ type: 'folder', folder: f })}
               onShareFile={(f) => setShareTarget({ type: 'file', file: f })}
+              onRenameFile={(f) => openRename('file', f)}
+              onRenameFolder={(f) => openRename('folder', f)}
+              onMoveFile={openMoveFile}
+              onMoveFolder={openMoveFolder}
             />
           )}
         </div>
       </div>
 
-      {/* ── Mobile FABs ── */}
-      <div className="lg:hidden fixed bottom-20 right-4 flex flex-col gap-3 z-10">
-        {!activeFolderId && (
-          <button
-            onClick={() => setNewFolderOpen(true)}
-            className="w-12 h-12 bg-ink-300 hover:bg-ink-500 text-ink-900 rounded-full shadow-lg flex items-center justify-center transition-all active:scale-95"
-          >
-            <Icon name="create_new_folder" size={20} />
-          </button>
-        )}
+      {/* ── Mobile FAB ── */}
+      <div className="lg:hidden fixed bottom-20 right-4 z-10">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-14 h-14 bg-brand-400 hover:bg-brand-400 text-white rounded-full shadow-xl shadow-brand-400/40 flex items-center justify-center transition-all active:scale-95"
+          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95"
         >
           <Icon name="upload" size={24} />
         </button>
       </div>
 
-      {/* Hidden file input */}
+      {/* Hidden inputs */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
         className="hidden"
-        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md"
-        onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        onChange={handleFileInputChange}
+      />
+      <input
+        ref={folderInputRef}
+        type="file"
+        className="hidden"
+        // @ts-expect-error — webkitdirectory is not in TS types yet
+        webkitdirectory=""
+        multiple
+        onChange={handleFolderInputChange}
       />
 
       {/* ── New folder modal ── */}
       <AnimatePresence>
         {newFolderOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => setNewFolderOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-sm bg-white border border-ink-300 rounded-lg shadow-2xl p-6"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              className="relative z-10 w-full max-w-sm bg-white border border-ink-200 rounded-2xl shadow-2xl p-6"
             >
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-md bg-brand-50 flex items-center justify-center text-brand-400">
-                  <Icon name="create_new_folder" size={20} />
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
+                  <Icon name="create_new_folder" size={20} className="text-amber-500" />
                 </div>
-                <h2 className="text-lg font-semibold text-ink-900">New Folder</h2>
+                <div>
+                  <h2 className="text-base font-display font-bold text-ink-900">New Folder</h2>
+                  {activeFolderId && folderPath.length > 0 && (
+                    <p className="text-xs text-ink-500">Inside {folderPath[folderPath.length - 1].name}</p>
+                  )}
+                </div>
               </div>
               <input
                 autoFocus
@@ -554,21 +790,17 @@ export function ProjectFilesPage() {
                 onChange={(e) => setNewFolderName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
                 placeholder="Folder name"
-                className="w-full h-11 px-4 rounded-md bg-white border border-ink-300 text-ink-900 placeholder-ink-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 mb-4"
+                maxLength={100}
+                className="w-full h-11 px-4 rounded-xl bg-white border border-ink-200 text-ink-900 placeholder-ink-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 mb-4 transition-colors"
               />
               <div className="flex gap-3">
                 <button
                   onClick={() => setNewFolderOpen(false)}
-                  className="flex-1 h-10 rounded-md border border-ink-300 text-ink-500 hover:text-ink-900 hover:border-ink-500 text-sm transition-colors"
+                  className="flex-1 h-10 rounded-xl border border-ink-200 text-ink-500 hover:text-ink-900 text-sm transition-colors"
                 >
                   Cancel
                 </button>
-                <Button
-                  onClick={handleCreateFolder}
-                  disabled={!newFolderName.trim()}
-                  loading={createFolder.isPending}
-                  className="flex-1"
-                >
+                <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()} loading={createFolder.isPending} className="flex-1">
                   Create
                 </Button>
               </div>
@@ -577,76 +809,57 @@ export function ProjectFilesPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Preview modal for non-image files ── */}
+      {/* ── Rename modal ── */}
       <AnimatePresence>
-        {previewFile && (
+        {renameTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              onClick={() => setPreviewFile(null)}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setRenameTarget(null)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative z-10 w-full max-w-2xl bg-white border border-ink-300 rounded-lg overflow-hidden shadow-2xl"
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              className="relative z-10 w-full max-w-sm bg-white border border-ink-200 rounded-2xl shadow-2xl p-6"
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-ink-300">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-ink-100 flex items-center justify-center flex-shrink-0">
-                    <FileTypeIcon mimeType={previewFile.mime_type} fileName={previewFile.file_name} fileType={previewFile.file_type} size={18} />
-                  </div>
-                  <p className="text-sm font-medium text-ink-900 truncate">{previewFile.file_name}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                  <button
-                    onClick={() => handleDownload(previewFile)}
-                    className="p-2 rounded-lg bg-ink-100 hover:bg-ink-300 text-ink-700 hover:text-ink-900 transition-colors"
-                  >
-                    <Icon name="download" size={16} />
-                  </button>
-                  <button
-                    onClick={() => setPreviewFile(null)}
-                    className="p-2 rounded-lg bg-ink-100 hover:bg-ink-300 text-ink-700 hover:text-ink-900 transition-colors"
-                  >
-                    <Icon name="close" size={16} />
-                  </button>
-                </div>
-              </div>
-              <div className="p-4">
-                {previewFile.file_type === 'video' ? (
-                  <video src={previewFile.signedUrl} controls className="w-full rounded-md max-h-[70vh]" />
-                ) : previewFile.file_type === 'audio' ? (
-                  <div className="flex flex-col items-center gap-6 py-10">
-                    <div className="w-24 h-24 rounded-full bg-pink-400/10 flex items-center justify-center">
-                      <Icon name="music_note" size={40} className="text-pink-400" />
-                    </div>
-                    <audio src={previewFile.signedUrl} controls className="w-full" />
-                  </div>
-                ) : previewFile.mime_type === 'application/pdf' ? (
-                  <iframe src={previewFile.signedUrl} className="w-full h-[70vh] rounded-md" title={previewFile.file_name} />
-                ) : (
-                  <div className="flex flex-col items-center gap-4 py-12">
-                    <div className="w-24 h-24 rounded-lg bg-ink-100 flex items-center justify-center">
-                      <FileTypeIcon mimeType={previewFile.mime_type} fileName={previewFile.file_name} fileType={previewFile.file_type} size={52} />
-                    </div>
-                    <p className="text-ink-500 text-sm">Preview not available for this file type</p>
-                    <Button onClick={() => handleDownload(previewFile)} size="sm">
-                      <Icon name="download" size={14} />
-                      Download file
-                    </Button>
-                  </div>
-                )}
+              <h2 className="text-base font-display font-bold text-ink-900 mb-4">
+                Rename {renameTarget.type === 'file' ? 'File' : 'Folder'}
+              </h2>
+              <input
+                autoFocus
+                value={renameName}
+                onChange={(e) => setRenameName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                maxLength={200}
+                className="w-full h-11 px-4 rounded-xl bg-white border border-ink-200 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 mb-4 transition-colors"
+              />
+              <div className="flex gap-3">
+                <button onClick={() => setRenameTarget(null)} className="flex-1 h-10 rounded-xl border border-ink-200 text-ink-500 text-sm transition-colors hover:text-ink-900">
+                  Cancel
+                </button>
+                <Button
+                  onClick={handleRename}
+                  disabled={!renameName.trim()}
+                  loading={renameFile.isPending || renameFolder.isPending}
+                  className="flex-1"
+                >
+                  Rename
+                </Button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Lightbox for images */}
+      {/* ── FilePreview ── */}
+      <FilePreview
+        file={previewFile}
+        onClose={() => setPreviewFile(null)}
+        onDownload={handleDownload}
+      />
+
+      {/* ── Lightbox for images ── */}
       {lightboxIndex !== null && lightboxImages.length > 0 && (
         <Lightbox
           images={lightboxImages}
@@ -655,7 +868,7 @@ export function ProjectFilesPage() {
         />
       )}
 
-      {/* Delete confirm */}
+      {/* ── Delete confirm ── */}
       <ConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -663,13 +876,24 @@ export function ProjectFilesPage() {
         title={deleteTarget?.type === 'folder' ? 'Delete Folder' : 'Delete File'}
         message={
           deleteTarget?.type === 'folder'
-            ? `Delete folder "${(deleteTarget.item as Folder).name}" and all files inside? This cannot be undone.`
+            ? `Delete folder "${(deleteTarget.item as Folder).name}" and ALL its contents? Storage will be cleaned up. This cannot be undone.`
             : `Delete "${(deleteTarget?.item as ProjectFile)?.file_name}"? This cannot be undone.`
         }
         loading={deleteFile.isPending || deleteFolder.isPending}
       />
 
-      {/* File share modal */}
+      {/* ── Move modal ── */}
+      {project && moveTarget && (
+        <MoveToModal
+          open={!!moveTarget}
+          onClose={() => { setMoveTarget(null); setSelectedIds(new Set()); }}
+          projectId={project.id}
+          targets={moveTarget.targets}
+          forbiddenIds={moveTarget.forbiddenIds}
+        />
+      )}
+
+      {/* ── Share modal ── */}
       {project && shareTarget && (
         <FileShareModal
           open={!!shareTarget}
@@ -683,11 +907,13 @@ export function ProjectFilesPage() {
   );
 }
 
-// ── Grid view ─────────────────────────────────────────────────────────────────
+// ── Shared ViewProps ──────────────────────────────────────────────────────────
 
 interface ViewProps {
   folders: Folder[];
   files: ProjectFile[];
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
   onOpenFolder: (f: Folder) => void;
   onPreviewFile: (f: ProjectFile) => void;
   onDownloadFile: (f: ProjectFile) => void;
@@ -695,14 +921,21 @@ interface ViewProps {
   onDeleteFile: (f: ProjectFile) => void;
   onShareFolder: (f: Folder) => void;
   onShareFile: (f: ProjectFile) => void;
+  onRenameFile: (f: ProjectFile) => void;
+  onRenameFolder: (f: Folder) => void;
+  onMoveFile: (f: ProjectFile) => void;
+  onMoveFolder: (f: Folder) => void;
 }
 
-function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile, onDeleteFolder, onDeleteFile, onShareFolder, onShareFile }: ViewProps) {
+// ── Grid view ─────────────────────────────────────────────────────────────────
+
+function GridView(props: ViewProps) {
+  const { folders, files, selectedIds, onToggleSelect } = props;
   const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   const loadThumb = useCallback(async (file: ProjectFile) => {
-    if (thumbUrls[file.id] || file.file_type !== 'image') return;
+    if (thumbUrls[file.id] || detectFileType(file.file_name, file.mime_type).category !== 'image') return;
     try {
       const url = await getSignedUrl(file.file_path, 600);
       setThumbUrls((prev) => ({ ...prev, [file.id]: url }));
@@ -710,8 +943,7 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
   }, [thumbUrls]);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-      {/* Folders */}
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       {folders.map((folder) => (
         <motion.div
           key={folder.id}
@@ -720,34 +952,36 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           className="relative group"
         >
           <button
-            onDoubleClick={() => onOpenFolder(folder)}
-            onClick={() => onOpenFolder(folder)}
-            className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-white border border-ink-300 rounded-lg hover:border-ink-500 hover:bg-ink-100 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-black/10 p-3"
+            onClick={() => props.onOpenFolder(folder)}
+            className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-white border border-ink-200 rounded-xl hover:border-amber-300 hover:bg-amber-50/40 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:shadow-md p-3"
           >
-            <Icon name="folder" size={36} className="text-amber-400" fill />
-            <span className="text-xs text-ink-900 font-medium truncate w-full text-center">{folder.name}</span>
+            <Icon name="folder" size={38} className="text-amber-400" fill />
+            <span className="text-xs text-ink-900 font-semibold truncate w-full text-center leading-tight">{folder.name}</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === folder.id ? null : folder.id); }}
-            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-ink-100 text-ink-500 opacity-0 group-hover:opacity-100 hover:text-ink-900 transition-opacity"
+            className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-md bg-white border border-ink-200 text-ink-500 opacity-0 group-hover:opacity-100 hover:text-ink-900 transition-opacity shadow-sm z-10"
           >
-            <Icon name="more_vert" size={14} />
+            <Icon name="more_vert" size={13} />
           </button>
           {menuOpen === folder.id && (
-            <ContextMenu
+            <ItemMenu
               onClose={() => setMenuOpen(null)}
               items={[
-                { icon: 'share', label: 'Share', onClick: () => { setMenuOpen(null); onShareFolder(folder); } },
-                { icon: 'delete', label: 'Delete', danger: true, onClick: () => { setMenuOpen(null); onDeleteFolder(folder); } },
+                { icon: 'drive_file_move', label: 'Move to…', onClick: () => { setMenuOpen(null); props.onMoveFolder(folder); } },
+                { icon: 'edit', label: 'Rename', onClick: () => { setMenuOpen(null); props.onRenameFolder(folder); } },
+                { icon: 'share', label: 'Share', onClick: () => { setMenuOpen(null); props.onShareFolder(folder); } },
+                { icon: 'delete', label: 'Delete', danger: true, onClick: () => { setMenuOpen(null); props.onDeleteFolder(folder); } },
               ]}
             />
           )}
         </motion.div>
       ))}
 
-      {/* Files */}
       {files.map((file) => {
         loadThumb(file);
+        const isSelected = selectedIds.has(file.id);
+        const info = detectFileType(file.file_name, file.mime_type);
         return (
           <motion.div
             key={file.id}
@@ -755,44 +989,64 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
             animate={{ opacity: 1, scale: 1 }}
             className="relative group"
           >
-            <button
-              onClick={() => onPreviewFile(file)}
-              className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-white border border-ink-300 rounded-lg hover:border-ink-500 hover:bg-ink-100 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-black/10 overflow-hidden"
+            {/* Checkbox */}
+            <div
+              onClick={(e) => { e.stopPropagation(); onToggleSelect(file.id); }}
+              className={cn(
+                'absolute top-1.5 left-1.5 z-10 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer',
+                'opacity-0 group-hover:opacity-100',
+                isSelected ? 'bg-blue-500 border-blue-500 opacity-100' : 'bg-white border-ink-300',
+              )}
             >
-              {file.file_type === 'image' && thumbUrls[file.id] ? (
+              {isSelected && <Icon name="check" size={12} className="text-white" />}
+            </div>
+
+            <button
+              onClick={() => props.onPreviewFile(file)}
+              className={cn(
+                'w-full aspect-square flex flex-col items-center justify-center bg-white border rounded-xl transition-all duration-150 group-hover:-translate-y-0.5 group-hover:shadow-md overflow-hidden',
+                isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-ink-200 hover:border-ink-400',
+              )}
+            >
+              {info.category === 'image' && thumbUrls[file.id] ? (
                 <img src={thumbUrls[file.id]} alt={file.file_name} className="w-full h-full object-cover" />
               ) : (
-                <div className="flex flex-col items-center gap-2 p-3">
-                  <div className="w-12 h-12 rounded-md bg-ink-100 flex items-center justify-center">
-                    <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={28} />
+                <div className="flex flex-col items-center gap-2 p-3 w-full h-full justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-ink-50 border border-ink-100 flex items-center justify-center">
+                    <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={26} />
                   </div>
-                  <span className="text-xs text-ink-500 font-medium truncate w-full text-center">
-                    {file.file_name.split('.').pop()?.toUpperCase() ?? 'FILE'}
+                  <span className="text-[10px] font-bold text-ink-500 uppercase tracking-wide">
+                    {file.file_name.split('.').pop() ?? 'FILE'}
                   </span>
                 </div>
               )}
-              {file.file_type === 'image' && thumbUrls[file.id] && (
+              {info.category === 'image' && thumbUrls[file.id] && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-xs text-white truncate">{file.file_name}</p>
+                  <p className="text-[11px] text-white truncate font-medium">{file.file_name}</p>
                 </div>
               )}
             </button>
-            {file.file_type !== 'image' && (
-              <p className="text-xs text-ink-500 truncate text-center mt-1 px-1">{file.file_name}</p>
+
+            {info.category !== 'image' && (
+              <p className="text-[11px] text-ink-600 truncate text-center mt-1.5 px-1 font-medium leading-tight">{file.file_name}</p>
             )}
+
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === file.id ? null : file.id); }}
-              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-lg bg-ink-100 text-ink-500 opacity-0 group-hover:opacity-100 hover:text-ink-900 transition-opacity z-10"
+              className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded-md bg-white border border-ink-200 text-ink-500 opacity-0 group-hover:opacity-100 hover:text-ink-900 transition-opacity shadow-sm z-10"
             >
-              <Icon name="more_vert" size={14} />
+              <Icon name="more_vert" size={13} />
             </button>
             {menuOpen === file.id && (
-              <ContextMenu
+              <ItemMenu
                 onClose={() => setMenuOpen(null)}
                 items={[
-                  { icon: 'share', label: 'Share', onClick: () => { setMenuOpen(null); onShareFile(file); } },
-                  { icon: 'download', label: 'Download', onClick: () => { setMenuOpen(null); onDownloadFile(file); } },
-                  { icon: 'delete', label: 'Delete', danger: true, onClick: () => { setMenuOpen(null); onDeleteFile(file); } },
+                  { icon: 'open_in_new', label: 'Open preview', onClick: () => { setMenuOpen(null); props.onPreviewFile(file); } },
+                  { icon: 'drive_file_move', label: 'Move to…', onClick: () => { setMenuOpen(null); props.onMoveFile(file); } },
+                  { icon: 'edit', label: 'Rename', onClick: () => { setMenuOpen(null); props.onRenameFile(file); } },
+                  { icon: 'share', label: 'Share', onClick: () => { setMenuOpen(null); props.onShareFile(file); } },
+                  { icon: 'download', label: 'Download', onClick: () => { setMenuOpen(null); props.onDownloadFile(file); } },
+                  { icon: 'delete', label: 'Delete', danger: true, onClick: () => { setMenuOpen(null); props.onDeleteFile(file); } },
                 ]}
               />
             )}
@@ -805,127 +1059,136 @@ function GridView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
 
 // ── List view ─────────────────────────────────────────────────────────────────
 
-function ListView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile, onDeleteFolder, onDeleteFile, onShareFolder, onShareFile }: ViewProps) {
+function ListView(props: ViewProps) {
+  const { folders, files, selectedIds, onToggleSelect } = props;
+
   return (
-    <div className="space-y-1">
-      {/* Header */}
-      <div className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 px-3 py-2 text-xs font-medium text-ink-500 uppercase tracking-wide">
+    <div className="space-y-0.5">
+      <div className="grid grid-cols-[auto_1fr_90px_90px_auto] gap-3 px-3 py-2 text-[11px] font-semibold text-ink-400 uppercase tracking-wide border-b border-ink-100">
         <div className="w-8" />
         <span>Name</span>
         <span className="hidden sm:block">Size</span>
         <span className="hidden sm:block">Modified</span>
+        <div className="w-16" />
       </div>
 
-      {/* Folders */}
       {folders.map((folder) => (
-        <motion.button
+        <motion.div
           key={folder.id}
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={() => onOpenFolder(folder)}
-          className="group relative w-full grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-md hover:bg-ink-100 transition-colors text-left"
+          initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+          className="group grid grid-cols-[auto_1fr_90px_90px_auto] gap-3 items-center px-3 py-2.5 rounded-lg hover:bg-ink-50 transition-colors cursor-pointer"
+          onClick={() => props.onOpenFolder(folder)}
         >
-          <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0">
             <Icon name="folder" size={18} className="text-amber-400" fill />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-ink-900 truncate group-hover:text-ink-900">{folder.name}</p>
-            <p className="text-xs text-ink-500">Folder</p>
+            <p className="text-sm font-semibold text-ink-900 truncate">{folder.name}</p>
+            <p className="text-[11px] text-ink-400">Folder</p>
           </div>
-          <span className="hidden sm:block text-xs text-ink-500">—</span>
-          <span className="hidden sm:block text-xs text-ink-500">{formatRelative(folder.created_at)}</span>
-          <div className="absolute right-4 opacity-0 group-hover:opacity-100 flex gap-1">
-            <button
-              onClick={(e) => { e.stopPropagation(); onShareFolder(folder); }}
-              className="p-1.5 rounded-lg hover:bg-brand-50 text-ink-500 hover:text-brand-400 transition-colors"
-              title="Share folder"
-            >
-              <Icon name="share" size={14} />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder); }}
-              className="p-1.5 rounded-lg hover:bg-red-500/10 text-ink-500 hover:text-red-400 transition-colors"
-            >
-              <Icon name="delete" size={14} />
-            </button>
-          </div>
-        </motion.button>
-      ))}
-
-      {/* Files */}
-      {files.map((file) => (
-        <motion.div
-          key={file.id}
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="group relative grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-md hover:bg-ink-100 transition-colors"
-        >
-          <button onClick={() => onPreviewFile(file)} className="contents">
-            <div className="w-8 h-8 rounded-lg bg-ink-100 flex items-center justify-center flex-shrink-0">
-              <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={17} />
-            </div>
-            <div className="min-w-0 text-left">
-              <p className="text-sm font-medium text-ink-900 truncate group-hover:text-ink-900">{file.file_name}</p>
-              <p className="text-xs text-ink-500 capitalize">{file.file_type}</p>
-            </div>
-            <span className="hidden sm:block text-xs text-ink-500">{file.file_size ? formatFileSize(file.file_size) : '—'}</span>
-            <span className="hidden sm:block text-xs text-ink-500">{formatRelative(file.created_at)}</span>
-          </button>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex gap-1">
-            <button
-              onClick={() => onShareFile(file)}
-              className="p-1.5 rounded-lg hover:bg-brand-50 text-ink-500 hover:text-brand-400 transition-colors"
-              title="Share file"
-            >
-              <Icon name="share" size={14} />
-            </button>
-            <button
-              onClick={() => onDownloadFile(file)}
-              className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
-            >
-              <Icon name="download" size={14} />
-            </button>
-            <button
-              onClick={() => onDeleteFile(file)}
-              className="p-1.5 rounded-lg hover:bg-red-500/10 text-ink-500 hover:text-red-400 transition-colors"
-            >
-              <Icon name="delete" size={14} />
-            </button>
+          <span className="hidden sm:block text-xs text-ink-400">—</span>
+          <span className="hidden sm:block text-xs text-ink-400">{formatRelative(folder.created_at)}</span>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <ActionBtn icon="drive_file_move" title="Move" onClick={(e) => { e.stopPropagation(); props.onMoveFolder(folder); }} />
+            <ActionBtn icon="edit" title="Rename" onClick={(e) => { e.stopPropagation(); props.onRenameFolder(folder); }} />
+            <ActionBtn icon="share" title="Share" onClick={(e) => { e.stopPropagation(); props.onShareFolder(folder); }} />
+            <ActionBtn icon="delete" title="Delete" danger onClick={(e) => { e.stopPropagation(); props.onDeleteFolder(folder); }} />
           </div>
         </motion.div>
       ))}
+
+      {files.map((file) => {
+        const isSelected = selectedIds.has(file.id);
+        return (
+          <motion.div
+            key={file.id}
+            initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+            className={cn(
+              'group grid grid-cols-[auto_1fr_90px_90px_auto] gap-3 items-center px-3 py-2.5 rounded-lg transition-colors',
+              isSelected ? 'bg-blue-50' : 'hover:bg-ink-50',
+            )}
+          >
+            <div
+              className="w-8 h-8 rounded-lg bg-ink-50 border border-ink-100 flex items-center justify-center flex-shrink-0 cursor-pointer relative"
+              onClick={() => onToggleSelect(file.id)}
+            >
+              {isSelected ? (
+                <div className="w-full h-full rounded-lg bg-blue-500 flex items-center justify-center">
+                  <Icon name="check" size={14} className="text-white" />
+                </div>
+              ) : (
+                <>
+                  <span className="group-hover:opacity-0 transition-opacity">
+                    <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={17} />
+                  </span>
+                  <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-full h-full rounded-lg border-2 border-ink-300 flex items-center justify-center">
+                      <Icon name="check_box_outline_blank" size={14} className="text-ink-400" />
+                    </div>
+                  </span>
+                </>
+              )}
+            </div>
+            <button onClick={() => props.onPreviewFile(file)} className="text-left min-w-0">
+              <p className="text-sm font-semibold text-ink-900 truncate">{file.file_name}</p>
+              <p className="text-[11px] text-ink-400 capitalize">{detectFileType(file.file_name, file.mime_type).label}</p>
+            </button>
+            <span className="hidden sm:block text-xs text-ink-400">{formatFileSize(file.file_size)}</span>
+            <span className="hidden sm:block text-xs text-ink-400">{formatRelative(file.created_at)}</span>
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ActionBtn icon="drive_file_move" title="Move" onClick={() => props.onMoveFile(file)} />
+              <ActionBtn icon="edit" title="Rename" onClick={() => props.onRenameFile(file)} />
+              <ActionBtn icon="share" title="Share" onClick={() => props.onShareFile(file)} />
+              <ActionBtn icon="download" title="Download" onClick={() => props.onDownloadFile(file)} />
+              <ActionBtn icon="delete" title="Delete" danger onClick={() => props.onDeleteFile(file)} />
+            </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
-// ── Context menu ──────────────────────────────────────────────────────────────
+// ── Context (3-dot) menu ──────────────────────────────────────────────────────
 
-interface ContextMenuItem {
-  icon: string;
-  label: string;
-  danger?: boolean;
-  onClick: () => void;
-}
+interface ItemMenuItem { icon: string; label: string; danger?: boolean; onClick: () => void; }
 
-function ContextMenu({ items, onClose }: { items: ContextMenuItem[]; onClose: () => void }) {
+function ItemMenu({ items, onClose }: { items: ItemMenuItem[]; onClose: () => void }) {
   return (
     <>
       <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div className="absolute top-8 right-0 z-20 bg-white border border-ink-300 rounded-md shadow-xl py-1 min-w-32 overflow-hidden">
+      <div className="absolute top-8 right-0 z-20 bg-white border border-ink-200 rounded-xl shadow-2xl py-1.5 min-w-[160px] overflow-hidden">
         {items.map((item) => (
           <button
             key={item.label}
             onClick={item.onClick}
             className={cn(
-              'w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors',
-              item.danger ? 'text-red-400 hover:bg-red-500/10' : 'text-ink-700 hover:bg-ink-100 hover:text-ink-900',
+              'w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors',
+              item.danger ? 'text-red-500 hover:bg-red-50' : 'text-ink-700 hover:bg-ink-50 hover:text-ink-900',
             )}
           >
-            <Icon name={item.icon} size={14} />
+            <Icon name={item.icon} size={13} />
             {item.label}
           </button>
         ))}
       </div>
     </>
+  );
+}
+
+// ── Small inline action button ────────────────────────────────────────────────
+
+function ActionBtn({ icon, title, onClick, danger }: { icon: string; title: string; onClick: (e: React.MouseEvent) => void; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={cn(
+        'p-1.5 rounded-md transition-colors',
+        danger ? 'text-ink-400 hover:text-red-500 hover:bg-red-50' : 'text-ink-400 hover:text-ink-900 hover:bg-ink-100',
+      )}
+    >
+      <Icon name={icon} size={14} />
+    </button>
   );
 }
