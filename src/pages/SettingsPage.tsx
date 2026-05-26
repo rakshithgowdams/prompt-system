@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects';
+import { useProfile, useUpsertProfile, getAvatarUrl } from '../hooks/useProfile';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal, ConfirmModal } from '../components/ui/Modal';
@@ -218,6 +219,8 @@ function EditProjectModal({ project, onClose }: EditProjectModalProps) {
 // ── Main page ───────────────────────────────────────────────────────────────
 export function SettingsPage() {
   const { user } = useAuth();
+  const { data: profile } = useProfile();
+  const upsertProfile = useUpsertProfile();
   const { data: projects } = useProjects();
   const createProject = useCreateProject();
   const deleteProject = useDeleteProject();
@@ -228,6 +231,51 @@ export function SettingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [showPw, setShowPw] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
+
+  // Avatar state
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync display name from loaded profile
+  useEffect(() => {
+    if (profile?.display_name) setDisplayName(profile.display_name);
+  }, [profile?.display_name]);
+
+  const handleAvatarFile = (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setAvatarPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      let avatarPath = profile?.avatar_path ?? null;
+      if (avatarFile) {
+        const ext = avatarFile.name.split('.').pop() ?? 'jpg';
+        const path = `${user.id}/avatar.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('avatars')
+          .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+        if (uploadErr) throw uploadErr;
+        avatarPath = path;
+      }
+      await upsertProfile.mutateAsync({ display_name: displayName.trim(), avatar_path: avatarPath });
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      toast.success('Profile saved!');
+    } catch {
+      toast.error('Failed to save profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -314,17 +362,70 @@ export function SettingsPage() {
             <Icon name="person" size={18} className="text-brand-400 flex-shrink-0" fill />
             <h2 className="font-semibold text-ink-900">Profile</h2>
           </div>
-          <div className="flex items-center gap-3 sm:gap-4 w-full min-w-0">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-lg sm:text-xl font-bold flex-shrink-0">
-              {user?.email?.[0]?.toUpperCase() ?? 'U'}
+
+          <div className="flex items-start gap-4">
+            {/* Avatar upload */}
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="group relative w-20 h-20 rounded-full overflow-hidden border-2 border-ink-300 hover:border-brand-400 transition-colors"
+              >
+                {avatarPreview || profile?.avatar_path ? (
+                  <img
+                    src={avatarPreview ?? (profile?.avatar_path ? getAvatarUrl(profile.avatar_path) : '')}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-2xl font-bold">
+                    {(displayName || user?.email)?.[0]?.toUpperCase() ?? 'U'}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Icon name="photo_camera" size={20} className="text-white" />
+                </div>
+              </button>
+              <p className="text-[11px] text-ink-500 text-center leading-tight">Click to<br/>upload photo</p>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarFile(f); e.target.value = ''; }}
+              />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-medium text-ink-900 text-sm sm:text-base truncate">{user?.email}</p>
-              <p className="text-xs text-ink-500 mt-0.5">
+
+            {/* Name + email */}
+            <div className="flex-1 min-w-0 space-y-3">
+              <div>
+                <label className="text-xs font-medium text-ink-700 block mb-1">Display Name</label>
+                <input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your name (shown on courses)"
+                  className="w-full h-10 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 placeholder-ink-400 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 transition-colors"
+                />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-ink-700 mb-1">Email</p>
+                <p className="text-sm text-ink-500 truncate">{user?.email}</p>
+              </div>
+              <p className="text-xs text-ink-400">
                 Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
               </p>
             </div>
           </div>
+
+          <Button
+            onClick={handleSaveProfile}
+            loading={savingProfile}
+            disabled={!displayName.trim()}
+            className="w-full sm:w-auto"
+          >
+            <Icon name="save" size={15} />
+            Save Profile
+          </Button>
         </section>
 
         {/* ── Change Password ──────────────────────────────────────── */}

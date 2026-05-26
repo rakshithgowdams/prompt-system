@@ -7,6 +7,7 @@ import {
   useEnroll, useCreateCourse, useDeleteCourse,
 } from '../hooks/useCourses';
 import { useAuth } from '../contexts/AuthContext';
+import { usePublicProfile, getAvatarUrl } from '../hooks/useProfile';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
@@ -37,6 +38,27 @@ function CourseCover({ course, className = '' }: { course: Course; className?: s
   return (
     <div className={`w-full h-full flex items-center justify-center bg-ink-100 ${className}`}>
       <Icon name="school" size={32} className="text-ink-300" />
+    </div>
+  );
+}
+
+function CreatorBadge({ userId }: { userId: string }) {
+  const { data: profile } = usePublicProfile(userId);
+  const name = profile?.display_name || 'Instructor';
+  const hasAvatar = !!profile?.avatar_path;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-400 to-brand-600 border border-white">
+        {hasAvatar ? (
+          <img src={getAvatarUrl(profile!.avatar_path!)} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="w-full h-full flex items-center justify-center text-white text-[9px] font-bold">
+            {name[0]?.toUpperCase()}
+          </span>
+        )}
+      </div>
+      <span className="text-[11px] text-ink-500 truncate max-w-[100px]">{name}</span>
     </div>
   );
 }
@@ -142,7 +164,7 @@ function CourseCard({
           {course.short_description || course.description || 'No description yet.'}
         </p>
 
-        <div className="flex items-center gap-3 text-[11px] text-ink-500 mb-3">
+        <div className="flex items-center gap-3 text-[11px] text-ink-500 mb-2">
           {course.total_duration_minutes > 0 && (
             <span className="flex items-center gap-1">
               <Icon name="schedule" size={11} />
@@ -156,6 +178,12 @@ function CourseCard({
             </span>
           )}
         </div>
+
+        {!isOwner && (
+          <div className="mb-3 pt-2 border-t border-ink-100">
+            <CreatorBadge userId={course.user_id} />
+          </div>
+        )}
 
         {isOwner ? (
           <Button size="sm" variant="secondary" className="w-full" onClick={onEdit}>
