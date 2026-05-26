@@ -113,8 +113,8 @@ export function CertificateView({ cert, forExport = false }: Props) {
         gap: py(4),
       }}>
         <LogoSVG style={{
-          width: forExport ? '420px' : `${(420 / W) * 100}%`,
-          height: 'auto',
+          width: forExport ? '500px' : `${(500 / W) * 100}%`,
+          height: forExport ? '95px' : `${(95 / H) * 100}%`,
         }} />
       </div>
 
