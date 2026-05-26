@@ -35,6 +35,7 @@ const CoursesPage       = lazy(() => import('./pages/CoursesPage').then((m) => (
 const CourseEditorPage  = lazy(() => import('./pages/CourseEditorPage').then((m) => ({ default: m.CourseEditorPage })));
 const CoursePlayerPage  = lazy(() => import('./pages/CoursePlayerPage').then((m) => ({ default: m.CoursePlayerPage })));
 const CertificatePage   = lazy(() => import('./pages/CertificatePage').then((m) => ({ default: m.CertificatePage })));
+const PortfolioPage     = lazy(() => import('./pages/PortfolioPage').then((m) => ({ default: m.PortfolioPage })));
 const CourseSharePage   = lazy(() => import('./pages/CourseSharePage').then((m) => ({ default: m.CourseSharePage })));
 const LandingPage            = lazy(() => import('./pages/landing/LandingPage'));
 const PricingPage            = lazy(() => import('./pages/landing/PricingPage'));
@@ -111,6 +112,7 @@ export default function App() {
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />
                 <Route path="/courses/:courseId/certificate" element={<CertificatePage />} />
+                <Route path="/portfolio" element={<PortfolioPage />} />
                 <Route path="/explore" element={<ExplorePromptsPage />} />
               </Route>
 
