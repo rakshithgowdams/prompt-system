@@ -81,7 +81,7 @@ export function LoginPage() {
             <div className="flex justify-center mb-4">
               <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-16 w-auto" />
             </div>
-            <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">aiwithrakshith.tech</h1>
+            <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">promptvault.app</h1>
             <p className="text-sm text-ink-500 mt-1 font-sans">Sign in to your account</p>
           </div>
 
