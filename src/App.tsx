@@ -13,6 +13,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { TermsPage } from './pages/legal/TermsPage';
 import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
 import { RefundPolicyPage } from './pages/legal/RefundPolicyPage';
@@ -104,6 +105,8 @@ export default function App() {
                 <Route path="/courses/:courseId/learn" element={<CoursePlayerPage />} />
                 <Route path="/courses/:courseId/certificate" element={<CertificatePage />} />
               </Route>
+
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
