@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { Skeleton } from './components/ui/Skeleton';
+import { InstallPrompt } from './components/ui/InstallPrompt';
 
 // Auth pages are small — keep them eager so login is instant
 import { LoginPage } from './pages/auth/LoginPage';
@@ -106,6 +107,8 @@ export default function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
+
+        <InstallPrompt />
 
         <Toaster
           position="bottom-right"
