@@ -7,6 +7,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects';
 import { useProfile, useUpsertProfile, getAvatarUrl } from '../hooks/useProfile';
+
+// Upload a file to Supabase Storage with XHR progress tracking
+async function uploadWithProgress(
+  bucket: string,
+  path: string,
+  file: File,
+  token: string,
+  supabaseUrl: string,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const url = `${supabaseUrl}/storage/v1/object/${bucket}/${path}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) { resolve(); }
+      else { reject(new Error(`Upload failed: ${xhr.statusText}`)); }
+    });
+    xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+    xhr.send(file);
+  });
+}
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal, ConfirmModal } from '../components/ui/Modal';
@@ -237,6 +265,7 @@ export function SettingsPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Sync display name from loaded profile
@@ -255,22 +284,26 @@ export function SettingsPage() {
   const handleSaveProfile = async () => {
     if (!user) return;
     setSavingProfile(true);
+    setUploadProgress(null);
     try {
       let avatarPath = profile?.avatar_path ?? null;
       if (avatarFile) {
         const ext = avatarFile.name.split('.').pop() ?? 'jpg';
         const path = `${user.id}/avatar.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from('avatars')
-          .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
-        if (uploadErr) throw uploadErr;
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token ?? '';
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+        setUploadProgress(0);
+        await uploadWithProgress('avatars', path, avatarFile, token, supabaseUrl, setUploadProgress);
         avatarPath = path;
       }
       await upsertProfile.mutateAsync({ display_name: displayName.trim(), avatar_path: avatarPath });
       setAvatarFile(null);
       setAvatarPreview(null);
+      setUploadProgress(null);
       toast.success('Profile saved!');
     } catch {
+      setUploadProgress(null);
       toast.error('Failed to save profile');
     } finally {
       setSavingProfile(false);
@@ -368,9 +401,11 @@ export function SettingsPage() {
             <div className="flex flex-col items-center gap-2 flex-shrink-0">
               <button
                 type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                className="group relative w-20 h-20 rounded-full overflow-hidden border-2 border-ink-300 hover:border-brand-400 transition-colors"
+                onClick={() => !savingProfile && avatarInputRef.current?.click()}
+                disabled={savingProfile}
+                className="group relative w-20 h-20 rounded-full overflow-hidden border-2 border-ink-300 hover:border-brand-400 transition-colors disabled:cursor-not-allowed"
               >
+                {/* Image / initials */}
                 {avatarPreview || profile?.avatar_path ? (
                   <img
                     src={avatarPreview ?? (profile?.avatar_path ? getAvatarUrl(profile.avatar_path) : '')}
@@ -382,11 +417,61 @@ export function SettingsPage() {
                     {(displayName || user?.email)?.[0]?.toUpperCase() ?? 'U'}
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Icon name="photo_camera" size={20} className="text-white" />
-                </div>
+
+                {/* Upload progress overlay */}
+                <AnimatePresence>
+                  {uploadProgress !== null ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-0.5"
+                    >
+                      {/* SVG ring */}
+                      <svg width="44" height="44" className="-rotate-90">
+                        <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
+                        <motion.circle
+                          cx="22" cy="22" r="18"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 18}
+                          animate={{ strokeDashoffset: 2 * Math.PI * 18 * (1 - uploadProgress / 100) }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        />
+                      </svg>
+                      <span className="text-white text-[11px] font-bold -mt-8">{uploadProgress}%</span>
+                    </motion.div>
+                  ) : !savingProfile ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0 }}
+                      whileHover={{ opacity: 1 }}
+                      className="absolute inset-0 bg-black/40 flex items-center justify-center"
+                    >
+                      <Icon name="photo_camera" size={20} className="text-white" />
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+
+                {/* Hover camera icon (non-uploading state) */}
+                {uploadProgress === null && !savingProfile && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Icon name="photo_camera" size={20} className="text-white" />
+                  </div>
+                )}
               </button>
-              <p className="text-[11px] text-ink-500 text-center leading-tight">Click to<br/>upload photo</p>
+
+              {/* Status text below avatar */}
+              {uploadProgress !== null ? (
+                <p className="text-[11px] text-brand-400 font-medium text-center leading-tight">
+                  Uploading…<br />{uploadProgress}%
+                </p>
+              ) : (
+                <p className="text-[11px] text-ink-500 text-center leading-tight">Click to<br/>upload photo</p>
+              )}
+
               <input
                 ref={avatarInputRef}
                 type="file"
@@ -417,15 +502,41 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <Button
-            onClick={handleSaveProfile}
-            loading={savingProfile}
-            disabled={!displayName.trim()}
-            className="w-full sm:w-auto"
-          >
-            <Icon name="save" size={15} />
-            Save Profile
-          </Button>
+          <div className="space-y-2">
+            {/* Progress bar — only visible when uploading a photo */}
+            <AnimatePresence>
+              {uploadProgress !== null && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-xs text-ink-700 font-medium">Uploading photo…</p>
+                    <span className="text-xs text-brand-400 font-bold ml-auto">{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-ink-100 rounded-full overflow-hidden border border-ink-200">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600"
+                      animate={{ width: `${uploadProgress}%` }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <Button
+              onClick={handleSaveProfile}
+              loading={savingProfile}
+              disabled={!displayName.trim()}
+              className="w-full sm:w-auto"
+            >
+              <Icon name="save" size={15} />
+              {uploadProgress !== null ? `Uploading… ${uploadProgress}%` : 'Save Profile'}
+            </Button>
+          </div>
         </section>
 
         {/* ── Change Password ──────────────────────────────────────── */}
