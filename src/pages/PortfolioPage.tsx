@@ -263,13 +263,13 @@ export function PortfolioPage() {
 
         {portfolioUrl ? (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden">
               <Icon name="check_circle" size={15} className="text-emerald-600 flex-shrink-0" fill />
               <a
                 href={portfolioUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-bold text-emerald-700 hover:underline truncate"
+                className="text-sm font-bold text-emerald-700 hover:underline truncate min-w-0"
               >
                 {portfolioUrl}
               </a>
