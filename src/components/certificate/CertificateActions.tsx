@@ -16,7 +16,7 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
   const [shareOpen, setShareOpen] = useState(false);
 
   const shareUrl = `${window.location.origin}/c/${certificate.share_slug}`;
-  const shareText = `I've earned my Certificate of Internship from MyDesignNexus!\n\nView my verified certificate:`;
+  const shareText = `I've earned my Certificate of Course Completion from MyDesignNexus!\n\nView my verified certificate:`;
 
   async function renderToCanvas(): Promise<HTMLCanvasElement> {
     const { default: html2canvas } = await import('html2canvas-pro');
@@ -61,7 +61,7 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
       pdf.setProperties({
         title: `Certificate ${certificate.serial_number}`,
-        subject: 'MyDesignNexus Certificate of Internship',
+        subject: 'MyDesignNexus Certificate of Course Completion',
         author: 'MyDesignNexus',
         creator: 'mydesignnexus.in',
       });
@@ -115,7 +115,7 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
   async function nativeShare() {
     if (!navigator.share) { copyLink(); return; }
     try {
-      await navigator.share({ title: 'My Certificate of Internship', text: shareText, url: shareUrl });
+      await navigator.share({ title: 'My Certificate of Course Completion', text: shareText, url: shareUrl });
     } catch { /* cancelled */ }
   }
 

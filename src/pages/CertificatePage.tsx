@@ -91,7 +91,7 @@ export function CertificatePage() {
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
           <Icon name="verified" size={22} className="text-green-600" fill />
           <div>
-            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Internship</p>
+            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Course Completion</p>
             <p className="text-xs text-ink-500">
               Issued to <strong>{certificate.student_name}</strong> &middot;{' '}
               {new Date(certificate.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}

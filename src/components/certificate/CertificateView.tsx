@@ -9,6 +9,16 @@ interface Props {
 const W = 1414;
 const H = 1000;
 
+const SUPABASE_URL = 'https://igkgdltwlsnxdlqkhuul.supabase.co';
+const ASSETS = {
+  logo:      `${SUPABASE_URL}/storage/v1/object/public/certificate-assets/company-logo.png`,
+  seal:      `${SUPABASE_URL}/storage/v1/object/public/certificate-assets/round-seal.png`,
+  signature: `${SUPABASE_URL}/storage/v1/object/public/certificate-assets/founder-signature.png`,
+};
+
+const FOOTER_TEXT =
+  'mydesignnexus.in  |  Hassan, Karnataka, India  |  AI Automation • AI Call Agents • Web Development  |  Film Making  |  Digital Marketing  |  AI Advertising';
+
 export function CertificateView({ cert, forExport = false }: Props) {
   const fmt = (d: string | null) =>
     d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
@@ -19,15 +29,16 @@ export function CertificateView({ cert, forExport = false }: Props) {
 
   const px = (n: number) => forExport ? `${n}px` : `${(n / W) * 100}%`;
   const py = (n: number) => forExport ? `${n}px` : `${(n / H) * 100}%`;
-  const fs = (n: number) => forExport ? `${n}px` : `clamp(${Math.round(n * 0.35)}px, ${(n / W) * 100}vw, ${n}px)`;
+  const fs = (n: number) =>
+    forExport ? `${n}px` : `clamp(${Math.round(n * 0.35)}px, ${(n / W) * 100}vw, ${n}px)`;
 
   return (
     <div
       id="certificate-canvas"
       style={{
         position: 'relative',
-        width:  forExport ? `${W}px` : '100%',
-        height: forExport ? `${H}px` : undefined,
+        width:       forExport ? `${W}px` : '100%',
+        height:      forExport ? `${H}px` : undefined,
         aspectRatio: forExport ? undefined : `${W} / ${H}`,
         background: '#f5f0ec',
         overflow: 'hidden',
@@ -39,11 +50,8 @@ export function CertificateView({ cert, forExport = false }: Props) {
 
       {/* ── Left silver swoosh ── */}
       <div style={{
-        position: 'absolute',
-        left: 0,
-        top: py(560),
-        width: px(88),
-        height: py(340),
+        position: 'absolute', left: 0, top: py(560),
+        width: px(88), height: py(340),
         background: 'linear-gradient(135deg, #b0b0b0 0%, #e0e0e0 50%, #909090 100%)',
         borderRadius: `0 ${px(60)} ${px(60)} 0`,
         opacity: 0.5,
@@ -51,43 +59,36 @@ export function CertificateView({ cert, forExport = false }: Props) {
 
       {/* ── Right silver swoosh ── */}
       <div style={{
-        position: 'absolute',
-        right: 0,
-        top: py(100),
-        width: px(88),
-        height: py(340),
+        position: 'absolute', right: 0, top: py(100),
+        width: px(88), height: py(340),
         background: 'linear-gradient(225deg, #b0b0b0 0%, #e0e0e0 50%, #909090 100%)',
         borderRadius: `${px(60)} 0 0 ${px(60)}`,
         opacity: 0.5,
       }} />
 
-      {/* ── Top-left logo: MyDesignNexus ── */}
+      {/* ── Top-left: Company logo image ── */}
       <div style={{
         position: 'absolute',
-        top: py(44),
+        top: py(36),
         left: px(64),
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: py(4),
       }}>
-        <div style={{
-          fontSize: fs(36),
-          fontWeight: 900,
-          color: '#111',
-          letterSpacing: '-0.01em',
-          lineHeight: 1,
-        }}>
-          <span style={{ fontWeight: 900 }}>MyDesign</span>
-          <span style={{ fontWeight: 400 }}>Nexus</span>
-        </div>
-        <div style={{
-          marginTop: py(4),
-          fontSize: fs(11),
-          color: '#666',
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase' as const,
-          fontWeight: 500,
-        }}>AI Solution Company</div>
+        <img
+          src={ASSETS.logo}
+          alt="MyDesignNexus"
+          crossOrigin="anonymous"
+          style={{
+            width: forExport ? '220px' : `${(220 / W) * 100}%`,
+            height: 'auto',
+            objectFit: 'contain',
+          }}
+        />
       </div>
 
-      {/* ── Top-right EST 2025 badge ── */}
+      {/* ── Top-right: EST 2025 badge ── */}
       <svg
         viewBox="0 0 90 104"
         style={{
@@ -107,36 +108,35 @@ export function CertificateView({ cert, forExport = false }: Props) {
       {/* ── Top decorative rule ── */}
       <div style={{
         position: 'absolute',
-        top: py(158),
-        left: px(64),
-        right: px(64),
+        top: py(154),
+        left: px(64), right: px(64),
         height: forExport ? '1.5px' : '0.15%',
         background: 'linear-gradient(90deg, transparent 0%, #999 15%, #444 50%, #999 85%, transparent 100%)',
       }} />
 
-      {/* ── CERTIFICATE OF INTERNSHIP ── */}
+      {/* ── CERTIFICATE OF COURSE COMPLETION ── */}
       <div style={{
         position: 'absolute',
-        top: py(178),
+        top: py(172),
         left: '50%',
         transform: 'translateX(-50%)',
         whiteSpace: 'nowrap' as const,
         textAlign: 'center' as const,
       }}>
         <div style={{
-          fontSize: fs(52),
+          fontSize: fs(50),
           fontWeight: 900,
           color: '#0d1120',
           letterSpacing: '0.07em',
           textTransform: 'uppercase' as const,
           lineHeight: 1,
-        }}>Certificate of Internship</div>
+        }}>Certificate of Course Completion</div>
       </div>
 
       {/* ── Ornamental divider ── */}
       <div style={{
         position: 'absolute',
-        top: py(262),
+        top: py(256),
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
@@ -145,8 +145,8 @@ export function CertificateView({ cert, forExport = false }: Props) {
         whiteSpace: 'nowrap' as const,
       }}>
         <div style={{ width: px(180), height: forExport ? '2px' : '0.2%', background: '#333' }} />
-        <svg viewBox="0 0 32 14" width={forExport ? '32' : `${(32/W)*100}%`} height={forExport ? '14' : `${(14/H)*100}%`}>
-          <polygon points="4,7 10,1 16,7 22,1 28,7 22,13 16,7 10,13" fill="#333"/>
+        <svg viewBox="0 0 32 14" width={forExport ? '32' : `${(32 / W) * 100}%`} height={forExport ? '14' : `${(14 / H) * 100}%`}>
+          <polygon points="4,7 10,1 16,7 22,1 28,7 22,13 16,7 10,13" fill="#333" />
         </svg>
         <div style={{ width: px(180), height: forExport ? '2px' : '0.2%', background: '#333' }} />
       </div>
@@ -154,7 +154,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
       {/* ── "This is to certify that" ── */}
       <div style={{
         position: 'absolute',
-        top: py(300),
+        top: py(294),
         left: '50%',
         transform: 'translateX(-50%)',
         fontSize: fs(21),
@@ -168,7 +168,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
       {/* ── Student name ── */}
       <div style={{
         position: 'absolute',
-        top: py(340),
+        top: py(332),
         left: '50%',
         transform: 'translateX(-50%)',
         textAlign: 'center' as const,
@@ -195,55 +195,45 @@ export function CertificateView({ cert, forExport = false }: Props) {
       {/* ── Body paragraph ── */}
       <div style={{
         position: 'absolute',
-        top: py(460),
-        left: px(80),
-        right: px(80),
+        top: py(452),
+        left: px(80), right: px(80),
         fontSize: fs(18),
         color: '#222',
         lineHeight: 1.8,
         fontWeight: 400,
         textAlign: 'justify' as const,
       }}>
-        Has successfully completed the internship program at{' '}
-        <strong style={{ fontWeight: 700 }}>MyDesignNexus</strong>{' '}
-        in the department of{' '}
-        <strong style={{ fontWeight: 700 }}>{cert.department || cert.course_category || '—'}</strong>
+        Has successfully completed the course{' '}
+        <strong style={{ fontWeight: 700 }}>"{cert.course_title}"</strong>{' '}
+        at <strong style={{ fontWeight: 700 }}>MyDesignNexus</strong>
         {cert.internship_from && cert.internship_to ? (
-          <> from <strong style={{ fontWeight: 700 }}>{fromDate}</strong> to{' '}
+          <>, from <strong style={{ fontWeight: 700 }}>{fromDate}</strong> to{' '}
           <strong style={{ fontWeight: 700 }}>{toDate}</strong></>
         ) : null}
-        {'. '}
-        During this period, the intern demonstrated exceptional skills, dedication, and professional growth in{' '}
-        <strong style={{ fontWeight: 700 }}>{cert.growth_area || cert.course_title || '—'}</strong>
+        . During this period, the student demonstrated exceptional dedication and professional growth in{' '}
+        <strong style={{ fontWeight: 700 }}>{cert.growth_area || cert.course_category || '—'}</strong>
         . We wish them continued success in their career.
       </div>
 
-      {/* ── Certificate ID + Instructor Name ── */}
+      {/* ── Certificate ID ── */}
       <div style={{
         position: 'absolute',
         top: py(652),
         left: px(80),
-        display: 'flex',
-        flexDirection: 'column',
-        gap: py(8),
+        fontSize: fs(15),
+        color: '#333',
       }}>
-        <div style={{ fontSize: fs(16), color: '#333' }}>
-          <strong>Certificate id :</strong>{' '}
-          <span style={{ fontFamily: "'Courier New', monospace", letterSpacing: '0.04em' }}>
-            {cert.serial_number}
-          </span>
-        </div>
-        <div style={{ fontSize: fs(16), color: '#333' }}>
-          <strong>Instructor Name :</strong> {cert.instructor_name || 'Rakshith'}
-        </div>
+        <strong>Certificate ID:</strong>{' '}
+        <span style={{ fontFamily: "'Courier New', monospace", letterSpacing: '0.04em' }}>
+          {cert.serial_number}
+        </span>
       </div>
 
       {/* ── Horizontal rule above bottom section ── */}
       <div style={{
         position: 'absolute',
-        top: py(740),
-        left: px(64),
-        right: px(64),
+        top: py(700),
+        left: px(64), right: px(64),
         height: forExport ? '1.5px' : '0.15%',
         background: '#aaa',
       }} />
@@ -256,7 +246,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
         bottom: py(90),
         left: px(80),
       }}>
-        <div style={{ fontSize: fs(17), fontWeight: 700, color: '#222', marginBottom: py(8) }}>Date:</div>
+        <div style={{ fontSize: fs(16), fontWeight: 700, color: '#222', marginBottom: py(8) }}>Date:</div>
         <div style={{
           fontSize: fs(14),
           color: '#444',
@@ -268,20 +258,20 @@ export function CertificateView({ cert, forExport = false }: Props) {
         }}>{issueDate}</div>
       </div>
 
-      {/* Vertical separator (left of seal) */}
+      {/* Vertical separator left */}
       <div style={{
         position: 'absolute',
-        bottom: py(56),
+        bottom: py(52),
         left: px(420),
         width: forExport ? '1.5px' : '0.1%',
-        height: py(118),
+        height: py(130),
         background: '#bbb',
       }} />
 
-      {/* Seal (center) */}
+      {/* Seal (center) — real image */}
       <div style={{
         position: 'absolute',
-        bottom: py(58),
+        bottom: py(54),
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
@@ -289,42 +279,53 @@ export function CertificateView({ cert, forExport = false }: Props) {
         alignItems: 'center',
         gap: py(6),
       }}>
-        <div style={{ fontSize: fs(13), color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 500 }}>Seal</div>
-        <svg viewBox="0 0 80 80" style={{ width: forExport ? '72px' : `${(72/W)*100}%`, height: 'auto' }}>
-          <circle cx="40" cy="40" r="37" fill="none" stroke="#333" strokeWidth="1.5" strokeDasharray="4 3"/>
-          <circle cx="40" cy="40" r="29" fill="none" stroke="#444" strokeWidth="0.8"/>
-          <rect x="11" y="28" width="58" height="24" rx="3" fill="#111"/>
-          <text x="40" y="44" textAnchor="middle" fill="white" fontSize="15" fontWeight="900" fontFamily="Inter,sans-serif" letterSpacing="1">MDN</text>
-        </svg>
+        <div style={{ fontSize: fs(12), color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontWeight: 500 }}>Seal</div>
+        <img
+          src={ASSETS.seal}
+          alt="Seal"
+          crossOrigin="anonymous"
+          style={{
+            width: forExport ? '80px' : `${(80 / W) * 100}%`,
+            height: 'auto',
+            objectFit: 'contain',
+          }}
+        />
       </div>
 
-      {/* Vertical separator (right of seal) */}
-      <div style={{
-        position: 'absolute',
-        bottom: py(56),
-        right: px(420),
-        width: forExport ? '1.5px' : '0.1%',
-        height: py(118),
-        background: '#bbb',
-      }} />
-
-      {/* Authorized Signature (bottom-right) */}
+      {/* Vertical separator right */}
       <div style={{
         position: 'absolute',
         bottom: py(52),
+        right: px(420),
+        width: forExport ? '1.5px' : '0.1%',
+        height: py(130),
+        background: '#bbb',
+      }} />
+
+      {/* Signature (bottom-right) — real image */}
+      <div style={{
+        position: 'absolute',
+        bottom: py(44),
         right: px(80),
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
         gap: py(3),
       }}>
-        {/* Stylised signature curve */}
-        <svg viewBox="0 0 120 44" style={{ width: forExport ? '110px' : `${(110/W)*100}%`, height: 'auto' }}>
-          <path d="M8 36 Q 25 4, 45 26 Q 65 46, 82 18 Q 98 -2, 112 20" fill="none" stroke="#222" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <div style={{ width: forExport ? '150px' : `${(150/W)*100}%`, height: forExport ? '1.5px' : '0.15%', background: '#333' }} />
-        <div style={{ fontSize: fs(12), color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>Authorized Signature</div>
-        <div style={{ fontSize: fs(22), fontWeight: 900, color: '#111' }}>Rakshith</div>
+        <img
+          src={ASSETS.signature}
+          alt="Authorized Signature"
+          crossOrigin="anonymous"
+          style={{
+            width: forExport ? '130px' : `${(130 / W) * 100}%`,
+            height: 'auto',
+            objectFit: 'contain',
+            marginBottom: py(4),
+          }}
+        />
+        <div style={{ width: forExport ? '150px' : `${(150 / W) * 100}%`, height: forExport ? '1.5px' : '0.15%', background: '#333' }} />
+        <div style={{ fontSize: fs(11), color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>Authorized Signature</div>
+        <div style={{ fontSize: fs(21), fontWeight: 900, color: '#111' }}>Rakshith</div>
         <div style={{ fontSize: fs(12), color: '#555' }}>Founder &amp; CEO</div>
         <div style={{ fontSize: fs(12), color: '#555' }}>MyDesignNexus</div>
       </div>
@@ -332,22 +333,25 @@ export function CertificateView({ cert, forExport = false }: Props) {
       {/* ── Footer bar ── */}
       <div style={{
         position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        bottom: 0, left: 0, right: 0,
         height: py(44),
         background: '#111',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: `0 ${px(24)}`,
       }}>
         <div style={{
-          fontSize: fs(12),
+          fontSize: fs(11),
           color: 'white',
           fontWeight: 700,
-          letterSpacing: '0.04em',
+          letterSpacing: '0.03em',
+          textAlign: 'center' as const,
+          whiteSpace: 'nowrap' as const,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}>
-          mydesignnexus.in &nbsp;|&nbsp; Hassan, Karnataka, India &nbsp;|&nbsp; AI Automation &bull; AI Call Agents &bull; Web Development
+          {FOOTER_TEXT}
         </div>
       </div>
 

@@ -27,7 +27,7 @@ export function PublicCertificatePage() {
 
   useEffect(() => {
     if (!cert) return;
-    document.title = `${cert.student_name} — Certificate of Internship | MyDesignNexus`;
+    document.title = `${cert.student_name} — Certificate of Course Completion | MyDesignNexus`;
 
     const setMeta = (property: string, content: string) => {
       let el = document.querySelector(`meta[property="${property}"]`);
@@ -38,7 +38,7 @@ export function PublicCertificatePage() {
       }
       el.setAttribute('content', content);
     };
-    setMeta('og:title', `${cert.student_name} — Certificate of Internship`);
+    setMeta('og:title', `${cert.student_name} — Certificate of Course Completion`);
     setMeta('og:description', `Verified certificate issued by MyDesignNexus on ${new Date(cert.issued_at).toDateString()}. Department: ${cert.department}`);
     setMeta('og:type', 'article');
     setMeta('og:url', window.location.href);
@@ -98,7 +98,7 @@ export function PublicCertificatePage() {
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
           <Icon name="verified" size={22} className="text-green-600 flex-shrink-0 mt-0.5" fill />
           <div>
-            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Internship</p>
+            <p className="font-bold text-ink-900 text-sm">Verified Certificate of Course Completion</p>
             <p className="text-xs text-ink-500 mt-0.5">
               Issued by MyDesignNexus to <span className="font-semibold text-ink-700">{cert.student_name}</span> on {new Date(cert.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
               {cert.course_title && <> for completing <span className="font-semibold text-ink-700">{cert.course_title}</span></>}
