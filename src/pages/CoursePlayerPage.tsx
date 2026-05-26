@@ -282,7 +282,6 @@ export function CoursePlayerPage() {
 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [rightPanel, setRightPanel] = useState<'notes' | 'resources' | null>(null);
   const [activeTab, setActiveTab] = useState<'discussion' | 'notes' | 'resources'>('discussion');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -347,7 +346,6 @@ export function CoursePlayerPage() {
     const allDone = lessons.length > 0 && nowCompleted.size >= lessons.length;
     if (allDone) {
       triggerCelebration();
-      // Issue certificate then send congratulations email (fire-and-forget)
       ;(async () => {
         try {
           const { data: certId } = await supabase.rpc('issue_certificate_if_complete', {
@@ -366,9 +364,7 @@ export function CoursePlayerPage() {
               body: JSON.stringify({ cert_id: certId }),
             });
           }
-        } catch {
-          // best-effort — never surface email errors to the student
-        }
+        } catch { /* best-effort */ }
       })();
     } else {
       toast.success('Lesson marked complete!');
@@ -388,12 +384,17 @@ export function CoursePlayerPage() {
     </div>
   );
 
-  // ── Sidebar lesson list ───────────────────────────────────────────────────
+  const lessonIndex = activeLesson ? lessons.findIndex((l) => l.id === activeLesson.id) : -1;
+  const prevLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
+  const nextLesson = lessonIndex < lessons.length - 1 ? lessons[lessonIndex + 1] : null;
 
-  const SidebarLessons = () => (
-    <div className="flex flex-col h-full bg-white">
+  // ── Sidebar ───────────────────────────────────────────────────────────────
+
+  const SidebarContent = () => (
+    <div className="flex flex-col bg-white" style={{ height: '100%' }}>
+
       {/* Progress header */}
-      <div className="px-4 py-4 border-b border-ink-200 flex-shrink-0 bg-white">
+      <div className="px-4 py-4 border-b border-ink-200 flex-shrink-0">
         <div className="flex items-center gap-3 mb-3">
           <ProgressRing pct={pct} size={44} stroke={4} />
           <div className="min-w-0">
@@ -407,13 +408,13 @@ export function CoursePlayerPage() {
       </div>
 
       {/* Course label */}
-      <div className="px-4 py-2.5 border-b border-ink-200 flex-shrink-0 bg-white">
+      <div className="px-4 py-2.5 border-b border-ink-200 flex-shrink-0">
         <p className="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-0.5">Course</p>
         <p className="text-xs font-display font-bold text-ink-900 leading-snug line-clamp-2">{course.title}</p>
       </div>
 
-      {/* Scrollable sections */}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+      {/* Scrollable lesson list */}
+      <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
         {sections.map((section, si) => {
           const sLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
           const isExpanded = expandedSections.has(section.id);
@@ -431,7 +432,6 @@ export function CoursePlayerPage() {
                   <Icon name="expand_more" size={18} />
                 </motion.span>
               </button>
-
               <AnimatePresence initial={false}>
                 {isExpanded && (
                   <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
@@ -525,12 +525,11 @@ export function CoursePlayerPage() {
     </div>
   );
 
-  // ── Page structure: fixed header + fixed-height body ─────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
-
-      {/* Overlays */}
+    <>
+      {/* Overlays (outside layout flow) */}
       <ConfettiBlast active={showConfetti} />
       <AnimatePresence>
         {showCelebration && (
@@ -541,162 +540,173 @@ export function CoursePlayerPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Fixed top chrome ─────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 z-30">
-
-        {/* Completion banner */}
-        <AnimatePresence>
-          {completionBanner && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.35, ease: [0.22,1,0.36,1] }}
-              className="overflow-hidden"
+      {/* Mobile sidebar drawer */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <motion.div initial={{ x: -300 }} animate={{ x: 0 }} exit={{ x: -300 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 z-50 w-[296px] shadow-2xl lg:hidden"
+              style={{ display: 'flex', flexDirection: 'column' }}
             >
-              <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-lg flex-shrink-0">🎉</span>
-                  <div className="min-w-0">
-                    <p className="text-white font-bold text-sm leading-tight">Congratulations! You completed this course!</p>
-                    <p className="text-white/80 text-xs hidden sm:block">Your certificate has been generated and is ready to download.</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                      <rect x="2" y="3" width="20" height="14" rx="2" stroke="white" strokeWidth="2"/>
-                      <path d="M8 21h8M12 17v4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Certificate
-                  </button>
-                  <button onClick={() => setCompletionBanner(false)}
-                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                  </button>
-                </div>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-ink-200 bg-white flex-shrink-0">
+                <p className="text-sm font-display font-bold text-ink-900">Lessons</p>
+                <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 transition-colors">
+                  <Icon name="close" size={18} />
+                </button>
+              </div>
+              <div style={{ flex: '1 1 0', minHeight: 0 }}>
+                <SidebarContent />
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </>
+        )}
+      </AnimatePresence>
 
-        {/* Header */}
-        <header className="flex items-center gap-3 px-4 sm:px-5 h-14 bg-white border-b border-ink-200">
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
-            <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
-          </Link>
-          <div className="w-px h-5 bg-ink-200 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-display font-bold text-ink-900 truncate leading-tight">{course.title}</p>
-            {enrollment && (
-              <div className="hidden sm:flex items-center gap-2 mt-0.5">
-                <div className="h-1 w-28 bg-ink-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                </div>
-                <span className="text-[10px] text-ink-400 font-medium">{pct}%</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {certificate && (
-              <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors"
+      {/*
+        ROOT: full viewport height, flex column, no overflow-hidden on root
+        so browser can correctly route scroll events to children.
+      */}
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff' }}>
+
+        {/* ── Top chrome (shrinks to its natural height) ── */}
+        <div style={{ flexShrink: 0, zIndex: 30 }}>
+
+          {/* Completion banner */}
+          <AnimatePresence>
+            {completionBanner && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.35, ease: [0.22,1,0.36,1] }}
+                style={{ overflow: 'hidden' }}
               >
-                <Icon name="workspace_premium" size={14} fill />
-                Certificate
-              </button>
-            )}
-            {isOwner && (
-              <button onClick={() => navigate(`/courses/${courseId}/edit`)}
-                className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors" title="Edit course"
-              >
-                <Icon name="edit" size={16} />
-              </button>
-            )}
-            <button onClick={() => setSidebarOpen((v) => !v)}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
-              title={sidebarOpen ? 'Hide lessons' : 'Show lessons'}
-            >
-              <Icon name={sidebarOpen ? 'menu_open' : 'menu'} size={20} />
-            </button>
-            <button onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors" title="Show lessons"
-            >
-              <Icon name="menu" size={20} />
-            </button>
-          </div>
-        </header>
-      </div>
-
-      {/* ── Body ─────────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flex: '1 1 0px', minHeight: 0, overflow: 'hidden' }}>
-
-        {/* Desktop sidebar */}
-        <AnimatePresence initial={false}>
-          {sidebarOpen && (
-            <motion.aside
-              initial={{ width: 0, opacity: 0 }} animate={{ width: 296, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.22,1,0.36,1] }}
-              className="hidden lg:flex flex-shrink-0 border-r border-ink-200 overflow-hidden"
-            >
-              <div className="w-[296px] h-full flex flex-col overflow-hidden">
-                <SidebarLessons />
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
-
-        {/* Mobile sidebar drawer */}
-        <AnimatePresence>
-          {mobileSidebarOpen && (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
-                onClick={() => setMobileSidebarOpen(false)}
-              />
-              <motion.aside initial={{ x: -300 }} animate={{ x: 0 }} exit={{ x: -300 }}
-                transition={{ type:'spring', damping:30, stiffness:280 }}
-                className="fixed inset-y-0 left-0 w-[296px] z-50 border-r border-ink-200 shadow-2xl lg:hidden overflow-hidden"
-              >
-                <div className="h-full flex flex-col bg-white">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-ink-200 flex-shrink-0">
-                    <p className="text-sm font-display font-bold text-ink-900">Lessons</p>
-                    <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 transition-colors">
-                      <Icon name="close" size={18} />
+                <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-lg flex-shrink-0">🎉</span>
+                    <div className="min-w-0">
+                      <p className="text-white font-bold text-sm leading-tight">Congratulations! You completed this course!</p>
+                      <p className="text-white/80 text-xs hidden sm:block">Your certificate is ready to download.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
+                    >Certificate</button>
+                    <button onClick={() => setCompletionBanner(false)}
+                      className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
                     </button>
                   </div>
-                  <div className="flex-1 overflow-hidden">
-                    <SidebarLessons />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Header */}
+          <header className="flex items-center gap-3 px-4 sm:px-5 h-14 bg-white border-b border-ink-200">
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+              <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain" />
+              <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-[13px]">aiwithrakshith</span>
+            </Link>
+            <div className="w-px h-5 bg-ink-200 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-display font-bold text-ink-900 truncate leading-tight">{course.title}</p>
+              {enrollment && (
+                <div className="hidden sm:flex items-center gap-2 mt-0.5">
+                  <div className="h-1 w-28 bg-ink-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
                   </div>
+                  <span className="text-[10px] text-ink-400 font-medium">{pct}%</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {certificate && (
+                <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors"
+                >
+                  <Icon name="workspace_premium" size={14} fill />
+                  Certificate
+                </button>
+              )}
+              {isOwner && (
+                <button onClick={() => navigate(`/courses/${courseId}/edit`)}
+                  className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors" title="Edit course"
+                >
+                  <Icon name="edit" size={16} />
+                </button>
+              )}
+              <button onClick={() => setSidebarOpen((v) => !v)}
+                className="hidden lg:flex p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
+              >
+                <Icon name={sidebarOpen ? 'menu_open' : 'menu'} size={20} />
+              </button>
+              <button onClick={() => setMobileSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
+              >
+                <Icon name="menu" size={20} />
+              </button>
+            </div>
+          </header>
+        </div>
+
+        {/*
+          ── Body row ──
+          Takes all remaining height. Sidebar + main sit side by side.
+          overflow:hidden here clips the sidebar animation only.
+        */}
+        <div style={{ flex: '1 1 0', display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+
+          {/* Desktop sidebar */}
+          <AnimatePresence initial={false}>
+            {sidebarOpen && (
+              <motion.aside
+                initial={{ width: 0 }} animate={{ width: 296 }} exit={{ width: 0 }}
+                transition={{ duration: 0.22, ease: [0.22,1,0.36,1] }}
+                className="hidden lg:block flex-shrink-0 border-r border-ink-200"
+                style={{ overflow: 'hidden' }}
+              >
+                <div style={{ width: 296, height: '100%' }}>
+                  <SidebarContent />
                 </div>
               </motion.aside>
-            </>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
 
-        {/* ── Main content ──────────────────────────────────────────────────────── */}
-        <div style={{ flex: '1 1 0px', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8f8f8' }}>
+          {/*
+            ── Main content column ──
+            flex-col so enrollment banner stacks above lesson area.
+            overflow:hidden clips it horizontally only — vertical scroll
+            lives one level deeper.
+          */}
+          <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f9f9f9' }}>
 
-          {/* Enrollment banner */}
-          {!enrollment && !isOwner && (
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-blue-50 border-b border-blue-100 flex-shrink-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Icon name="school" size={16} className="text-blue-600 flex-shrink-0" />
-                <p className="text-sm text-blue-800 font-medium truncate">Enroll for free to unlock all lessons and track your progress.</p>
+            {/* Enrollment banner */}
+            {!enrollment && !isOwner && (
+              <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-blue-50 border-b border-blue-100" style={{ flexShrink: 0 }}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon name="school" size={16} className="text-blue-600 flex-shrink-0" />
+                  <p className="text-sm text-blue-800 font-medium truncate">Enroll for free to unlock all lessons and track your progress.</p>
+                </div>
+                <Button size="sm" onClick={handleEnroll} loading={enroll.isPending} className="flex-shrink-0">Enroll Free</Button>
               </div>
-              <Button size="sm" onClick={handleEnroll} loading={enroll.isPending} className="flex-shrink-0">Enroll Free</Button>
-            </div>
-          )}
+            )}
 
-          {activeLesson && canAccess ? (
-            <div style={{ display: 'flex', flex: '1 1 0px', minHeight: 0, height: '100%' }}>
+            {activeLesson && canAccess ? (
+              /*
+                ── Lesson area ──
+                This is the ONE scrollable container. It fills all remaining
+                height. overflow-y:auto means the browser renders a scrollbar
+                and routes wheel/trackpad events here directly.
+              */
+              <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
 
-              {/* Scrollable lesson column */}
-              <div style={{ flex: '1 1 0px', minWidth: 0, overflowY: 'auto', overflowX: 'hidden', height: '100%' }}>
-
-                {/* ── Video / media ── */}
-                <div className="flex-shrink-0 bg-gray-950">
+                {/* Video / media */}
+                <div style={{ background: '#030712', flexShrink: 0 }}>
                   {activeLesson.lesson_type === 'video' && videoUrl && (
                     getEmbedUrl(videoUrl) ? (
                       <div className="relative aspect-video">
@@ -721,16 +731,11 @@ export function CoursePlayerPage() {
                     )
                   )}
                   {activeLesson.lesson_type === 'video' && !videoUrl && (
-                    <div className="aspect-video relative overflow-hidden">
-                      {mediaLoading ? (
-                        <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-                          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
-                          <Icon name="play_circle" size={48} className="text-gray-600" />
-                        </div>
-                      )}
+                    <div className="aspect-video flex items-center justify-center bg-gray-900">
+                      {mediaLoading
+                        ? <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        : <Icon name="play_circle" size={48} className="text-gray-600" />
+                      }
                     </div>
                   )}
                 </div>
@@ -738,13 +743,13 @@ export function CoursePlayerPage() {
                 {activeLesson.lesson_type === 'image' && (
                   <div className="p-4 sm:p-6 bg-white">
                     {mediaLoading ? (
-                      <div className="rounded-2xl overflow-hidden border border-ink-200 min-h-[200px] bg-ink-100 animate-pulse" />
+                      <div className="rounded-2xl border border-ink-200 min-h-[200px] bg-ink-100 animate-pulse" />
                     ) : videoUrl ? (
-                      <div className="rounded-2xl overflow-hidden border border-ink-200 bg-ink-50 flex items-center justify-center">
+                      <div className="rounded-2xl border border-ink-200 bg-ink-50 flex items-center justify-center overflow-hidden">
                         <img src={videoUrl} alt={activeLesson.title} className="w-full object-contain max-h-[70vh]" />
                       </div>
                     ) : (
-                      <div className="rounded-2xl overflow-hidden border border-ink-200 bg-ink-50 flex items-center justify-center min-h-[200px]">
+                      <div className="rounded-2xl border border-ink-200 bg-ink-50 flex items-center justify-center min-h-[200px]">
                         <Icon name="image" size={48} className="text-ink-300" />
                       </div>
                     )}
@@ -773,7 +778,7 @@ export function CoursePlayerPage() {
                   </div>
                 )}
 
-                {/* ── Lesson meta + actions ── */}
+                {/* Lesson meta + actions */}
                 <div className="bg-white border-b border-ink-200 px-4 sm:px-6 py-5">
                   <div className="flex items-start justify-between gap-4 flex-wrap max-w-4xl">
                     <div className="flex-1 min-w-0">
@@ -814,48 +819,41 @@ export function CoursePlayerPage() {
                   </div>
                 </div>
 
-                {/* ── Prev / Next ── */}
+                {/* Prev / Next */}
                 <div className="px-4 sm:px-6 py-4 bg-white border-b border-ink-200">
-                  {(() => {
-                    const idx = lessons.findIndex((l) => l.id === activeLesson.id);
-                    const prev = idx > 0 ? lessons[idx - 1] : null;
-                    const next = idx < lessons.length - 1 ? lessons[idx + 1] : null;
-                    return (
-                      <div className="flex items-center justify-between gap-3 max-w-4xl">
-                        <button onClick={() => prev && setActiveLessonId(prev.id)} disabled={!prev}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-ink-200 text-ink-600 hover:text-ink-900 hover:border-ink-400 hover:bg-ink-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold"
-                        >
-                          <Icon name="chevron_left" size={16} />
-                          Previous
-                        </button>
-                        <span className="text-xs text-ink-400 hidden sm:block">{idx + 1} / {lessons.length}</span>
-                        {next ? (
-                          <button onClick={() => setActiveLessonId(next.id)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ink-900 hover:bg-emerald-600 text-white text-sm font-bold transition-colors"
-                          >
-                            Next <Icon name="chevron_right" size={16} />
-                          </button>
-                        ) : certificate ? (
-                          <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold hover:bg-amber-100 transition-colors"
-                          >
-                            <Icon name="workspace_premium" size={16} fill />
-                            Get Certificate
-                          </button>
-                        ) : (
-                          <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold shadow-sm shadow-amber-200 transition-all duration-200"
-                          >
-                            <Icon name="workspace_premium" size={16} fill />
-                            View Certificate
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  <div className="flex items-center justify-between gap-3 max-w-4xl">
+                    <button onClick={() => prevLesson && setActiveLessonId(prevLesson.id)} disabled={!prevLesson}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-ink-200 text-ink-600 hover:text-ink-900 hover:border-ink-400 hover:bg-ink-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold"
+                    >
+                      <Icon name="chevron_left" size={16} />
+                      Previous
+                    </button>
+                    <span className="text-xs text-ink-400 hidden sm:block">{lessonIndex + 1} / {lessons.length}</span>
+                    {nextLesson ? (
+                      <button onClick={() => setActiveLessonId(nextLesson.id)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ink-900 hover:bg-emerald-600 text-white text-sm font-bold transition-colors"
+                      >
+                        Next <Icon name="chevron_right" size={16} />
+                      </button>
+                    ) : certificate ? (
+                      <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold hover:bg-amber-100 transition-colors"
+                      >
+                        <Icon name="workspace_premium" size={16} fill />
+                        Get Certificate
+                      </button>
+                    ) : (
+                      <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold shadow-sm shadow-amber-200 transition-all"
+                      >
+                        <Icon name="workspace_premium" size={16} fill />
+                        View Certificate
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* ── Tab bar: Discussion / Notes / Resources ── */}
+                {/* Tab bar */}
                 <div className="bg-white border-b border-ink-200 px-4 sm:px-6">
                   <div className="flex items-center gap-0 max-w-4xl">
                     {([
@@ -879,8 +877,8 @@ export function CoursePlayerPage() {
                   </div>
                 </div>
 
-                {/* ── Tab content ── */}
-                <div className="max-w-4xl px-4 sm:px-6 py-6">
+                {/* Tab content */}
+                <div className="max-w-4xl px-4 sm:px-6 py-6 pb-16">
                   {activeTab === 'discussion' && (
                     <LessonComments
                       lessonId={activeLesson.id}
@@ -903,62 +901,32 @@ export function CoursePlayerPage() {
                 </div>
 
               </div>
-
-              {/* Desktop right panel (Notes / Resources quick access) */}
-              <AnimatePresence initial={false}>
-                {rightPanel && (
-                  <motion.div initial={{ width: 0 }} animate={{ width: 320 }} exit={{ width: 0 }}
-                    transition={{ duration: 0.22, ease: [0.22,1,0.36,1] }}
-                    className="hidden lg:flex flex-shrink-0 border-l border-ink-200 flex-col overflow-hidden"
-                  >
-                    <div className="w-[320px] h-full flex flex-col">
-                      <div className="flex border-b border-ink-200 bg-white flex-shrink-0">
-                        {([['notes','Notes'] as const, ['resources','Resources'] as const]).map(([key,label]) => (
-                          <button key={key} onClick={() => setRightPanel(key)}
-                            className={cn('flex-1 py-3 text-xs font-bold border-b-2 transition-colors',
-                              rightPanel === key ? 'text-ink-900 border-ink-900' : 'text-ink-400 border-transparent hover:text-ink-900'
-                            )}
-                          >{label}</button>
-                        ))}
-                        <button onClick={() => setRightPanel(null)} className="px-3 text-ink-400 hover:text-ink-900 transition-colors border-b-2 border-transparent">
-                          <Icon name="close" size={16} />
-                        </button>
-                      </div>
-                      <div className="flex-1 overflow-hidden">
-                        {rightPanel === 'notes'
-                          ? <NotesPanel courseId={courseId!} lessonId={activeLesson.id} />
-                          : <ResourceList lesson={activeLesson} />}
-                      </div>
-                    </div>
-                  </motion.div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
+                <div className="w-20 h-20 bg-white border border-ink-200 rounded-2xl flex items-center justify-center shadow-sm">
+                  <Icon name={!enrollment && !isOwner ? 'lock' : 'school'} size={36} className="text-ink-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-display font-extrabold text-ink-900 mb-2">
+                    {!enrollment && !isOwner ? 'Enroll to start learning' : 'Select a lesson to begin'}
+                  </h3>
+                  <p className="text-sm text-ink-500 max-w-xs mx-auto leading-relaxed">
+                    {!enrollment && !isOwner
+                      ? 'This course is free. Enroll to unlock all content and track your progress.'
+                      : 'Choose a lesson from the sidebar on the left.'}
+                  </p>
+                </div>
+                {!enrollment && !isOwner && (
+                  <Button onClick={handleEnroll} loading={enroll.isPending} size="lg">
+                    <Icon name="school" size={16} />
+                    Enroll Now — Free
+                  </Button>
                 )}
-              </AnimatePresence>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8 text-center">
-              <div className="w-20 h-20 bg-white border border-ink-200 rounded-2xl flex items-center justify-center shadow-sm">
-                <Icon name={!enrollment && !isOwner ? 'lock' : 'school'} size={36} className="text-ink-400" />
               </div>
-              <div>
-                <h3 className="text-xl font-display font-extrabold text-ink-900 mb-2">
-                  {!enrollment && !isOwner ? 'Enroll to start learning' : 'Select a lesson to begin'}
-                </h3>
-                <p className="text-sm text-ink-500 max-w-xs mx-auto leading-relaxed">
-                  {!enrollment && !isOwner
-                    ? 'This course is free. Enroll to unlock all content and track your progress.'
-                    : 'Choose a lesson from the sidebar on the left.'}
-                </p>
-              </div>
-              {!enrollment && !isOwner && (
-                <Button onClick={handleEnroll} loading={enroll.isPending} size="lg">
-                  <Icon name="school" size={16} />
-                  Enroll Now — Free
-                </Button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
