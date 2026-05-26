@@ -117,12 +117,18 @@ function ProjectCard({ project, promptCount, onClick, onFilesClick, onShare }: {
   );
 }
 
+const PAGE_SIZE = 6;
+
 export function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: recentPrompts, isLoading: promptsLoading } = usePrompts();
   const [shareProject, setShareProject] = useState<Project | null>(null);
+  const [promptPage, setPromptPage] = useState(0);
+
+  // Reset to first page when prompts reload
+  useEffect(() => { setPromptPage(0); }, [recentPrompts?.length]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -195,28 +201,100 @@ export function DashboardPage() {
 
       {/* Recent Prompts */}
       <section>
+        {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Recent Prompts</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-white">Recent Prompts</h2>
+            {recentPrompts && recentPrompts.length > 0 && (
+              <span className="text-xs text-gray-500 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">
+                {recentPrompts.length}
+              </span>
+            )}
+          </div>
+          {recentPrompts && recentPrompts.length > PAGE_SIZE && (
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <span>Page {promptPage + 1} of {Math.ceil(recentPrompts.length / PAGE_SIZE)}</span>
+            </div>
+          )}
         </div>
 
         {promptsLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => <PromptCardSkeleton key={i} />)}
+            {[...Array(6)].map((_, i) => <PromptCardSkeleton key={i} />)}
           </div>
         ) : recentPrompts && recentPrompts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentPrompts.slice(0, 6).map((prompt, i) => {
-              const proj = projects?.find((p) => p.id === prompt.project_id) ?? null;
+          <>
+            {/* Grid */}
+            <motion.div
+              key={promptPage}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              {recentPrompts
+                .slice(promptPage * PAGE_SIZE, (promptPage + 1) * PAGE_SIZE)
+                .map((prompt, i) => {
+                  const proj = projects?.find((p) => p.id === prompt.project_id) ?? null;
+                  return (
+                    <motion.div
+                      key={prompt.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                    >
+                      <PromptCard
+                        prompt={prompt}
+                        onShare={(e) => { e.stopPropagation(); if (proj) setShareProject(proj); }}
+                      />
+                    </motion.div>
+                  );
+                })}
+            </motion.div>
+
+            {/* Pagination dots */}
+            {recentPrompts.length > PAGE_SIZE && (() => {
+              const totalPages = Math.ceil(recentPrompts.length / PAGE_SIZE);
               return (
-                <motion.div key={prompt.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <PromptCard
-                    prompt={prompt}
-                    onShare={(e) => { e.stopPropagation(); if (proj) setShareProject(proj); }}
-                  />
-                </motion.div>
+                <div className="flex items-center justify-center gap-4 mt-6">
+                  {/* Prev */}
+                  <button
+                    onClick={() => setPromptPage((p) => Math.max(0, p - 1))}
+                    disabled={promptPage === 0}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <Icon name="chevron_left" size={18} />
+                  </button>
+
+                  {/* Dots */}
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalPages }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setPromptPage(idx)}
+                        className={cn(
+                          'rounded-full transition-all duration-200',
+                          idx === promptPage
+                            ? 'w-6 h-2 bg-blue-500'
+                            : 'w-2 h-2 bg-gray-700 hover:bg-gray-500',
+                        )}
+                        aria-label={`Page ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Next */}
+                  <button
+                    onClick={() => setPromptPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={promptPage === totalPages - 1}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <Icon name="chevron_right" size={18} />
+                  </button>
+                </div>
               );
-            })}
-          </div>
+            })()}
+          </>
         ) : (
           <EmptyState
             icon={<Icon name="add_circle" size={24} className="text-gray-500" />}
