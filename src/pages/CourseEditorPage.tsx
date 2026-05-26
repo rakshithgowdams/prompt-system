@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -15,6 +15,52 @@ import { cn } from '../lib/utils';
 import { CourseShareModal } from '../components/courses/CourseShareModal';
 import type { CourseSection, CourseLesson, TimelineMarker } from '../hooks/useCourses';
 
+
+// ── Debounce hook ─────────────────────────────────────────────────────────────
+
+function useDebounce<T extends (...args: never[]) => void>(fn: T, delay: number): T {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  return useMemo(() => ((...args: Parameters<T>) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => fnRef.current(...args), delay);
+  }) as T, [delay]);
+}
+
+// ── Section title input with local state + debounced save ─────────────────────
+
+function SectionTitleInput({ section, courseId, onUpdate }: {
+  section: { id: string; title: string };
+  courseId: string;
+  onUpdate: (id: string, courseId: string, title: string) => void;
+}) {
+  const [value, setValue] = useState(section.title);
+  const debouncedSave = useDebounce((title: string) => {
+    onUpdate(section.id, courseId, title);
+  }, 600);
+
+  // Sync if the section prop changes from outside (e.g. initial load)
+  const prevId = useRef(section.id);
+  useEffect(() => {
+    if (prevId.current !== section.id) {
+      setValue(section.title);
+      prevId.current = section.id;
+    }
+  }, [section.id, section.title]);
+
+  return (
+    <input
+      value={value}
+      onChange={(e) => {
+        setValue(e.target.value);
+        debouncedSave(e.target.value);
+      }}
+      className="flex-1 bg-transparent text-sm font-semibold text-ink-900 focus:outline-none placeholder-ink-300 min-w-0"
+      placeholder="Section title"
+    />
+  );
+}
 
 // ── Safe filename helper ──────────────────────────────────────────────────────
 
@@ -264,11 +310,34 @@ function LessonEditor({
     onSave({ title, description, lesson_type: lessonType, video_url: videoUrl || null, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0, resources: newRes });
   };
 
-  const save = () => onSave({
-    title, description, lesson_type: lessonType, video_url: videoUrl || null,
-    content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0,
+  // Store mutable refs so the debounced flush always uses the latest values
+  const titleRef = useRef(title);
+  const descRef = useRef(description);
+  const contentRef = useRef(content);
+  const videoUrlRef = useRef(videoUrl);
+  const durationRef = useRef(durationMin);
+  const isPreviewRef = useRef(isPreview);
+  const lessonTypeRef = useRef(lessonType);
+  titleRef.current = title;
+  descRef.current = description;
+  contentRef.current = content;
+  videoUrlRef.current = videoUrl;
+  durationRef.current = durationMin;
+  isPreviewRef.current = isPreview;
+  lessonTypeRef.current = lessonType;
+
+  const save = useCallback(() => onSave({
+    title: titleRef.current,
+    description: descRef.current,
+    lesson_type: lessonTypeRef.current,
+    video_url: videoUrlRef.current || null,
+    content: contentRef.current,
+    is_preview: isPreviewRef.current,
+    video_duration_minutes: parseFloat(durationRef.current) || 0,
     resources, timeline_markers: markers,
-  } as Partial<CourseLesson>);
+  } as Partial<CourseLesson>), [onSave, resources, markers]);
+
+  const debouncedSave = useDebounce(save, 600);
 
   const UploadZone = ({ onClick, accept, icon, label, sublabel, color = 'blue' }: {
     onClick: () => void; accept: string; icon: string; label: string; sublabel: string; color?: string;
@@ -349,7 +418,7 @@ function LessonEditor({
             {/* Title */}
             <div>
               <label className="text-xs font-medium text-ink-500 mb-1 block">Title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)}
+              <input value={title} onChange={(e) => { setTitle(e.target.value); debouncedSave(); }}
                 className="w-full h-9 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                 placeholder="Lesson title" />
             </div>
@@ -406,14 +475,14 @@ function LessonEditor({
 
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1 block">YouTube / Vimeo URL</label>
-                  <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
+                  <input value={videoUrl} onChange={(e) => { setVideoUrl(e.target.value); debouncedSave(); }}
                     className="w-full h-9 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                     placeholder="https://youtube.com/watch?v=..." />
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1 block">Duration (minutes)</label>
-                  <input value={durationMin} onChange={(e) => setDurationMin(e.target.value)} type="number" min="0"
+                  <input value={durationMin} onChange={(e) => { setDurationMin(e.target.value); debouncedSave(); }} type="number" min="0"
                     className="w-full h-9 px-3 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100"
                     placeholder="e.g. 12.5" />
                 </div>
@@ -452,7 +521,7 @@ function LessonEditor({
 
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1 block">Caption / Notes</label>
-                  <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3}
+                  <textarea value={content} onChange={(e) => { setContent(e.target.value); debouncedSave(); }} rows={3}
                     className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                     placeholder="Add a caption or context for this image..." />
                 </div>
@@ -463,7 +532,7 @@ function LessonEditor({
             {lessonType === 'text' && (
               <div>
                 <label className="text-xs font-medium text-ink-500 mb-1 block">Lesson Content</label>
-                <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={12}
+                <textarea value={content} onChange={(e) => { setContent(e.target.value); debouncedSave(); }} rows={12}
                   className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none font-mono leading-relaxed"
                   placeholder={'# Lesson Title\n\nWrite your lesson content here...\n\n## Section\n\nSupports markdown formatting.'} />
               </div>
@@ -508,7 +577,7 @@ function LessonEditor({
 
                 <div>
                   <label className="text-xs font-medium text-ink-500 mb-1 block">Description / Instructions</label>
-                  <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={4}
+                  <textarea value={content} onChange={(e) => { setContent(e.target.value); debouncedSave(); }} rows={4}
                     className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                     placeholder="Describe what this file is and how students should use it..." />
                 </div>
@@ -518,7 +587,7 @@ function LessonEditor({
             {/* Description (all types) */}
             <div>
               <label className="text-xs font-medium text-ink-500 mb-1 block">Lesson Summary</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
+              <textarea value={description} onChange={(e) => { setDescription(e.target.value); debouncedSave(); }} rows={2}
                 className="w-full px-3 py-2.5 rounded-md bg-ink-100 border border-ink-300 text-ink-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 resize-none"
                 placeholder="Brief one-line description of this lesson" />
             </div>
@@ -956,11 +1025,10 @@ export function CourseEditorPage() {
                           <span className="w-5 h-5 rounded-full bg-ink-100 text-ink-500 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
                             {sIdx + 1}
                           </span>
-                          <input
-                            value={section.title}
-                            onChange={(e) => updateSection.mutate({ id: section.id, courseId: course.id, title: e.target.value })}
-                            className="flex-1 bg-transparent text-sm font-semibold text-ink-900 focus:outline-none placeholder-ink-300 min-w-0"
-                            placeholder="Section title"
+                          <SectionTitleInput
+                            section={section}
+                            courseId={course.id}
+                            onUpdate={(id, cId, title) => updateSection.mutate({ id, courseId: cId, title })}
                           />
                           <span className="text-[10px] text-ink-300 flex-shrink-0">{sectionLessons.length} lessons</span>
                           <button onClick={() => deleteSection.mutate({ id: section.id, courseId: course.id })}

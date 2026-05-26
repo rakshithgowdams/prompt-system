@@ -294,7 +294,20 @@ export function useUpdateSection() {
       if (error) throw error;
       return { ...data as CourseSection, courseId };
     },
-    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['course-sections', data.course_id] }),
+    onMutate: async ({ id, courseId, ...patch }) => {
+      await qc.cancelQueries({ queryKey: ['course-sections', courseId] });
+      const prev = qc.getQueryData<CourseSection[]>(['course-sections', courseId]);
+      qc.setQueryData<CourseSection[]>(['course-sections', courseId], (old) =>
+        old?.map((s) => s.id === id ? { ...s, ...patch } : s) ?? []
+      );
+      return { prev, courseId };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['course-sections', ctx.courseId], ctx.prev);
+    },
+    onSettled: (_data, _err, { courseId }) => {
+      qc.invalidateQueries({ queryKey: ['course-sections', courseId] });
+    },
   });
 }
 
@@ -359,7 +372,23 @@ export function useUpdateLesson() {
       if (error) throw error;
       return data as CourseLesson;
     },
-    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['course-lessons', data.course_id] }),
+    onMutate: async ({ id, ...patch }) => {
+      const lesson = qc.getQueryData<CourseLesson[]>(['course-lessons'])?.find((l) => l.id === id);
+      const courseId = (patch as Partial<CourseLesson>).course_id ?? lesson?.course_id;
+      if (!courseId) return;
+      await qc.cancelQueries({ queryKey: ['course-lessons', courseId] });
+      const prev = qc.getQueryData<CourseLesson[]>(['course-lessons', courseId]);
+      qc.setQueryData<CourseLesson[]>(['course-lessons', courseId], (old) =>
+        old?.map((l) => l.id === id ? { ...l, ...patch } : l) ?? []
+      );
+      return { prev, courseId };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev && ctx.courseId) qc.setQueryData(['course-lessons', ctx.courseId], ctx.prev);
+    },
+    onSettled: (data) => {
+      if (data?.course_id) qc.invalidateQueries({ queryKey: ['course-lessons', data.course_id] });
+    },
   });
 }
 
