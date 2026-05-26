@@ -41,6 +41,7 @@ const LandingPage            = lazy(() => import('./pages/landing/LandingPage'))
 const PricingPage            = lazy(() => import('./pages/landing/PricingPage'));
 const ExplorePromptsPage     = lazy(() => import('./pages/ExplorePromptsPage').then((m) => ({ default: m.ExplorePromptsPage })));
 const PublicCertificatePage  = lazy(() => import('./pages/PublicCertificatePage').then((m) => ({ default: m.PublicCertificatePage })));
+const PublicPortfolioPage    = lazy(() => import('./pages/PublicPortfolioPage').then((m) => ({ default: m.PublicPortfolioPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,7 @@ export default function App() {
 
               {/* Public pages — no auth required */}
               <Route path="/c/:slug" element={<PublicCertificatePage />} />
+              <Route path="/p/:slug" element={<PublicPortfolioPage />} />
 
               {/* Standalone pages — no AppShell wrapper */}
               <Route path="/share/:shareId" element={<SharePage />} />

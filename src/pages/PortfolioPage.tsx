@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  useProfile, useUpsertProfile, useAllMyCertificates, getAvatarUrl,
-  type UserProfile,
+  useProfile, useUpsertProfile, useAllMyCertificates, useGeneratePortfolioSlug,
+  getAvatarUrl, type UserProfile,
 } from '../hooks/useProfile';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
@@ -305,6 +305,8 @@ export function PortfolioPage() {
   const { data: certs = [], isLoading: certsLoading } = useAllMyCertificates();
   const upsert = useUpsertProfile();
 
+  const generateSlug = useGeneratePortfolioSlug();
+  const [shareOpen, setShareOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('overview');
   const [saving, setSaving] = useState(false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
@@ -412,6 +414,7 @@ export function PortfolioPage() {
     experience_company: form.experience_company ?? '',
     skills: form.skills ?? [],
     is_portfolio_public: form.is_portfolio_public ?? false,
+    portfolio_slug: profile?.portfolio_slug ?? null,
     created_at: profile?.created_at ?? '',
     updated_at: '',
   };
@@ -425,7 +428,23 @@ export function PortfolioPage() {
           <h1 className="text-2xl font-display font-extrabold text-ink-900 tracking-tight">My Portfolio</h1>
           <p className="text-sm text-ink-500 mt-1">Certificates, bio, education, and experience all in one place.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Share Portfolio button */}
+          <button
+            onClick={async () => {
+              if (!profile?.portfolio_slug) {
+                // Generate slug first
+                await generateSlug.mutateAsync();
+              }
+              setShareOpen((o) => !o);
+            }}
+            disabled={generateSlug.isPending}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-colors"
+          >
+            <Icon name={generateSlug.isPending ? 'hourglass_empty' : 'share'} size={15} />
+            {generateSlug.isPending ? 'Generating…' : 'Share Portfolio'}
+          </button>
+
           <button
             onClick={() => setTab(tab === 'edit' ? 'overview' : 'edit')}
             className={cn(
@@ -450,6 +469,113 @@ export function PortfolioPage() {
           )}
         </div>
       </div>
+
+      {/* Share panel */}
+      <AnimatePresence>
+        {shareOpen && profile?.portfolio_slug && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="bg-white border border-blue-200 rounded-2xl overflow-hidden shadow-sm"
+          >
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-blue-100 bg-blue-50">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <Icon name="share" size={17} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-ink-900">Share Your Portfolio</p>
+                <p className="text-xs text-ink-500 mt-0.5">Anyone with this link can view your public portfolio and certificates.</p>
+              </div>
+              <button
+                onClick={() => setShareOpen(false)}
+                className="flex-shrink-0 w-8 h-8 rounded-xl hover:bg-blue-100 flex items-center justify-center text-ink-400 hover:text-ink-700 transition-colors"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* URL copy row */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-ink-50 border border-ink-200 rounded-xl">
+                  <Icon name="link" size={14} className="text-ink-400 flex-shrink-0" />
+                  <span className="text-xs font-mono text-ink-700 truncate flex-1">
+                    {`${window.location.origin}/p/${profile.portfolio_slug}`}
+                  </span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(`${window.location.origin}/p/${profile!.portfolio_slug}`);
+                    toast.success('Portfolio link copied!');
+                  }}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-ink-900 hover:bg-ink-700 text-white text-xs font-bold transition-colors"
+                >
+                  <Icon name="content_copy" size={13} />
+                  Copy
+                </button>
+                <a
+                  href={`/p/${profile.portfolio_slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-ink-200 hover:border-ink-400 text-ink-700 hover:bg-ink-50 text-xs font-bold transition-colors"
+                >
+                  <Icon name="open_in_new" size={13} />
+                  Preview
+                </a>
+              </div>
+
+              {/* Social share buttons */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  {
+                    label: 'LinkedIn',
+                    bg: '#0A66C2',
+                    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${window.location.origin}/p/${profile.portfolio_slug}`)}`,
+                  },
+                  {
+                    label: 'WhatsApp',
+                    bg: '#25D366',
+                    href: `https://wa.me/?text=${encodeURIComponent(`Check out my portfolio & certificates!\n${window.location.origin}/p/${profile.portfolio_slug}`)}`,
+                  },
+                  {
+                    label: 'Twitter / X',
+                    bg: '#000',
+                    href: `https://twitter.com/intent/tweet?text=${encodeURIComponent('Check out my verified portfolio & certificates from @MyDesignNexus!')}&url=${encodeURIComponent(`${window.location.origin}/p/${profile.portfolio_slug}`)}`,
+                  },
+                  {
+                    label: 'Telegram',
+                    bg: '#0088CC',
+                    href: `https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}/p/${profile.portfolio_slug}`)}&text=${encodeURIComponent('My verified portfolio & certificates!')}`,
+                  },
+                ].map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: s.bg }}
+                  >
+                    {s.label}
+                  </a>
+                ))}
+              </div>
+
+              {/* Privacy toggle reminder */}
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <Icon name="info" size={15} className="text-amber-600 flex-shrink-0" />
+                <p className="text-xs text-amber-800">
+                  Your portfolio is currently{' '}
+                  <strong>{displayProfile.is_portfolio_public ? 'public' : 'private'}</strong>.
+                  {!displayProfile.is_portfolio_public && ' Switch it to Public in Edit Profile to make the link accessible.'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {tab === 'overview' ? (
