@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useProject } from '../hooks/useProjects';
@@ -43,10 +43,30 @@ type ViewMode = 'grid' | 'list';
 export function ProjectFilesPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
   const { data: project, isLoading: projectLoading } = useProject(slug ?? '');
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
+  // Read folder from URL query param — this is how the sidebar navigates into a folder
+  const folderParam = searchParams.get('folder');
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(folderParam);
+
+  // Keep URL in sync when activeFolderId changes programmatically (breadcrumb click, folder open)
+  const setFolder = useCallback((id: string | null) => {
+    setActiveFolderId(id);
+    if (id) {
+      setSearchParams({ folder: id }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [setSearchParams]);
+
+  // Sync if the URL changes externally (sidebar navigation)
+  useEffect(() => {
+    const param = searchParams.get('folder');
+    setActiveFolderId(param);
+  }, [searchParams]);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<FileType | ''>('');
@@ -222,16 +242,25 @@ export function ProjectFilesPage() {
             </button>
             <span className="opacity-50 flex-shrink-0">/</span>
             <button
-              onClick={() => setActiveFolderId(null)}
-              className={cn('hover:text-white transition-colors truncate max-w-[120px] xs:max-w-[180px]', !activeFolderId && 'text-white font-semibold')}
+              onClick={() => navigate(`/projects/${slug}`)}
+              className="hover:text-white transition-colors truncate max-w-[120px] xs:max-w-[180px]"
             >
               {project.name}
             </button>
-            {activeFolder && (
+            <span className="opacity-50 flex-shrink-0">/</span>
+            {activeFolder ? (
               <>
+                <button
+                  onClick={() => setFolder(null)}
+                  className="hover:text-white transition-colors whitespace-nowrap"
+                >
+                  Files
+                </button>
                 <span className="opacity-50 flex-shrink-0">/</span>
                 <span className="text-white font-semibold truncate max-w-[120px] xs:max-w-[200px]">{activeFolder.name}</span>
               </>
+            ) : (
+              <span className="text-white font-semibold whitespace-nowrap">Files</span>
             )}
           </div>
 
@@ -239,12 +268,12 @@ export function ProjectFilesPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => activeFolder ? setFolder(null) : navigate(`/projects/${slug}`)}
                 className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex-shrink-0"
               >
                 <Icon name="arrow_back" size={18} className="text-white" />
               </button>
-              <h1 className="text-lg sm:text-xl font-bold truncate">{activeFolder ? activeFolder.name : project.name}</h1>
+              <h1 className="text-lg sm:text-xl font-bold truncate">{activeFolder ? activeFolder.name : `${project.name} — Files`}</h1>
               <span className="text-xs sm:text-sm text-white/60 flex-shrink-0">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
             </div>
 
@@ -444,7 +473,7 @@ export function ProjectFilesPage() {
             <GridView
               folders={visibleFolders}
               files={visibleFiles}
-              onOpenFolder={(f) => setActiveFolderId(f.id)}
+              onOpenFolder={(f) => setFolder(f.id)}
               onPreviewFile={openPreview}
               onDownloadFile={handleDownload}
               onDeleteFolder={(f) => setDeleteTarget({ type: 'folder', item: f })}
@@ -456,7 +485,7 @@ export function ProjectFilesPage() {
             <ListView
               folders={visibleFolders}
               files={visibleFiles}
-              onOpenFolder={(f) => setActiveFolderId(f.id)}
+              onOpenFolder={(f) => setFolder(f.id)}
               onPreviewFile={openPreview}
               onDownloadFile={handleDownload}
               onDeleteFolder={(f) => setDeleteTarget({ type: 'folder', item: f })}
@@ -794,7 +823,7 @@ function ListView({ folders, files, onOpenFolder, onPreviewFile, onDownloadFile,
           initial={{ opacity: 0, x: -4 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => onOpenFolder(folder)}
-          className="group w-full grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-xl hover:bg-gray-800/60 transition-colors text-left"
+          className="group relative w-full grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_100px_80px] gap-3 sm:gap-4 items-center px-3 py-3 rounded-xl hover:bg-gray-800/60 transition-colors text-left"
         >
           <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center flex-shrink-0">
             <Icon name="folder" size={18} className="text-amber-400" fill />

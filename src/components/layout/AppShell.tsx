@@ -19,20 +19,34 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
 
   const projectBase = `/projects/${project.slug}`;
   const filesBase = `${projectBase}/files`;
-  const isProjectActive = location.pathname === projectBase || (location.pathname.startsWith(projectBase) && !location.pathname.includes('/files'));
+  const isProjectActive = location.pathname === projectBase || (location.pathname.startsWith(projectBase + '/') && !location.pathname.includes('/files'));
   const isFilesActive = location.pathname.startsWith(filesBase);
   const isAnyActive = isProjectActive || isFilesActive;
 
+  // Read active folder from URL query params so sidebar stays in sync
+  const activeFolderInUrl = isFilesActive
+    ? new URLSearchParams(location.search).get('folder')
+    : null;
+
   const [expanded, setExpanded] = useState(isAnyActive);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    activeFolderInUrl ? new Set([activeFolderInUrl]) : new Set(),
+  );
 
   const { data: folders = [] } = useFolders(project.id);
   const { data: allFiles = [] } = useAllProjectFiles(project.id);
 
-  // Auto-expand when navigating into project
+  // Auto-expand project tree when navigating into it
   useEffect(() => {
     if (isAnyActive) setExpanded(true);
   }, [isAnyActive]);
+
+  // Auto-expand the folder that's active in the URL
+  useEffect(() => {
+    if (activeFolderInUrl) {
+      setExpandedFolders((prev) => new Set([...prev, activeFolderInUrl]));
+    }
+  }, [activeFolderInUrl]);
 
   const toggleFolder = (id: string) => {
     setExpandedFolders((prev) => {
@@ -40,6 +54,11 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  };
+
+  const navigateToFolder = (folderId: string) => {
+    navigate(`${filesBase}?folder=${folderId}`);
+    setExpandedFolders((prev) => new Set([...prev, folderId]));
   };
 
   const rootFiles = allFiles.filter((f) => !f.folder_id);
@@ -90,12 +109,17 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
           >
             <div className="ml-5 mt-0.5 border-l border-gray-800 pl-2 space-y-0.5 pb-1">
 
-              {/* Root files (no folder) */}
+              {/* Root files (no folder) — click takes to files page at root */}
               {rootFiles.map((file) => (
                 <button
                   key={file.id}
                   onClick={() => navigate(filesBase)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-200 hover:bg-gray-800/60 transition-colors text-left group"
+                  className={cn(
+                    'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left',
+                    isFilesActive && !activeFolderInUrl
+                      ? 'text-blue-300 bg-blue-600/10'
+                      : 'text-gray-500 hover:text-gray-200 hover:bg-gray-800/60',
+                  )}
                   title={file.file_name}
                 >
                   <FileTypeIcon mimeType={file.mime_type} fileName={file.file_name} fileType={file.file_type} size={13} />
@@ -107,6 +131,7 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
               {folders.map((folder) => {
                 const folderFiles = allFiles.filter((f) => f.folder_id === folder.id);
                 const isFolderExpanded = expandedFolders.has(folder.id);
+                const isFolderActive = activeFolderInUrl === folder.id;
 
                 return (
                   <div key={folder.id}>
@@ -128,12 +153,17 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                       </button>
 
                       <button
-                        onClick={() => { navigate(`${filesBase}?folder=${folder.id}`); toggleFolder(folder.id); }}
-                        className="flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 transition-colors text-left min-w-0"
+                        onClick={() => navigateToFolder(folder.id)}
+                        className={cn(
+                          'flex-1 flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors text-left min-w-0',
+                          isFolderActive
+                            ? 'text-amber-300 bg-amber-500/10 border border-amber-500/20'
+                            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60',
+                        )}
                         title={folder.name}
                       >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className={cn('flex-shrink-0 transition-colors', isFolderExpanded ? 'text-amber-400' : 'text-amber-500/70')}>
-                          {isFolderExpanded ? (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className={cn('flex-shrink-0 transition-colors', isFolderActive || isFolderExpanded ? 'text-amber-400' : 'text-amber-500/70')}>
+                          {isFolderActive || isFolderExpanded ? (
                             <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" fill="currentColor" fillOpacity=".3" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
                           ) : (
                             <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" fill="currentColor" fillOpacity=".15" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -162,7 +192,7 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                             folderFiles.map((file) => (
                               <button
                                 key={file.id}
-                                onClick={() => navigate(filesBase)}
+                                onClick={() => navigate(`${filesBase}?folder=${folder.id}`)}
                                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-200 hover:bg-gray-800/60 transition-colors text-left"
                                 title={file.file_name}
                               >
@@ -178,13 +208,13 @@ function SidebarProjectTree({ project, isActive }: { project: Project; isActive:
                 );
               })}
 
-              {/* Files link always visible at bottom */}
+              {/* All Files link */}
               <Link
                 to={filesBase}
                 className={cn(
                   'flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-all duration-150',
-                  isFilesActive
-                    ? 'text-blue-300 bg-blue-600/15'
+                  isFilesActive && !activeFolderInUrl
+                    ? 'text-blue-300 bg-blue-600/15 border border-blue-500/20'
                     : 'text-gray-600 hover:text-gray-300 hover:bg-gray-800/60',
                 )}
               >
