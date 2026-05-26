@@ -44,17 +44,11 @@ function SealSVG({ style }: { style?: React.CSSProperties }) {
 
 function SignatureSVG({ style }: { style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 200 70" style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Stylized "Rakshith" cursive signature path */}
-      <path
-        d="M10 50 C20 20 30 10 40 30 C45 40 42 50 38 45 C34 40 36 30 45 28 C55 26 58 35 60 42 C62 50 60 55 55 50 C50 45 52 35 60 32 C70 28 75 40 80 48 C85 56 82 62 78 58 C74 54 76 44 84 40 C94 35 100 48 108 54 C116 60 120 58 125 52 C130 46 128 36 136 34 C146 32 155 45 165 50 C172 54 178 52 185 46 C190 41 192 36 190 50"
-        fill="none"
-        stroke="#111"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <img
+      src="/founder-signature_1.svg"
+      alt="Founder signature"
+      style={{ ...style, objectFit: 'contain' }}
+    />
   );
 }
 
@@ -343,7 +337,7 @@ export function CertificateView({ cert, forExport = false }: Props) {
         gap: py(3),
       }}>
         <SignatureSVG style={{
-          width: forExport ? '130px' : `${(130 / W) * 100}%`,
+          width: forExport ? '200px' : `${(200 / W) * 100}%`,
           height: 'auto',
           marginBottom: py(4),
         }} />
