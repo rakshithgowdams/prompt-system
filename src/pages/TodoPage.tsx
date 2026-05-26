@@ -176,9 +176,9 @@ function Calendar({ selectedDate, onSelectDate, todoDates }: CalendarProps) {
               onClick={() => onSelectDate(dateKey)}
               className={cn(
                 'relative h-12 flex flex-col items-center justify-center gap-0.5 text-sm font-medium transition-all border-b border-r border-ink-100',
-                'hover:bg-ink-50',
+                !isSelected && 'hover:bg-ink-50',
                 isSat && 'border-r-0',
-                isSelected && 'bg-brand-400 hover:bg-brand-500 text-white',
+                isSelected && 'bg-brand-400 text-white',
                 !isSelected && isToday && 'text-brand-500',
                 !isSelected && !isToday && (isSun || isSat ? 'text-ink-400' : 'text-ink-700'),
               )}
