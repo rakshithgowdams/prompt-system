@@ -154,7 +154,7 @@ function DeviceMockup() {
           <div className="flex-1 mx-2 sm:mx-4 min-w-0">
             <div className="bg-white rounded-md border border-ink-300 px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1.5 sm:gap-2 max-w-xs mx-auto">
               <Lock className="w-3 h-3 text-success flex-shrink-0" />
-              <span className="text-xs text-ink-500 truncate">app.aiwithrakshith.tech</span>
+              <span className="text-xs text-ink-500 truncate">promptvault.app</span>
             </div>
           </div>
         </div>
