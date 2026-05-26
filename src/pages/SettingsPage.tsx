@@ -35,10 +35,12 @@ async function uploadWithProgress(
     xhr.send(file);
   });
 }
+import { Bug } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal, ConfirmModal } from '../components/ui/Modal';
 import { Icon } from '../components/ui/Icon';
+import { BugReportModal } from '../components/ui/BugReportModal';
 import { supabase } from '../lib/supabase';
 import { uploadProjectCover, getSignedUrl } from '../lib/storage';
 import { cn, PROJECT_COLORS } from '../lib/utils';
@@ -267,6 +269,7 @@ export function SettingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [showPw, setShowPw] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
 
   // Avatar state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -666,6 +669,23 @@ export function SettingsPage() {
             </button>
           </div>
         </section>
+
+        {/* ── Report a bug ────────────────────────────────────────────── */}
+        <section className="bg-white border border-ink-200 rounded-lg p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ink-900">Report an Issue</p>
+              <p className="text-xs text-ink-500 mt-0.5">Found a bug or something broken? Let us know.</p>
+            </div>
+            <button
+              onClick={() => setBugReportOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-ink-200 text-ink-700 text-sm font-semibold hover:bg-ink-50 transition-colors flex-shrink-0"
+            >
+              <Bug size={16} />
+              Report Bug
+            </button>
+          </div>
+        </section>
       </div>
 
       {/* ── New project modal ──────────────────────────────────────── */}
@@ -766,6 +786,9 @@ export function SettingsPage() {
           project={actionProject}
         />
       )}
+
+      {/* ── Bug report modal ─────────────────────────────────────────── */}
+      <BugReportModal open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
     </>
   );
 }
