@@ -293,6 +293,23 @@ export function CoursePlayerPage() {
   const [completionBanner, setCompletionBanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lessonScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = lessonScrollRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const atTop = scrollTop === 0 && e.deltaY < 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1 && e.deltaY > 0;
+      if (!atTop && !atBottom) {
+        e.stopPropagation();
+      }
+      el.scrollTop += e.deltaY;
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
 
   const triggerCelebration = useCallback(() => {
     setShowConfetti(true);
@@ -693,7 +710,11 @@ export function CoursePlayerPage() {
             <div className="flex flex-1 min-h-0 overflow-hidden">
 
               {/* Scrollable lesson column */}
-              <div className="flex-1 min-w-0 overflow-y-scroll overscroll-contain">
+              <div
+                ref={lessonScrollRef}
+                className="flex-1 min-w-0 overflow-y-auto"
+                style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+              >
 
                 {/* ── Video / media ── */}
                 <div className="flex-shrink-0 bg-gray-950">
