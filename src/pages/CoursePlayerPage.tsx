@@ -247,14 +247,19 @@ export function CoursePlayerPage() {
     if (!activeLesson || !courseId) return;
     const pos = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
     await markComplete.mutateAsync({ lessonId: activeLesson.id, courseId, watchPositionSeconds: pos });
-    const idx = lessons.findIndex((l) => l.id === activeLesson.id);
-    const isLastLesson = idx === lessons.length - 1;
-    if (isLastLesson) {
+
+    // Check if ALL lessons are now complete (not just positional last)
+    const nowCompleted = new Set([...completedIds, activeLesson.id]);
+    const allDone = lessons.length > 0 && nowCompleted.size >= lessons.length;
+
+    if (allDone) {
       toast.success('Course complete! Generating your certificate...', { duration: 3000 });
       setTimeout(() => navigate(`/courses/${courseId}/certificate`), 2000);
     } else {
       toast.success('Lesson marked complete!');
-      setActiveLessonId(lessons[idx + 1].id);
+      const idx = lessons.findIndex((l) => l.id === activeLesson.id);
+      const next = lessons.find((l, i) => i > idx && !nowCompleted.has(l.id));
+      if (next) setActiveLessonId(next.id);
     }
   };
 

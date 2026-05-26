@@ -481,7 +481,7 @@ export function useMarkLessonComplete() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['course-progress', data.course_id] });
       qc.invalidateQueries({ queryKey: ['enrollment', data.course_id] });
-      qc.invalidateQueries({ queryKey: ['my-certificate', data.course_id] });
+      qc.invalidateQueries({ queryKey: ['my-certificate', data.course_id, user?.id] });
     },
   });
 }
@@ -594,6 +594,7 @@ export function useMyCertificate(courseId: string) {
       return data as CourseCertificate | null;
     },
     enabled: !!user && !!courseId,
+    staleTime: 0,
   });
 }
 

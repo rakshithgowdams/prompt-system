@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourse, useMyCertificate } from '../hooks/useCourses';
 import { CertificateView } from '../components/certificate/CertificateView';
@@ -6,36 +6,72 @@ import { CertificateActions } from '../components/certificate/CertificateActions
 import { Icon } from '../components/ui/Icon';
 import { supabase } from '../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../contexts/AuthContext';
 
 export function CertificatePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const { data: course } = useCourse(courseId ?? '');
   const { data: certificate, isLoading } = useMyCertificate(courseId ?? '');
 
-  // Auto-patch any stubs that have empty fields (from legacy flow)
+  const [generating, setGenerating] = useState(false);
+  const retryRef = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // If no cert exists yet, call the RPC as a fallback (handles RPC failures during lesson completion
+  // and students who navigate here directly after finishing a course)
   useEffect(() => {
-    if (!certificate) return;
+    if (!courseId || !user || isLoading) return;
+
+    if (!certificate) {
+      setGenerating(true);
+      retryRef.current = 0;
+
+      const attempt = () => {
+        supabase.rpc('issue_certificate_if_complete', {
+          p_course_id: courseId,
+          p_user_id: user.id,
+        }).then(({ data: certId }) => {
+          if (certId) {
+            qc.invalidateQueries({ queryKey: ['my-certificate', courseId, user.id] });
+            setGenerating(false);
+          } else if (retryRef.current < 4) {
+            // RPC returned null (course not 100% complete yet or transient), retry a few times
+            retryRef.current += 1;
+            retryTimer.current = setTimeout(attempt, 800);
+          } else {
+            setGenerating(false);
+          }
+        }).catch(() => setGenerating(false));
+      };
+
+      attempt();
+      return () => { if (retryTimer.current) clearTimeout(retryTimer.current); };
+    }
+
+    // Cert exists — patch any empty fields silently
     const needsPatch =
       !certificate.department ||
       !certificate.growth_area ||
       !certificate.internship_from ||
       !certificate.internship_to;
-    if (!needsPatch) return;
 
-    supabase.rpc('patch_incomplete_certificate', { p_cert_id: certificate.id })
-      .then(() => {
-        qc.invalidateQueries({ queryKey: ['my-certificate', courseId] });
-      });
-  }, [certificate, courseId, qc]);
+    if (needsPatch) {
+      supabase.rpc('patch_incomplete_certificate', { p_cert_id: certificate.id })
+        .then(() => qc.invalidateQueries({ queryKey: ['my-certificate', courseId, user.id] }));
+    }
+  }, [isLoading, certificate?.id, courseId, user?.id]);
 
-  if (isLoading) {
+  const showSpinner = isLoading || (generating && !certificate);
+
+  if (showSpinner) {
     return (
       <div className="min-h-screen bg-ink-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-ink-500">Loading your certificate...</p>
+          <p className="text-sm text-ink-500">Generating your certificate...</p>
         </div>
       </div>
     );
