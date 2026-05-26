@@ -13,6 +13,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
+import { AuthCallbackPage } from './pages/auth/AuthCallbackPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TermsPage } from './pages/legal/TermsPage';
 import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/refund" element={<RefundPolicyPage />} />

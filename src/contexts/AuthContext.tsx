@@ -8,6 +8,7 @@ interface AuthContextValue {
   loading: boolean;
   emailConfirmed: boolean;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -36,12 +37,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { access_type: 'offline', prompt: 'select_account' },
+      },
+    });
+  };
+
   const user = session?.user ?? null;
   // email_confirmed_at is set when the user clicks the activation link
   const emailConfirmed = !!user?.email_confirmed_at;
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, emailConfirmed, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, emailConfirmed, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );
