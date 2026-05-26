@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -416,26 +416,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: projects } = useProjects();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  // Track the pathname at the time sidebar was opened so we can detect real navigation
+  const openedAtPathname = useRef<string | null>(null);
 
-  // Close sidebar on route change (pathname only — search changes must not re-trigger)
-  useEffect(() => {
+  const closeSidebar = useCallback(() => {
     setSidebarOpen(false);
     setUserMenuOpen(false);
+    openedAtPathname.current = null;
+  }, []);
+
+  const openSidebar = useCallback(() => {
+    openedAtPathname.current = location.pathname;
+    setSidebarOpen(true);
   }, [location.pathname]);
 
-  // Lock body scroll while mobile sidebar is open
+  // Close immediately when the user navigates to a different route
   useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+    if (openedAtPathname.current !== null && location.pathname !== openedAtPathname.current) {
+      closeSidebar();
     }
-    return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
+  }, [location.pathname, closeSidebar]);
 
   const handleSignOut = async () => {
-    setSidebarOpen(false);
-    setUserMenuOpen(false);
+    closeSidebar();
     await signOut();
     navigate('/');
   };
@@ -461,41 +464,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarNav {...sidebarProps} />
       </aside>
 
-      {/* Mobile sidebar overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <>
-            {/* Backdrop — sits behind sidebar, click closes */}
-            <motion.div
-              key="sidebar-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] lg:hidden"
-              onClick={(e) => { e.stopPropagation(); setSidebarOpen(false); }}
-            />
-            {/* Sidebar — sits above backdrop */}
-            <motion.aside
-              key="sidebar-panel"
-              initial={{ x: -288 }}
-              animate={{ x: 0 }}
-              exit={{ x: -288 }}
-              transition={{ type: 'spring', damping: 36, stiffness: 320 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-[70] flex flex-col lg:hidden shadow-2xl"
-            >
-              <SidebarNav {...sidebarProps} onClose={() => setSidebarOpen(false)} />
-            </motion.aside>
-          </>
+      {/* Mobile sidebar — rendered outside of flow, no body scroll locking needed */}
+      {/* Backdrop */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          'lg:hidden fixed inset-0 z-[60] bg-black/50 transition-opacity duration-200',
+          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
-      </AnimatePresence>
+        onClick={closeSidebar}
+      />
+      {/* Sidebar panel — CSS transform so no AnimatePresence timing races */}
+      <aside
+        className={cn(
+          'lg:hidden fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-[70] flex flex-col shadow-2xl',
+          'transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+        aria-label="Navigation menu"
+      >
+        <SidebarNav {...sidebarProps} onClose={closeSidebar} />
+      </aside>
 
       {/* Main content */}
       <div className="flex-1 lg:ml-64 min-w-0 w-full">
         {/* Mobile top bar */}
         <header className="lg:hidden fixed top-0 left-0 right-0 z-20 flex items-center gap-2 px-4 h-14 bg-white border-b border-ink-300">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={openSidebar}
             className="p-2 -ml-1 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
             aria-label="Open menu"
           >
@@ -511,7 +507,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
-        {/* Mobile bottom nav — liquid drop indicator */}
+        {/* Mobile bottom nav */}
         <nav
           className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-ink-300"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -527,21 +523,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   to={item.href}
                   className="flex-1 flex flex-col items-center justify-center pt-3 pb-2 gap-1 min-h-[56px] relative z-10"
                 >
-                  {/* Liquid drop pill — shared layoutId slides between tabs */}
                   {active && (
                     <motion.div
                       layoutId="bottom-nav-pill"
                       className="absolute inset-x-1.5 top-1 bottom-1 rounded-2xl bg-brand-50 border border-brand-100"
                       style={{ zIndex: -1 }}
-                      transition={{
-                        type: 'spring',
-                        stiffness: 380,
-                        damping: 30,
-                        mass: 1,
-                      }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 1 }}
                     />
                   )}
-
                   <motion.div
                     animate={active ? { scale: 1.12, y: -1 } : { scale: 1, y: 0 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 28 }}
@@ -550,20 +539,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       name={item.icon}
                       size={21}
                       fill={active}
-                      className={cn(
-                        'transition-colors duration-200',
-                        active ? 'text-brand-500' : 'text-ink-500',
-                      )}
+                      className={cn('transition-colors duration-200', active ? 'text-brand-500' : 'text-ink-500')}
                     />
                   </motion.div>
-
                   <motion.span
                     animate={{ opacity: active ? 1 : 0.6 }}
                     transition={{ duration: 0.18 }}
-                    className={cn(
-                      'text-[10px] font-bold leading-none',
-                      active ? 'text-brand-500' : 'text-ink-500',
-                    )}
+                    className={cn('text-[10px] font-bold leading-none', active ? 'text-brand-500' : 'text-ink-500')}
                   >
                     {item.label}
                   </motion.span>
