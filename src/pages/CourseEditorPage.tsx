@@ -16,6 +16,23 @@ import type { CourseSection, CourseLesson } from '../hooks/useCourses';
 
 const CATEGORIES = ['General', 'Design', 'Development', 'Marketing', 'Business', 'Photography', 'Music', 'Health', 'Other'];
 
+// ── Safe filename helper ──────────────────────────────────────────────────────
+
+function safeName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+}
+
+// ── Spinner ───────────────────────────────────────────────────────────────────
+
+function Spinner({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} className="animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
+
 // ── Cover upload ──────────────────────────────────────────────────────────────
 
 function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
@@ -26,6 +43,7 @@ function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
   const { user } = useAuth();
   const [url, setUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -36,46 +54,71 @@ function CourseCoverUpload({ courseId, currentPath, onUploaded }: {
   }, [currentPath]);
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) { toast.error('Images only'); return; }
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10 MB'); return; }
     setUploading(true);
+    setProgress(0);
     try {
-      const ext = file.name.split('.').pop();
-      const path = `covers/${user!.id}/${courseId}.${ext}`;
-      const { error } = await supabase.storage.from('prompt-media').upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data } = await supabase.storage.from('prompt-media').createSignedUrl(path, 3600);
-      if (data?.signedUrl) setUrl(data.signedUrl);
+      const ext = file.name.split('.').pop() ?? 'jpg';
+      // uid is first segment so storage policy matches
+      const path = `${user!.id}/course-covers/${courseId}.${ext}`;
+      setProgress(30);
+      const { error } = await supabase.storage.from('prompt-media').upload(path, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+      if (error) throw new Error(error.message);
+      setProgress(80);
+      const { data: signed, error: signErr } = await supabase.storage
+        .from('prompt-media').createSignedUrl(path, 3600);
+      if (signErr) throw new Error(signErr.message);
+      setProgress(100);
+      if (signed?.signedUrl) setUrl(signed.signedUrl);
       onUploaded(path);
-      toast.success('Cover updated');
-    } catch { toast.error('Upload failed'); }
-    finally { setUploading(false); }
+      toast.success('Cover image uploaded!');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      setProgress(0);
+    }
   };
 
   return (
     <div
       className="relative aspect-video w-full rounded-2xl overflow-hidden bg-gray-800 border-2 border-dashed border-gray-700 hover:border-blue-500/50 transition-colors cursor-pointer group"
-      onClick={() => inputRef.current?.click()}
+      onClick={() => !uploading && inputRef.current?.click()}
     >
       {url ? (
         <img src={url} alt="Cover" className="w-full h-full object-cover" />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-500">
           <Icon name="add_photo_alternate" size={32} />
-          <span className="text-sm">Click to upload cover image</span>
+          <span className="text-sm font-medium">Click to upload cover image</span>
+          <span className="text-xs text-gray-600">JPG, PNG, WEBP · Max 10 MB</span>
         </div>
       )}
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-sm font-medium">
+      {/* Hover / uploading overlay */}
+      <div className={`absolute inset-0 bg-black/60 transition-opacity flex flex-col items-center justify-center gap-2 text-white ${uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         {uploading ? (
-          <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
+          <>
+            <Spinner size={24} />
+            <span className="text-sm font-medium">Uploading… {progress}%</span>
+            <div className="w-32 h-1 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            </div>
+          </>
         ) : (
-          <><Icon name="upload" size={16} /> Change Cover</>
+          <><Icon name="upload" size={18} /><span className="text-sm font-medium">Change Cover</span></>
         )}
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
     </div>
   );
 }
@@ -105,34 +148,60 @@ function LessonEditor({
   const [isPreview, setIsPreview] = useState(lesson.is_preview);
   const [durationMin, setDurationMin] = useState(String(lesson.video_duration_minutes || ''));
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [resources, setResources] = useState(lesson.resources ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resInputRef = useRef<HTMLInputElement>(null);
 
   const handleVideoUpload = async (file: File) => {
+    if (!file.type.startsWith('video/')) { toast.error('Please select a video file'); return; }
+    const MAX_VIDEO = 500 * 1024 * 1024;
+    if (file.size > MAX_VIDEO) { toast.error('Video must be under 500 MB'); return; }
     setUploading(true);
+    setUploadProgress(10);
     try {
-      const path = `courses/${user!.id}/${lesson.course_id}/lessons/${lesson.id}/${file.name}`;
-      const { error } = await supabase.storage.from('prompt-media').upload(path, file, { upsert: true });
-      if (error) throw error;
+      const path = `${user!.id}/courses/${lesson.course_id}/lessons/${lesson.id}/${safeName(file.name)}`;
+      setUploadProgress(30);
+      const { error } = await supabase.storage.from('prompt-media').upload(path, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+      if (error) throw new Error(error.message);
+      setUploadProgress(100);
       onSave({ video_path: path, title, description, lesson_type: lessonType, content, is_preview: isPreview, video_duration_minutes: parseFloat(durationMin) || 0 });
       toast.success('Video uploaded');
-    } catch { toast.error('Upload failed'); }
-    finally { setUploading(false); }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleResourceUpload = async (file: File) => {
+    const MAX_RES = 100 * 1024 * 1024;
+    if (file.size > MAX_RES) { toast.error('Resource file must be under 100 MB'); return; }
     setUploading(true);
+    setUploadProgress(10);
     try {
-      const path = `courses/${user!.id}/${lesson.course_id}/resources/${lesson.id}/${file.name}`;
-      const { error } = await supabase.storage.from('prompt-media').upload(path, file, { upsert: true });
-      if (error) throw error;
+      const path = `${user!.id}/courses/${lesson.course_id}/resources/${lesson.id}/${safeName(file.name)}`;
+      setUploadProgress(30);
+      const { error } = await supabase.storage.from('prompt-media').upload(path, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+      if (error) throw new Error(error.message);
+      setUploadProgress(100);
       const newRes = [...resources, { name: file.name, path, size: file.size, mime_type: file.type }];
       setResources(newRes);
       onSave({ resources: newRes });
       toast.success('Resource uploaded');
-    } catch { toast.error('Upload failed'); }
-    finally { setUploading(false); }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const removeResource = (idx: number) => {
@@ -213,15 +282,20 @@ function LessonEditor({
                     placeholder="YouTube / Vimeo URL" />
                 </div>
                 <p className="text-xs text-gray-600 text-center">or</p>
-                <button onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-10 border border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-2">
+                <button onClick={() => !uploading && fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full border border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-xs text-gray-500 hover:text-gray-300 transition-colors flex flex-col items-center justify-center gap-1.5 py-3 disabled:opacity-60 disabled:cursor-not-allowed">
                   {uploading ? (
-                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : <Icon name="upload" size={14} />}
-                  Upload Video File
+                    <>
+                      <Spinner size={14} />
+                      <span>Uploading… {uploadProgress}%</span>
+                      <div className="w-28 h-1 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                      </div>
+                    </>
+                  ) : (
+                    <><Icon name="upload" size={14} /><span>Upload Video File · Max 500 MB</span></>
+                  )}
                 </button>
                 <input ref={fileInputRef} type="file" accept="video/*" className="hidden"
                   onChange={(e) => e.target.files?.[0] && handleVideoUpload(e.target.files[0])} />
@@ -268,15 +342,20 @@ function LessonEditor({
         {tab === 'resources' && (
           <div className="space-y-3">
             <p className="text-xs text-gray-500">Attach downloadable files (PDFs, ZIPs, code, etc.)</p>
-            <button onClick={() => resInputRef.current?.click()}
-              className="w-full h-10 border border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-2">
+            <button onClick={() => !uploading && resInputRef.current?.click()}
+              disabled={uploading}
+              className="w-full border border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-xs text-gray-500 hover:text-gray-300 transition-colors flex flex-col items-center justify-center gap-1.5 py-3 disabled:opacity-60 disabled:cursor-not-allowed">
               {uploading ? (
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-              ) : <Icon name="attach_file" size={14} />}
-              Upload Resource File
+                <>
+                  <Spinner size={14} />
+                  <span>Uploading… {uploadProgress}%</span>
+                  <div className="w-28 h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                </>
+              ) : (
+                <><Icon name="attach_file" size={14} /><span>Upload Resource · Max 100 MB</span></>
+              )}
             </button>
             <input ref={resInputRef} type="file" className="hidden"
               onChange={(e) => e.target.files?.[0] && handleResourceUpload(e.target.files[0])} />
