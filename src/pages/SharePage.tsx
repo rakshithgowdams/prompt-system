@@ -109,6 +109,8 @@ function AuthModal({
 }) {
   const [tab, setTab] = useState<'login' | 'signup'>('signup');
   const [showPw, setShowPw] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupDone, setSignupDone] = useState(false);
   const navigate = useNavigate();
 
   const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
@@ -122,12 +124,15 @@ function AuthModal({
   };
 
   const handleSignup = async (data: SignupForm) => {
-    const { error } = await supabase.auth.signUp({ email: data.email, password: data.password });
+    const redirectTo = `${window.location.origin}/verify-email`;
+    const { error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: { emailRedirectTo: redirectTo },
+    });
     if (error) { toast.error(error.message); return; }
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
-    if (loginError) { toast.error('Account created — please sign in.'); setTab('login'); return; }
-    toast.success('Account created!');
-    onSuccess();
+    setSignupEmail(data.email);
+    setSignupDone(true);
   };
 
   const reasonText = reason === 'download'
@@ -157,137 +162,186 @@ function AuthModal({
           <div className="w-10 h-1 rounded-full bg-gray-700" />
         </div>
 
-        {/* Header */}
-        <div className="px-6 pt-4 pb-5 border-b border-gray-800">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Icon name="lock" size={13} className="text-white" fill />
-                </div>
-                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">PromptVault</span>
+        <AnimatePresence mode="wait" initial={false}>
+          {signupDone ? (
+            /* ── Check-email state inside modal ── */
+            <motion.div
+              key="check-email"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="px-6 py-7 text-center"
+            >
+              <div className="w-16 h-16 bg-blue-500/10 border-2 border-blue-500/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Icon name="mark_email_unread" size={30} className="text-blue-400" />
               </div>
-              <h2 className="text-lg font-bold text-white">
-                {tab === 'login' ? 'Sign in to continue' : 'Create a free account'}
-              </h2>
-              <p className="text-sm text-gray-400 mt-0.5">{reasonText}</p>
-            </div>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors flex-shrink-0 mt-0.5">
-              <Icon name="close" size={18} />
-            </button>
-          </div>
-
-          {/* Tab switcher */}
-          <div className="flex mt-4 bg-gray-800 rounded-xl p-1 gap-1">
-            {(['signup', 'login'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={cn(
-                  'flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                  tab === t ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200',
-                )}
-              >
-                {t === 'signup' ? 'Create Account' : 'Sign In'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Forms */}
-        <div className="px-6 py-5">
-          <AnimatePresence mode="wait" initial={false}>
-            {tab === 'login' ? (
-              <motion.form
-                key="login"
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.15 }}
-                onSubmit={loginForm.handleSubmit(handleLogin)}
-                className="space-y-4"
-              >
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="you@example.com"
-                  error={loginForm.formState.errors.email?.message}
-                  autoComplete="email"
-                  {...loginForm.register('email')}
-                />
-                <div className="relative">
-                  <Input
-                    label="Password"
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    error={loginForm.formState.errors.password?.message}
-                    autoComplete="current-password"
-                    className="pr-11"
-                    {...loginForm.register('password')}
-                  />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 bottom-0 h-11 text-gray-400 hover:text-gray-200">
-                    <Icon name={showPw ? 'visibility_off' : 'visibility'} size={17} />
-                  </button>
-                </div>
-                <div className="flex justify-end">
-                  <button type="button" onClick={() => navigate('/forgot-password')} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                    Forgot password?
-                  </button>
-                </div>
-                <Button type="submit" className="w-full" size="lg" loading={loginForm.formState.isSubmitting}>
-                  Sign In
-                </Button>
-              </motion.form>
-            ) : (
-              <motion.form
-                key="signup"
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 12 }}
-                transition={{ duration: 0.15 }}
-                onSubmit={signupForm.handleSubmit(handleSignup)}
-                className="space-y-4"
-              >
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="you@example.com"
-                  error={signupForm.formState.errors.email?.message}
-                  autoComplete="email"
-                  {...signupForm.register('email')}
-                />
-                <div className="relative">
-                  <Input
-                    label="Password"
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Min. 8 characters"
-                    error={signupForm.formState.errors.password?.message}
-                    autoComplete="new-password"
-                    className="pr-11"
-                    {...signupForm.register('password')}
-                  />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 bottom-0 h-11 text-gray-400 hover:text-gray-200">
-                    <Icon name={showPw ? 'visibility_off' : 'visibility'} size={17} />
-                  </button>
-                </div>
-                <Input
-                  label="Confirm Password"
-                  type="password"
-                  placeholder="Repeat your password"
-                  error={signupForm.formState.errors.confirm?.message}
-                  autoComplete="new-password"
-                  {...signupForm.register('confirm')}
-                />
-                <Button type="submit" className="w-full" size="lg" loading={signupForm.formState.isSubmitting}>
-                  Create Free Account
-                </Button>
-                <p className="text-center text-xs text-gray-500">
-                  Free forever. No credit card required.
+              <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
+              <p className="text-sm text-gray-400 mb-3">We sent an activation link to</p>
+              <div className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl mb-5">
+                <Icon name="email" size={13} className="text-blue-400 flex-shrink-0" />
+                <span className="text-sm font-semibold text-white break-all">{signupEmail}</span>
+              </div>
+              <div className="space-y-2 mb-6 text-left">
+                {[
+                  { icon: 'inbox',   text: 'Open your email inbox' },
+                  { icon: 'search',  text: 'Check Spam or Promotions if missing' },
+                  { icon: 'verified',text: 'Click the activation link' },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-800/60 rounded-xl border border-gray-700/50">
+                    <div className="w-7 h-7 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      <Icon name={s.icon} size={13} className="text-gray-300" />
+                    </div>
+                    <p className="text-xs text-gray-300">{s.text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl text-left mb-4">
+                <Icon name="info" size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-200/80 leading-relaxed">
+                  Link expires in <span className="font-semibold">24 hours</span>. Check <span className="text-amber-300 font-medium">Spam</span> if not in inbox.
                 </p>
-              </motion.form>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+              <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+                Close and continue browsing
+              </button>
+            </motion.div>
+          ) : (
+            /* ── Login / signup forms ── */
+            <motion.div key="forms" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {/* Header */}
+              <div className="px-6 pt-4 pb-5 border-b border-gray-800">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <Icon name="lock" size={13} className="text-white" fill />
+                      </div>
+                      <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">PromptVault</span>
+                    </div>
+                    <h2 className="text-lg font-bold text-white">
+                      {tab === 'login' ? 'Sign in to continue' : 'Create a free account'}
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-0.5">{reasonText}</p>
+                  </div>
+                  <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors flex-shrink-0 mt-0.5">
+                    <Icon name="close" size={18} />
+                  </button>
+                </div>
+
+                {/* Tab switcher */}
+                <div className="flex mt-4 bg-gray-800 rounded-xl p-1 gap-1">
+                  {(['signup', 'login'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={cn(
+                        'flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150',
+                        tab === t ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200',
+                      )}
+                    >
+                      {t === 'signup' ? 'Create Account' : 'Sign In'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Forms */}
+              <div className="px-6 py-5">
+                <AnimatePresence mode="wait" initial={false}>
+                  {tab === 'login' ? (
+                    <motion.form
+                      key="login"
+                      initial={{ opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -12 }}
+                      transition={{ duration: 0.15 }}
+                      onSubmit={loginForm.handleSubmit(handleLogin)}
+                      className="space-y-4"
+                    >
+                      <Input
+                        label="Email"
+                        type="email"
+                        placeholder="you@example.com"
+                        error={loginForm.formState.errors.email?.message}
+                        autoComplete="email"
+                        {...loginForm.register('email')}
+                      />
+                      <div className="relative">
+                        <Input
+                          label="Password"
+                          type={showPw ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          error={loginForm.formState.errors.password?.message}
+                          autoComplete="current-password"
+                          className="pr-11"
+                          {...loginForm.register('password')}
+                        />
+                        <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 bottom-0 h-11 text-gray-400 hover:text-gray-200">
+                          <Icon name={showPw ? 'visibility_off' : 'visibility'} size={17} />
+                        </button>
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="button" onClick={() => navigate('/forgot-password')} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                          Forgot password?
+                        </button>
+                      </div>
+                      <Button type="submit" className="w-full" size="lg" loading={loginForm.formState.isSubmitting}>
+                        Sign In
+                      </Button>
+                    </motion.form>
+                  ) : (
+                    <motion.form
+                      key="signup"
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 12 }}
+                      transition={{ duration: 0.15 }}
+                      onSubmit={signupForm.handleSubmit(handleSignup)}
+                      className="space-y-4"
+                    >
+                      <Input
+                        label="Email"
+                        type="email"
+                        placeholder="you@example.com"
+                        error={signupForm.formState.errors.email?.message}
+                        autoComplete="email"
+                        {...signupForm.register('email')}
+                      />
+                      <div className="relative">
+                        <Input
+                          label="Password"
+                          type={showPw ? 'text' : 'password'}
+                          placeholder="Min. 8 characters"
+                          error={signupForm.formState.errors.password?.message}
+                          autoComplete="new-password"
+                          className="pr-11"
+                          {...signupForm.register('password')}
+                        />
+                        <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 bottom-0 h-11 text-gray-400 hover:text-gray-200">
+                          <Icon name={showPw ? 'visibility_off' : 'visibility'} size={17} />
+                        </button>
+                      </div>
+                      <Input
+                        label="Confirm Password"
+                        type="password"
+                        placeholder="Repeat your password"
+                        error={signupForm.formState.errors.confirm?.message}
+                        autoComplete="new-password"
+                        {...signupForm.register('confirm')}
+                      />
+                      <Button type="submit" className="w-full" size="lg" loading={signupForm.formState.isSubmitting}>
+                        Create Free Account
+                      </Button>
+                      <p className="text-center text-xs text-gray-500">
+                        Free forever · No credit card required
+                      </p>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
