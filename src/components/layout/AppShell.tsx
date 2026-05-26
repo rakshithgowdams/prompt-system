@@ -283,13 +283,22 @@ function SidebarNav({
 }) {
   return (
     <>
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-ink-300 flex-shrink-0">
+      <div className="flex items-center justify-between gap-2 px-4 py-4 border-b border-ink-300 flex-shrink-0">
         <Link to="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
           <div className="w-7 h-7 bg-brand-400 rounded-md flex items-center justify-center flex-shrink-0">
             <Icon name="bolt" size={15} className="text-white" fill />
           </div>
           <span className="font-extrabold text-ink-900 text-base tracking-tight">aiwithrakshith.tech</span>
         </Link>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
+            aria-label="Close menu"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto overscroll-contain">
@@ -441,13 +450,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               transition={{ type: 'spring', damping: 32, stiffness: 260 }}
               className="fixed inset-y-0 left-0 w-72 bg-white border-r border-ink-300 z-50 flex flex-col lg:hidden shadow-2xl"
             >
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="absolute top-4 right-4 p-2 rounded-md hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
-                aria-label="Close menu"
-              >
-                <Icon name="close" size={18} />
-              </button>
               <SidebarNav {...sidebarProps} onClose={() => setSidebarOpen(false)} />
             </motion.aside>
           </>
