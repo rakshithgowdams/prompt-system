@@ -333,7 +333,7 @@ function SidebarNav({
 
         {projects && projects.length > 0 && (
           <>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-ink-500 px-3 pt-4 pb-1.5">Projects</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-ink-500 px-3 pt-4 pb-1.5">Mini Drive</p>
             <div className="space-y-1">
               {projects.map((project) => (
                 <SidebarProjectTree
