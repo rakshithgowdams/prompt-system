@@ -868,23 +868,25 @@ export function CourseEditorPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button onClick={handlePublish}
-            className={cn('px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors',
+            className={cn('flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold border transition-colors',
               course.is_published
-                ? 'border-ink-300 text-ink-500 hover:border-ink-300 hover:text-ink-900'
+                ? 'border-ink-300 text-ink-500 hover:border-ink-400 hover:text-ink-900'
                 : 'border-emerald-500/50 text-success hover:bg-green-50'
             )}>
-            {course.is_published ? 'Unpublish' : 'Publish'}
+            <Icon name={course.is_published ? 'unpublished' : 'publish'} size={15} className="flex-shrink-0" />
+            <span className="hidden sm:inline">{course.is_published ? 'Unpublish' : 'Publish'}</span>
           </button>
           <button onClick={() => setShareOpen(true)}
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-teal-600/20 text-teal-300 border border-teal-500/30 hover:bg-teal-600/30 transition-colors flex items-center gap-1.5">
-            <Icon name="share" size={13} />
-            Share
+            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold bg-teal-600/20 text-teal-300 border border-teal-500/30 hover:bg-teal-600/30 transition-colors">
+            <Icon name="share" size={15} className="flex-shrink-0" />
+            <span className="hidden sm:inline">Share</span>
           </button>
           <button onClick={() => navigate(`/courses/${course.id}/learn`)}
-            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-brand-50 text-brand-400 border border-brand-100 hover:bg-brand-50 transition-colors">
-            Preview
+            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold bg-brand-50 text-brand-400 border border-brand-100 hover:bg-brand-100 transition-colors">
+            <Icon name="play_circle" size={15} className="flex-shrink-0" />
+            <span className="hidden sm:inline">Preview</span>
           </button>
         </div>
       </div>
