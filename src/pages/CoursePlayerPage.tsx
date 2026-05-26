@@ -293,23 +293,6 @@ export function CoursePlayerPage() {
   const [completionBanner, setCompletionBanner] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lessonScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = lessonScrollRef.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      const atTop = scrollTop === 0 && e.deltaY < 0;
-      const atBottom = scrollTop + clientHeight >= scrollHeight - 1 && e.deltaY > 0;
-      if (!atTop && !atBottom) {
-        e.stopPropagation();
-      }
-      el.scrollTop += e.deltaY;
-    };
-    el.addEventListener('wheel', handler, { passive: false });
-    return () => el.removeEventListener('wheel', handler);
-  }, []);
 
   const triggerCelebration = useCallback(() => {
     setShowConfetti(true);
@@ -545,7 +528,7 @@ export function CoursePlayerPage() {
   // ── Page structure: fixed header + fixed-height body ─────────────────────
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white overflow-hidden">
+    <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
 
       {/* Overlays */}
       <ConfettiBlast active={showConfetti} />
@@ -646,8 +629,8 @@ export function CoursePlayerPage() {
         </header>
       </div>
 
-      {/* ── Body (fills remaining height, no overflow on wrapper) ────────────── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* ── Body ─────────────────────────────────────────────────────────────── */}
+      <div className="flex min-h-0" style={{ flex: '1 1 0', overflow: 'hidden' }}>
 
         {/* Desktop sidebar */}
         <AnimatePresence initial={false}>
@@ -693,7 +676,7 @@ export function CoursePlayerPage() {
         </AnimatePresence>
 
         {/* ── Main content ──────────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-ink-50">
+        <div className="flex-1 min-w-0 flex flex-col bg-ink-50" style={{ minWidth: 0, overflow: 'hidden' }}>
 
           {/* Enrollment banner */}
           {!enrollment && !isOwner && (
@@ -707,14 +690,10 @@ export function CoursePlayerPage() {
           )}
 
           {activeLesson && canAccess ? (
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex" style={{ flex: '1 1 0', minHeight: 0 }}>
 
               {/* Scrollable lesson column */}
-              <div
-                ref={lessonScrollRef}
-                className="flex-1 min-w-0 overflow-y-auto"
-                style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
-              >
+              <div className="flex-1 min-w-0" style={{ overflowY: 'auto', overscrollBehavior: 'contain' }}>
 
                 {/* ── Video / media ── */}
                 <div className="flex-shrink-0 bg-gray-950">
