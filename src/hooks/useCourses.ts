@@ -575,3 +575,87 @@ export function useAllMyCertificates() {
     enabled: !!user,
   });
 }
+
+// ── Course Shares ─────────────────────────────────────────────────────────────
+
+export interface CourseShare {
+  id: string;
+  course_id: string;
+  user_id: string;
+  share_name: string;
+  access_type: 'public' | 'password';
+  password_hash: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  view_count: number;
+  created_at: string;
+}
+
+export function useCourseShares(courseId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['course-shares', courseId, user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_shares')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as CourseShare[];
+    },
+    enabled: !!user && !!courseId,
+  });
+}
+
+export function useCreateCourseShare() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      course_id: string;
+      share_name: string;
+      access_type: 'public' | 'password';
+      password_hash?: string | null;
+      expires_at?: string | null;
+    }) => {
+      const { data, error } = await supabase
+        .from('course_shares')
+        .insert({ ...input, user_id: user!.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as CourseShare;
+    },
+    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['course-shares', data.course_id] }),
+  });
+}
+
+export function useDeleteCourseShare() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, courseId }: { id: string; courseId: string }) => {
+      const { error } = await supabase.from('course_shares').delete().eq('id', id);
+      if (error) throw error;
+      return courseId;
+    },
+    onSuccess: (courseId) => qc.invalidateQueries({ queryKey: ['course-shares', courseId] }),
+  });
+}
+
+export function useToggleCourseShare() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, courseId, is_active }: { id: string; courseId: string; is_active: boolean }) => {
+      const { data, error } = await supabase
+        .from('course_shares')
+        .update({ is_active })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return { ...(data as CourseShare), courseId };
+    },
+    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['course-shares', data.course_id] }),
+  });
+}

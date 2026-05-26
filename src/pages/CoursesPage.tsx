@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
+import { CourseShareModal } from '../components/courses/CourseShareModal';
 import { cn, formatRelative } from '../lib/utils';
 import type { Course } from '../hooks/useCourses';
 
@@ -49,6 +50,7 @@ function CourseCard({
   onOpen,
   onEdit,
   onDelete,
+  onShare,
 }: {
   course: Course;
   isEnrolled: boolean;
@@ -57,6 +59,7 @@ function CourseCard({
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onShare: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -100,6 +103,10 @@ function CourseCard({
                     <button onClick={() => { setMenuOpen(false); onEdit(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
                       <Icon name="edit" size={13} /> Edit Course
+                    </button>
+                    <button onClick={() => { setMenuOpen(false); onShare(); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
+                      <Icon name="share" size={13} /> Share Course
                     </button>
                     <button onClick={() => { setMenuOpen(false); onDelete(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
@@ -285,6 +292,7 @@ export function CoursesPage() {
   const [category, setCategory] = useState('All');
   const [level, setLevel] = useState('All');
   const [newCourseOpen, setNewCourseOpen] = useState(false);
+  const [sharingCourse, setSharingCourse] = useState<Course | null>(null);
 
   const enrolledIds = new Set(enrollments.map((e) => e.course_id));
   const myIds = new Set(myCourses.map((c) => c.id));
@@ -461,6 +469,7 @@ export function CoursesPage() {
                 onOpen={() => navigate(`/courses/${course.id}/learn`)}
                 onEdit={() => navigate(`/courses/${course.id}/edit`)}
                 onDelete={() => handleDelete(course.id)}
+                onShare={() => setSharingCourse(course)}
               />
             ))}
           </div>
@@ -473,6 +482,17 @@ export function CoursesPage() {
             open={newCourseOpen}
             onClose={() => setNewCourseOpen(false)}
             onCreate={(id) => { setNewCourseOpen(false); navigate(`/courses/${id}/edit`); }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {sharingCourse && (
+          <CourseShareModal
+            open={!!sharingCourse}
+            courseId={sharingCourse.id}
+            courseTitle={sharingCourse.title}
+            onClose={() => setSharingCourse(null)}
           />
         )}
       </AnimatePresence>

@@ -29,6 +29,7 @@ const CoursesPage       = lazy(() => import('./pages/CoursesPage').then((m) => (
 const CourseEditorPage  = lazy(() => import('./pages/CourseEditorPage').then((m) => ({ default: m.CourseEditorPage })));
 const CoursePlayerPage  = lazy(() => import('./pages/CoursePlayerPage').then((m) => ({ default: m.CoursePlayerPage })));
 const CertificatePage   = lazy(() => import('./pages/CertificatePage').then((m) => ({ default: m.CertificatePage })));
+const CourseSharePage   = lazy(() => import('./pages/CourseSharePage').then((m) => ({ default: m.CourseSharePage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,8 +67,9 @@ export default function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-              {/* Public share page — no auth required */}
+              {/* Public share pages — no auth required */}
               <Route path="/share/:shareId" element={<SharePage />} />
+              <Route path="/courses/share/:shareId" element={<CourseSharePage />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />

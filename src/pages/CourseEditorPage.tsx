@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
+import { CourseShareModal } from '../components/courses/CourseShareModal';
 import type { CourseSection, CourseLesson } from '../hooks/useCourses';
 
 const CATEGORIES = ['General', 'Design', 'Development', 'Marketing', 'Business', 'Photography', 'Music', 'Health', 'Other'];
@@ -412,6 +413,7 @@ export function CourseEditorPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [editingLesson, setEditingLesson] = useState<CourseLesson | null>(null);
   const [saving, setSaving] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Course fields
   const [title, setTitle] = useState('');
@@ -555,6 +557,11 @@ export function CourseEditorPage() {
                 : 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10'
             )}>
             {course.is_published ? 'Unpublish' : 'Publish'}
+          </button>
+          <button onClick={() => setShareOpen(true)}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-teal-600/20 text-teal-300 border border-teal-500/30 hover:bg-teal-600/30 transition-colors flex items-center gap-1.5">
+            <Icon name="share" size={13} />
+            Share
           </button>
           <button onClick={() => navigate(`/courses/${course.id}/learn`)}
             className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition-colors">
@@ -837,6 +844,13 @@ export function CourseEditorPage() {
           </div>
         )}
       </div>
+
+      <CourseShareModal
+        open={shareOpen}
+        courseId={course.id}
+        courseTitle={course.title}
+        onClose={() => setShareOpen(false)}
+      />
     </div>
   );
 }
