@@ -824,3 +824,86 @@ export function useToggleCourseShare() {
     onSuccess: (data) => qc.invalidateQueries({ queryKey: ['course-shares', data.course_id] }),
   });
 }
+
+// ── Lesson Comments ───────────────────────────────────────────────────────────
+
+export interface LessonComment {
+  id: string;
+  lesson_id: string;
+  course_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  rating: number | null;
+  created_at: string;
+  updated_at: string;
+  // joined
+  user_email?: string;
+  user_display_name?: string;
+  user_avatar_url?: string;
+}
+
+export function useLessonComments(lessonId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['lesson-comments', lessonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lesson_comments')
+        .select('*')
+        .eq('lesson_id', lessonId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const comments = (data ?? []) as LessonComment[];
+
+      // Fetch profiles for all unique user_ids
+      const userIds = [...new Set(comments.map((c) => c.user_id))];
+      if (userIds.length === 0) return comments;
+      const { data: profiles } = await supabase
+        .from('user_profiles')
+        .select('id, display_name, avatar_url')
+        .in('id', userIds);
+      const profileMap = new Map((profiles ?? []).map((p: { id: string; display_name?: string; avatar_url?: string }) => [p.id, p]));
+      return comments.map((c) => {
+        const p = profileMap.get(c.user_id) as { display_name?: string; avatar_url?: string } | undefined;
+        return { ...c, user_display_name: p?.display_name ?? null, user_avatar_url: p?.avatar_url ?? null };
+      });
+    },
+    enabled: !!user && !!lessonId,
+  });
+}
+
+export function useCreateLessonComment() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      lesson_id: string;
+      course_id: string;
+      content: string;
+      rating?: number | null;
+      parent_id?: string | null;
+    }) => {
+      const { data, error } = await supabase
+        .from('lesson_comments')
+        .insert({ ...input, user_id: user!.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as LessonComment;
+    },
+    onSuccess: (data) => qc.invalidateQueries({ queryKey: ['lesson-comments', data.lesson_id] }),
+  });
+}
+
+export function useDeleteLessonComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, lessonId }: { id: string; lessonId: string }) => {
+      const { error } = await supabase.from('lesson_comments').delete().eq('id', id);
+      if (error) throw error;
+      return lessonId;
+    },
+    onSuccess: (lessonId) => qc.invalidateQueries({ queryKey: ['lesson-comments', lessonId] }),
+  });
+}
