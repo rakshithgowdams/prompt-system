@@ -95,7 +95,7 @@ function useSignedUrls(mediaFiles: MediaFile[]) {
   return { urls, loading };
 }
 
-// ── Image Carousel (used inside detail modal) ─────────────────────────────────
+// ── Image Carousel ────────────────────────────────────────────────────────────
 
 function ImageCarousel({
   images,
@@ -107,12 +107,30 @@ function ImageCarousel({
   loading: boolean;
 }) {
   const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1); // 1 = next, -1 = prev
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => { setActive(0); }, [images.length]);
 
-  const prev = useCallback(() => setActive((i) => (i - 1 + images.length) % images.length), [images.length]);
-  const next = useCallback(() => setActive((i) => (i + 1) % images.length), [images.length]);
+  const prev = useCallback(() => {
+    setDirection(-1);
+    setActive((i) => (i - 1 + images.length) % images.length);
+  }, [images.length]);
+
+  const next = useCallback(() => {
+    setDirection(1);
+    setActive((i) => (i + 1) % images.length);
+  }, [images.length]);
+
+  // Touch swipe support
+  const touchStartX = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
+    touchStartX.current = null;
+  };
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -129,123 +147,200 @@ function ImageCarousel({
 
   const activeUrl = urls[images[active]?.id];
 
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir * 60, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir * -60, opacity: 0 }),
+  };
+
   return (
     <>
-      <div className="relative bg-black/5 rounded-xl overflow-hidden select-none">
-        {/* Counter */}
-        <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
-          {active + 1} / {images.length}
-        </div>
-
-        {/* Main image */}
+      <div
+        className="relative rounded-2xl overflow-hidden select-none bg-[#111]"
+        style={{ minHeight: 260 }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Image stage */}
         <div
           className="relative cursor-zoom-in"
-          style={{ minHeight: 280 }}
-          onClick={() => setFullscreen(true)}
+          style={{ minHeight: 260 }}
+          onClick={() => activeUrl && setFullscreen(true)}
         >
           {loading ? (
-            <div className="h-72 w-full animate-pulse bg-ink-100 rounded-xl" />
+            <div className="absolute inset-0 animate-pulse bg-ink-100 rounded-2xl" style={{ minHeight: 260 }} />
           ) : activeUrl ? (
-            <motion.img
-              key={active}
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2 }}
-              src={activeUrl}
-              alt={images[active]?.file_name}
-              className="w-full object-contain max-h-80 rounded-xl"
-            />
+            <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+              <motion.img
+                key={active}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.28, ease: [0.32, 0, 0.18, 1] }}
+                src={activeUrl}
+                alt={images[active]?.file_name}
+                className="w-full object-contain rounded-2xl"
+                style={{ maxHeight: 380, display: 'block' }}
+                draggable={false}
+              />
+            </AnimatePresence>
           ) : (
-            <div className="h-72 flex items-center justify-center text-ink-300">
-              <ImageIcon size={32} />
+            <div className="absolute inset-0 flex items-center justify-center text-white/30">
+              <ImageIcon size={36} />
             </div>
           )}
         </div>
 
+        {/* Gradient overlays for buttons */}
+        {images.length > 1 && (
+          <>
+            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/20 to-transparent pointer-events-none rounded-l-2xl" />
+            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/20 to-transparent pointer-events-none rounded-r-2xl" />
+          </>
+        )}
+
+        {/* Counter pill */}
+        <div className="absolute top-3 left-3 z-10 bg-black/55 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full tabular-nums">
+          {active + 1} / {images.length}
+        </div>
+
+        {/* Expand hint */}
+        {activeUrl && (
+          <div className="absolute top-3 right-3 z-10 bg-black/40 backdrop-blur-md text-white/80 text-[10px] px-2 py-1 rounded-full pointer-events-none">
+            tap to expand
+          </div>
+        )}
+
         {/* Prev / Next */}
         {images.length > 1 && (
           <>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); prev(); }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
             >
-              <ChevronLeft size={16} />
-            </button>
-            <button
+              <ChevronLeft size={17} />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
               onClick={(e) => { e.stopPropagation(); next(); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
             >
-              <ChevronRight size={16} />
-            </button>
+              <ChevronRight size={17} />
+            </motion.button>
           </>
+        )}
+
+        {/* Dot indicators */}
+        {images.length > 1 && images.length <= 8 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+            {images.map((_, i) => (
+              <motion.button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setDirection(i > active ? 1 : -1); setActive(i); }}
+                animate={{ width: i === active ? 18 : 6, opacity: i === active ? 1 : 0.5 }}
+                transition={{ duration: 0.22 }}
+                className="h-1.5 rounded-full bg-white"
+                style={{ width: i === active ? 18 : 6 }}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnails strip */}
       {images.length > 1 && (
-        <div className="flex gap-2 mt-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-2 mt-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {images.map((img, i) => (
-            <button
+            <motion.button
               key={img.id}
-              onClick={() => setActive(i)}
+              whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
+              onClick={() => { setDirection(i > active ? 1 : -1); setActive(i); }}
               className={cn(
-                'flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all',
-                i === active ? 'border-ink-900 shadow-md' : 'border-transparent opacity-60 hover:opacity-100',
+                'flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200',
+                i === active
+                  ? 'border-ink-900 shadow-md opacity-100 ring-2 ring-ink-900/20'
+                  : 'border-transparent opacity-50 hover:opacity-80',
               )}
             >
               {urls[img.id] ? (
-                <img src={urls[img.id]} alt="" className="w-full h-full object-cover" />
+                <img src={urls[img.id]} alt="" className="w-full h-full object-cover" draggable={false} />
               ) : (
                 <div className="w-full h-full bg-ink-100 flex items-center justify-center">
                   <ImageIcon size={12} className="text-ink-300" />
                 </div>
               )}
-            </button>
+            </motion.button>
           ))}
         </div>
       )}
 
-      {/* Fullscreen */}
+      {/* Fullscreen lightbox */}
       <AnimatePresence>
         {fullscreen && activeUrl && (
           <motion.div
+            key="fs"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-[200] bg-black/96 flex items-center justify-center"
             onClick={() => setFullscreen(false)}
           >
-            <button
+            {/* Close */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
               onClick={() => setFullscreen(false)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
             >
               <X size={18} />
-            </button>
+            </motion.button>
+
             {images.length > 1 && (
               <>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.1, x: -2 }} whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); prev(); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
                 >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
+                  <ChevronLeft size={20} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, x: 2 }} whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); next(); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
                 >
-                  <ChevronRight size={18} />
-                </button>
+                  <ChevronRight size={20} />
+                </motion.button>
               </>
             )}
-            <img
-              src={activeUrl}
-              alt=""
-              className="max-w-[94vw] max-h-[92vh] object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="absolute bottom-5 text-white/50 text-xs">
+
+            <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+              <motion.img
+                key={active}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: [0.32, 0, 0.18, 1] }}
+                src={activeUrl}
+                alt=""
+                className="max-w-[92vw] max-h-[88vh] object-contain rounded-xl shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+                draggable={false}
+              />
+            </AnimatePresence>
+
+            {/* Counter */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-xs tabular-nums"
+            >
               {active + 1} / {images.length}
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -796,44 +891,52 @@ function MasonryCard({
   const firstImage = images[0];
   const platformMeta = PLATFORM_COLORS[prompt.platform] ?? PLATFORM_COLORS['Other'];
   const { data: stats } = usePromptStats(prompt.id);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.35, delay, ease: [0.22, 1, 0.36, 1] }}
       className="break-inside-avoid mb-3"
     >
-      <div
+      <motion.div
         onClick={onClick}
-        className={cn(
-          'group relative cursor-pointer rounded-2xl overflow-hidden bg-white',
-          'shadow-[0_1px_4px_rgba(0,0,0,0.08)]',
-          'hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)]',
-          'hover:-translate-y-0.5 active:scale-[0.99]',
-          'transition-all duration-200',
-        )}
+        onHoverStart={() => setHovered(true)}
+        onHoverEnd={() => setHovered(false)}
+        whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(0,0,0,0.13)' }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        className="relative cursor-pointer rounded-2xl overflow-hidden bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
+        style={{ willChange: 'transform' }}
       >
         {/* Image */}
         {firstImage ? (
           <div className="relative overflow-hidden">
             {loading ? (
-              <div className="w-full bg-ink-100 animate-pulse" style={{ paddingBottom: '100%' }} />
+              <div className="w-full bg-ink-100 animate-pulse" style={{ paddingBottom: '75%' }} />
             ) : urls[firstImage.id] ? (
-              <img
+              <motion.img
                 src={urls[firstImage.id]}
                 alt={prompt.title}
-                className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                animate={{ scale: hovered ? 1.04 : 1 }}
+                transition={{ duration: 0.4, ease: [0.32, 0, 0.18, 1] }}
+                className="w-full object-cover"
                 loading="lazy"
+                draggable={false}
               />
             ) : (
-              <div className="w-full aspect-square bg-gradient-to-br from-ink-100 to-ink-200 flex items-center justify-center">
+              <div className="w-full aspect-[4/3] bg-gradient-to-br from-ink-100 to-ink-200 flex items-center justify-center">
                 <Sparkles size={20} className="text-ink-300" />
               </div>
             )}
 
-            {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
+            {/* Dark overlay */}
+            <motion.div
+              className="absolute inset-0 bg-black"
+              animate={{ opacity: hovered ? 0.18 : 0 }}
+              transition={{ duration: 0.25 }}
+            />
 
             {/* Multi-image badge */}
             {images.length > 1 && (
@@ -843,10 +946,14 @@ function MasonryCard({
               </div>
             )}
 
-            {/* Bottom overlay on hover */}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* Stats overlay — slides up on hover */}
+            <motion.div
+              className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent px-3 pb-3 pt-8"
+              animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
+              transition={{ duration: 0.22 }}
+            >
               <div className="flex items-center gap-3 text-white">
-                <span className="flex items-center gap-1 text-[11px]">
+                <span className="flex items-center gap-1 text-[11px] font-medium">
                   <Heart size={11} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
                   {formatCount(stats?.like_count ?? 0)}
                 </span>
@@ -859,11 +966,11 @@ function MasonryCard({
                   {formatCount(stats?.comment_count ?? 0)}
                 </span>
               </div>
-            </div>
+            </motion.div>
           </div>
         ) : (
           /* Text-only card */
-          <div className="p-4 bg-gradient-to-br from-ink-50 to-white min-h-[100px] flex flex-col justify-between">
+          <div className="p-4 bg-gradient-to-br from-ink-50 to-white min-h-[110px] flex flex-col justify-between">
             <p className="text-[12px] text-ink-700 leading-relaxed font-mono line-clamp-5">
               {prompt.prompt_text}
             </p>
@@ -883,7 +990,7 @@ function MasonryCard({
         {/* Card footer */}
         <div className="p-3">
           <div className="flex items-start justify-between gap-1.5 mb-1">
-            <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0', platformMeta.pill)}>
+            <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md border flex-shrink-0', platformMeta.pill)}>
               {platformMeta.icon} {prompt.platform}
             </span>
             <span className="text-[10px] text-ink-400 flex-shrink-0 mt-0.5">{timeAgo(prompt.created_at)}</span>
@@ -891,11 +998,9 @@ function MasonryCard({
           <h3 className="font-semibold text-ink-900 text-[12px] leading-snug line-clamp-2 mt-1">
             {prompt.title}
           </h3>
-
-          {/* Stats strip */}
           <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-ink-100 text-[11px] text-ink-400">
             <span className="flex items-center gap-1">
-              <Heart size={10} className={cn('transition-colors', stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
+              <Heart size={10} className={cn(stats?.user_has_liked ? 'fill-red-400 text-red-400' : '')} />
               {formatCount(stats?.like_count ?? 0)}
             </span>
             <span className="flex items-center gap-1">
@@ -908,7 +1013,7 @@ function MasonryCard({
             </span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
