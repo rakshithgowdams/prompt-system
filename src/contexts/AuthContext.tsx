@@ -6,6 +6,7 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  emailConfirmed: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -22,7 +23,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      (() => {
+        setSession(session);
+      })();
     });
 
     return () => subscription.unsubscribe();
@@ -32,8 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const user = session?.user ?? null;
+  // email_confirmed_at is set when the user clicks the activation link
+  const emailConfirmed = !!user?.email_confirmed_at;
+
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, emailConfirmed, signOut }}>
       {children}
     </AuthContext.Provider>
   );

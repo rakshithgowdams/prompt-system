@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AppShell } from './AppShell';
 
 export function ProtectedRoute() {
-  const { session, loading } = useAuth();
+  const { session, loading, emailConfirmed } = useAuth();
 
   if (loading) {
     return (
@@ -17,6 +17,12 @@ export function ProtectedRoute() {
   }
 
   if (!session) return <Navigate to="/login" replace />;
+
+  // Signed in but email not yet confirmed — hold at verify page
+  if (!emailConfirmed) {
+    const email = session.user.email ?? '';
+    return <Navigate to={`/verify-email${email ? `?email=${encodeURIComponent(email)}` : ''}`} replace />;
+  }
 
   return (
     <AppShell>

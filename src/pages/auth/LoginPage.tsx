@@ -20,7 +20,7 @@ type FormData = z.infer<typeof schema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const [showPw, setShowPw] = useState(false);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -29,10 +29,20 @@ export function LoginPage() {
       email: data.email,
       password: data.password,
     });
+
     if (error) {
+      // Email not confirmed — redirect to the verify page with their email so they can resend
+      if (
+        error.message.toLowerCase().includes('email not confirmed') ||
+        error.message.toLowerCase().includes('email_not_confirmed')
+      ) {
+        navigate(`/verify-email?email=${encodeURIComponent(data.email)}&pending=1`, { replace: false });
+        return;
+      }
       toast.error(error.message);
       return;
     }
+
     navigate('/dashboard');
   };
 
