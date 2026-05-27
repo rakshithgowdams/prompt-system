@@ -256,7 +256,7 @@ function ProjectThumb({ project }: { project: Project }) {
 
 // ── Nav constants ─────────────────────────────────────────────────────────────
 
-interface NavItem { label: string; href: string; icon: string }
+interface NavItem { label: string; href: string; icon: string; badge?: string }
 
 const mainNav: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
@@ -264,6 +264,7 @@ const mainNav: NavItem[] = [
   { label: 'Courses', href: '/courses', icon: 'school' },
   { label: 'Certificates / Portfolio', href: '/portfolio', icon: 'workspace_premium' },
   { label: 'Todos', href: '/todos', icon: 'checklist' },
+  { label: 'Image Reducer', href: '/image-reducer', icon: 'photo_size_select_large', badge: 'NEW' },
   { label: 'Password Vault', href: '/vault', icon: 'shield' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
@@ -328,7 +329,12 @@ function SidebarNav({
             )}
           >
             <Icon name={item.icon} size={18} className={isActive(item.href) ? 'text-brand-600' : 'text-ink-500'} fill={isActive(item.href)} />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.badge && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 leading-none">
+                {item.badge}
+              </span>
+            )}
           </Link>
         ))}
 
