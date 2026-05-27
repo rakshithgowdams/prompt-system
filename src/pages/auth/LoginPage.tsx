@@ -44,9 +44,30 @@ export function LoginPage() {
     resolver: zodResolver(schema),
   });
 
+  // Wait up to 3s for the background captcha to auto-resolve before giving up
+  const waitForToken = (): Promise<string | null> =>
+    new Promise((resolve) => {
+      if (captchaToken) { resolve(captchaToken); return; }
+      let waited = 0;
+      const interval = setInterval(() => {
+        waited += 100;
+        if (captchaToken) { clearInterval(interval); resolve(captchaToken); }
+        else if (waited >= 3000) { clearInterval(interval); resolve(null); }
+      }, 100);
+      // Check immediately after setting up the interval too
+      setTimeout(() => {
+        const el = document.querySelector('[data-captcha-token]') as HTMLElement | null;
+        if (el?.dataset.captchaToken) { clearInterval(interval); resolve(el.dataset.captchaToken); }
+      }, 50);
+    });
+
   const onSubmit = async (data: FormData) => {
-    if (!captchaToken) {
-      toast.error('Please complete the security check.');
+    const token = captchaToken ?? await waitForToken();
+
+    if (!token) {
+      toast.error('Security check failed. Please try again.');
+      resetTurnstile();
+      setCaptchaToken(null);
       return;
     }
 
@@ -54,7 +75,7 @@ export function LoginPage() {
     const captchaRes = await fetch(`${supabaseUrl}/functions/v1/verify-login-captcha`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: data.email, captcha_token: captchaToken }),
+      body: JSON.stringify({ email: data.email, captcha_token: token }),
     });
     const captchaData = await captchaRes.json().catch(() => ({}));
     if (!captchaRes.ok || !captchaData.success) {
@@ -80,7 +101,7 @@ export function LoginPage() {
           const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: data.email, captcha_token: captchaToken }),
+            body: JSON.stringify({ email: data.email, captcha_token: token }),
           });
           if (res.ok) {
             toast.info('Account not verified — a new code has been sent to your inbox.');
@@ -107,6 +128,14 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-ink-100 flex items-center justify-center p-4">
+      {/* Invisible Turnstile — verifies silently in background */}
+      <TurnstileWidget
+        action="login"
+        onVerify={setCaptchaToken}
+        onExpire={() => setCaptchaToken(null)}
+        onError={() => setCaptchaToken(null)}
+      />
+
       <div className="w-full max-w-md">
         <div className="bg-white border border-ink-300 rounded-lg p-8 shadow-sm">
           <div className="text-center mb-8">
@@ -180,25 +209,12 @@ export function LoginPage() {
               </Link>
             </div>
 
-            <TurnstileWidget
-              action="login"
-              onVerify={setCaptchaToken}
-              onExpire={() => setCaptchaToken(null)}
-              onError={() => setCaptchaToken(null)}
-              className="flex justify-center"
-            />
-
-            {!captchaToken && (
-              <p className="text-center text-xs text-ink-400">Complete the security check above to continue.</p>
-            )}
-
             <Button
               type="submit"
               variant="primary"
               className="w-full"
               size="lg"
               loading={isSubmitting || sendingOtp}
-              disabled={!captchaToken}
             >
               Sign in
             </Button>

@@ -277,6 +277,13 @@ export function SignupPage() {
   const [openPolicy, setOpenPolicy] = useState<PolicyType | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<string | null>(null);
+
+  // Keep a ref in sync so waitForToken closure always reads current value
+  const handleVerify = (token: string) => {
+    captchaRef.current = token;
+    setCaptchaToken(token);
+  };
 
   const {
     register,
@@ -291,22 +298,39 @@ export function SignupPage() {
 
   const acceptTerms = watch('acceptTerms');
 
+  const waitForToken = (): Promise<string | null> =>
+    new Promise((resolve) => {
+      if (captchaRef.current) { resolve(captchaRef.current); return; }
+      let waited = 0;
+      const interval = setInterval(() => {
+        waited += 100;
+        if (captchaRef.current) { clearInterval(interval); resolve(captchaRef.current); }
+        else if (waited >= 3000) { clearInterval(interval); resolve(null); }
+      }, 100);
+    });
+
   const onSubmit = async (data: FormData) => {
-    if (!captchaToken) {
-      toast.error('Please complete the security check.');
+    const token = captchaRef.current ?? await waitForToken();
+
+    if (!token) {
+      toast.error('Security check failed. Please try again.');
+      resetTurnstile();
+      setCaptchaToken(null);
+      captchaRef.current = null;
       return;
     }
 
     const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: data.email, captcha_token: captchaToken }),
+      body: JSON.stringify({ email: data.email, captcha_token: token }),
     });
     const json = await res.json();
     if (!res.ok || !json.success) {
       toast.error(json.error ?? 'Failed to send verification code');
       resetTurnstile();
       setCaptchaToken(null);
+      captchaRef.current = null;
       return;
     }
     setSubmittedEmail(data.email);
@@ -316,6 +340,14 @@ export function SignupPage() {
 
   return (
     <>
+      {/* Invisible Turnstile — verifies silently in background */}
+      <TurnstileWidget
+        action="signup"
+        onVerify={handleVerify}
+        onExpire={() => { setCaptchaToken(null); captchaRef.current = null; }}
+        onError={() => { setCaptchaToken(null); captchaRef.current = null; }}
+      />
+
       <div className="min-h-screen bg-ink-100 flex items-center justify-center p-4">
         <AnimatePresence mode="wait">
           {otpSent ? (
@@ -452,25 +484,12 @@ export function SignupPage() {
                     )}
                   </div>
 
-                  <TurnstileWidget
-                    action="signup"
-                    onVerify={setCaptchaToken}
-                    onExpire={() => setCaptchaToken(null)}
-                    onError={() => setCaptchaToken(null)}
-                    className="flex justify-center"
-                  />
-
-                  {!captchaToken && (
-                    <p className="text-center text-xs text-ink-400">Complete the security check above to continue.</p>
-                  )}
-
                   <Button
                     type="submit"
                     variant="primary"
                     className="w-full"
                     size="lg"
                     loading={isSubmitting}
-                    disabled={!captchaToken}
                   >
                     <Icon name="send" size={16} />
                     Send Verification Code

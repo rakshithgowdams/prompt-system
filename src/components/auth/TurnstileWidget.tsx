@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Icon } from '../ui/Icon';
 
 declare global {
   interface Window {
@@ -25,7 +27,7 @@ interface TurnstileOptions {
   retry?: 'auto' | 'never';
 }
 
-interface Props {
+export interface TurnstileWidgetProps {
   onVerify: (token: string) => void;
   onError?: () => void;
   onExpire?: () => void;
@@ -34,23 +36,47 @@ interface Props {
   className?: string;
 }
 
-type WidgetState = 'loading' | 'ready' | 'verified' | 'error' | 'expired';
-
 const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
 
-// ── Dev-only bypass widget ────────────────────────────────────────────────────
+// ── Dev bypass — no site key configured ──────────────────────────────────────
 function DevBypassWidget({ onVerify }: { onVerify: (t: string) => void }) {
   useEffect(() => { onVerify('dev-bypass-no-key'); }, [onVerify]);
   return null;
 }
 
-// ── Real Turnstile widget ─────────────────────────────────────────────────────
-function RealTurnstileWidget({ onVerify, onError, onExpire, action, theme = 'auto', className }: Props) {
+// ── Invisible Turnstile (interaction-only) ────────────────────────────────────
+// Renders completely hidden. Cloudflare solves automatically for real users.
+// If it can't auto-solve, it calls onNeedChallenge so the parent can show
+// the challenge container in a modal overlay.
+
+interface InvisibleTurnstileProps extends TurnstileWidgetProps {
+  onNeedChallenge?: () => void;
+  onChallengeResolved?: () => void;
+  /** Ref so the parent can call reset() imperatively */
+  imperativeRef?: React.RefObject<{ reset: () => void }>;
+}
+
+function InvisibleTurnstile({
+  onVerify, onError, onExpire, onNeedChallenge, onChallengeResolved,
+  action, theme = 'light', imperativeRef,
+}: InvisibleTurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [ready, setReady] = useState(!!window.__turnstileReady);
-  const [widgetState, setWidgetState] = useState<WidgetState>('loading');
   const [retryKey, setRetryKey] = useState(0);
+
+  // Expose reset to parent
+  useEffect(() => {
+    if (!imperativeRef) return;
+    (imperativeRef as React.MutableRefObject<{ reset: () => void }>).current = {
+      reset: () => {
+        if (widgetIdRef.current && window.turnstile) {
+          try { window.turnstile.reset(widgetIdRef.current); } catch { /* ignore */ }
+        }
+        onExpire?.();
+      },
+    };
+  });
 
   useEffect(() => {
     if (ready) return;
@@ -60,50 +86,49 @@ function RealTurnstileWidget({ onVerify, onError, onExpire, action, theme = 'aut
       if (window.__turnstileReady) { setReady(true); clearInterval(poll); }
     }, 200);
     const timeout = setTimeout(() => {
-      if (!window.__turnstileReady) setWidgetState('error');
-    }, 8000);
+      if (!window.__turnstileReady) { onError?.(); }
+    }, 10000);
     return () => {
       window.removeEventListener('turnstile:ready', handle);
       clearInterval(poll);
       clearTimeout(timeout);
     };
-  }, [ready, retryKey]);
+  }, [ready, retryKey, onError]);
 
   const renderWidget = useCallback(() => {
     if (!ready || !containerRef.current || !window.turnstile) return;
-
     if (widgetIdRef.current) {
       try { window.turnstile.remove(widgetIdRef.current); } catch { /* ignore */ }
       widgetIdRef.current = null;
     }
-
-    setWidgetState('ready');
-
     const id = window.turnstile.render(containerRef.current, {
       sitekey: SITE_KEY!,
       action,
       theme,
       size: 'flexible',
+      appearance: 'interaction-only',
       retry: 'auto',
       callback: (token: string) => {
-        setWidgetState('verified');
         onVerify(token);
+        onChallengeResolved?.();
       },
       'error-callback': () => {
-        setWidgetState('error');
         onError?.();
       },
       'expired-callback': () => {
-        setWidgetState('expired');
         onExpire?.();
+        // Silently reset so next submit re-triggers
+        if (widgetIdRef.current && window.turnstile) {
+          try { window.turnstile.reset(widgetIdRef.current); } catch { /* ignore */ }
+        }
       },
       'timeout-callback': () => {
-        setWidgetState('error');
-        onError?.();
+        // interaction-only: widget needs user input — signal parent
+        onNeedChallenge?.();
       },
     });
     widgetIdRef.current = id;
-  }, [ready, action, theme, onVerify, onError, onExpire]);
+  }, [ready, action, theme, onVerify, onError, onExpire, onNeedChallenge, onChallengeResolved]);
 
   useEffect(() => {
     if (!ready) return;
@@ -114,63 +139,161 @@ function RealTurnstileWidget({ onVerify, onError, onExpire, action, theme = 'aut
         widgetIdRef.current = null;
       }
     };
-  }, [ready, renderWidget]);
+  }, [ready, renderWidget, retryKey]);
 
-  const handleRetry = () => {
-    setWidgetState('loading');
-    if (widgetIdRef.current && window.turnstile) {
-      try { window.turnstile.remove(widgetIdRef.current); } catch { /* ignore */ }
-      widgetIdRef.current = null;
-    }
-    if (window.__turnstileReady && window.turnstile) {
-      renderWidget();
-    } else {
-      setReady(false);
-      setRetryKey((k) => k + 1);
-    }
-  };
-
-  const showError = widgetState === 'error' || widgetState === 'expired';
-
+  // Completely hidden — Cloudflare works in background
   return (
-    <div className={className}>
-      {widgetState === 'loading' && (
-        <div className="h-[65px] bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center gap-2 text-xs text-gray-500">
-          <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
-          Loading security check…
-        </div>
-      )}
-
-      {showError && (
-        <div className="h-[65px] bg-red-50 border border-red-200 rounded-lg flex items-center justify-between px-4 gap-3">
-          <p className="text-xs text-red-700 leading-snug">
-            {widgetState === 'expired'
-              ? 'Security check expired.'
-              : 'Security check failed to load.'}
-            {' '}Please retry.
-          </p>
-          <button
-            type="button"
-            onClick={handleRetry}
-            className="flex-shrink-0 text-xs font-semibold text-red-700 hover:text-red-900 border border-red-300 hover:border-red-400 bg-white rounded px-2.5 py-1 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      <div
-        ref={containerRef}
-        className={widgetState === 'loading' || showError ? 'hidden' : ''}
-      />
-    </div>
+    <div
+      ref={containerRef}
+      aria-hidden="true"
+      style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}
+    />
   );
 }
 
-// ── Public export ─────────────────────────────────────────────────────────────
-export function TurnstileWidget(props: Props) {
+// ── Challenge modal — shown only when auto-verify can't complete ──────────────
+function ChallengeModal({
+  open,
+  onClose,
+  action,
+  onVerify,
+  onError,
+}: {
+  open: boolean;
+  onClose: () => void;
+  action: string;
+  onVerify: (token: string) => void;
+  onError: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
+  const [widgetReady, setWidgetReady] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const tryRender = () => {
+      if (!containerRef.current || !window.turnstile || !SITE_KEY) return false;
+      if (widgetIdRef.current) {
+        try { window.turnstile.remove(widgetIdRef.current); } catch { /* ignore */ }
+      }
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: SITE_KEY,
+        action,
+        theme: 'light',
+        size: 'normal',
+        appearance: 'always',
+        retry: 'auto',
+        callback: (token: string) => {
+          onVerify(token);
+          onClose();
+        },
+        'error-callback': () => {
+          onError();
+          onClose();
+        },
+      });
+      setWidgetReady(true);
+      return true;
+    };
+
+    if (!tryRender()) {
+      const poll = setInterval(() => { if (tryRender()) clearInterval(poll); }, 200);
+      return () => clearInterval(poll);
+    }
+    return () => {
+      if (widgetIdRef.current && window.turnstile) {
+        try { window.turnstile.remove(widgetIdRef.current); } catch { /* ignore */ }
+        widgetIdRef.current = null;
+      }
+      setWidgetReady(false);
+    };
+  }, [open, action, onVerify, onError, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.92, opacity: 0, y: 16 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="security" size={20} className="text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-ink-900">Security Verification</p>
+                  <p className="text-xs text-ink-500 mt-0.5">One quick check to continue</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-400 hover:text-ink-700 hover:bg-ink-100 transition-colors"
+              >
+                <Icon name="close" size={15} />
+              </button>
+            </div>
+
+            <p className="text-xs text-ink-500 mb-4 leading-relaxed">
+              We couldn't automatically verify your browser. Please complete this quick check — it only takes a second.
+            </p>
+
+            {/* Turnstile widget renders here */}
+            <div className="flex justify-center min-h-[65px] items-center">
+              {!widgetReady && (
+                <div className="flex items-center gap-2 text-xs text-ink-400">
+                  <div className="w-4 h-4 border-2 border-ink-300 border-t-ink-600 rounded-full animate-spin" />
+                  Loading…
+                </div>
+              )}
+              <div ref={containerRef} className={widgetReady ? '' : 'hidden'} />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ── Public composite component ────────────────────────────────────────────────
+// Drop-in replacement for the old TurnstileWidget.
+// Renders invisible by default; shows a modal only when Cloudflare requires
+// manual interaction. The parent's API is unchanged.
+
+export function TurnstileWidget(props: TurnstileWidgetProps) {
+  const [challengeOpen, setChallengeOpen] = useState(false);
+
   if (!SITE_KEY) return <DevBypassWidget onVerify={props.onVerify} />;
-  return <RealTurnstileWidget {...props} />;
+
+  return (
+    <>
+      <InvisibleTurnstile
+        {...props}
+        onNeedChallenge={() => setChallengeOpen(true)}
+        onChallengeResolved={() => setChallengeOpen(false)}
+      />
+      <ChallengeModal
+        open={challengeOpen}
+        onClose={() => setChallengeOpen(false)}
+        action={props.action}
+        onVerify={(token) => { props.onVerify(token); setChallengeOpen(false); }}
+        onError={() => { props.onError?.(); setChallengeOpen(false); }}
+      />
+    </>
+  );
 }
 
 export function resetTurnstile() {
