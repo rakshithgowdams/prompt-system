@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { VaultProvider } from './contexts/VaultContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { LenisScrollManager } from './components/layout/LenisScrollManager';
 import { Skeleton } from './components/ui/Skeleton';
@@ -89,6 +90,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <VaultProvider>
         <BrowserRouter>
           <LenisScrollManager />
           <Suspense fallback={<PageFallback />}>
@@ -150,6 +152,7 @@ export default function App() {
             },
           }}
         />
+        </VaultProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

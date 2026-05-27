@@ -115,6 +115,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Require auth — caller must present a valid Bearer token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch {
       return new Response(JSON.stringify({ error: "invalid_json" }), {
@@ -131,6 +139,15 @@ Deno.serve(async (req: Request) => {
 
     const ip = getClientIp(req);
     const supabase = adminClient();
+
+    // Verify JWT and get calling user
+    const token = authHeader.slice(7);
+    const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !caller) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Rate limit: 20/hr by IP
     const byIp = await checkRateLimit(supabase,
@@ -155,6 +172,27 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Ownership check: caller must be the cert owner, the course instructor, or an admin
+    const [profileResult, courseResult] = await Promise.all([
+      supabase.from("user_profiles").select("is_admin").eq("id", caller.id).maybeSingle(),
+      supabase.from("courses").select("user_id").eq("id", cert.course_id).maybeSingle(),
+    ]);
+
+    const isOwner      = caller.id === cert.user_id;
+    const isInstructor = courseResult.data?.user_id === caller.id;
+    const isAdmin      = !!profileResult.data?.is_admin;
+
+    if (!isOwner && !isInstructor && !isAdmin) {
+      await logAudit(supabase, {
+        action: "send-cert-email.forbidden",
+        metadata: { cert_id, caller_id: caller.id, cert_owner_id: cert.user_id },
+        ip,
+      });
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Idempotency
     if (cert.email_sent) {
       return new Response(JSON.stringify({ skipped: true, reason: "already_sent" }), {
@@ -171,7 +209,7 @@ Deno.serve(async (req: Request) => {
 
     const studentEmail = userData.user.email;
 
-    // Rate limit: 20/hr by email
+    // Rate limit: 20/hr by recipient email
     const byEmail = await checkRateLimit(supabase,
       { bucket: "cert-email", max: 20, windowSeconds: 3600, keyBy: "email" }, ip, studentEmail);
     if (!byEmail.allowed) {
@@ -216,7 +254,7 @@ Deno.serve(async (req: Request) => {
 
     await logAudit(supabase, {
       action: "send-cert-email.sent",
-      metadata: { cert_id, course_id: cert.course_id },
+      metadata: { cert_id, course_id: cert.course_id, caller_id: caller.id },
       ip,
     });
 

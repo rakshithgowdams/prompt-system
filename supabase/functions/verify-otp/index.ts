@@ -128,11 +128,22 @@ Deno.serve(async (req: Request) => {
       .update({ used: true, failed_attempts: 0, locked_until: null })
       .eq("id", latestOtp.id);
 
-    // Check if user already exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email
-    );
+    // Check if user already exists — direct O(1) lookup, avoids scanning all users
+    let existingUser: { id: string; email?: string } | null = null;
+    try {
+      const { data, error } = await supabase
+        .from("auth.users" as any)
+        .select("id, email")
+        .eq("email", email)
+        .maybeSingle();
+      if (!error && data) existingUser = data as { id: string; email: string };
+    } catch {
+      // Fallback: newer SDK method
+      try {
+        const { data } = await (supabase.auth.admin as any).getUserByEmail(email);
+        if (data?.user) existingUser = data.user;
+      } catch { /* user doesn't exist */ }
+    }
 
     let session = null;
 

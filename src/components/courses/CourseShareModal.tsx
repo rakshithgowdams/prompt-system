@@ -7,11 +7,6 @@ import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import type { CourseShare } from '../../hooks/useCourses';
 
-async function sha256(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 function buildShareUrl(shareId: string): string {
   return `${window.location.origin}/courses/share/${shareId}`;
 }
@@ -134,12 +129,11 @@ function CreateShareForm({ courseId, onCreated }: { courseId: string; onCreated:
       return;
     }
     try {
-      const password_hash = accessType === 'password' ? await sha256(password.trim()) : null;
       await createShare.mutateAsync({
         course_id: courseId,
         share_name: name.trim() || 'Share Link',
         access_type: accessType,
-        password_hash,
+        password_hash: accessType === 'password' ? password.trim() : null,
         expires_at: getExpiresAt(),
       });
       toast.success('Share link created!');

@@ -8,11 +8,6 @@ import { cn } from '../lib/utils';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-async function sha256(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 const YOUTUBE_EMBED = (url: string) => {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
   return m ? `https://www.youtube.com/embed/${m[1]}?rel=0` : null;
@@ -74,7 +69,7 @@ type PageState =
 
 // ── Password Gate ─────────────────────────────────────────────────────────────
 
-function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; shareName: string; onUnlock: (hash: string) => void }) {
+function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; shareName: string; onUnlock: (password: string) => void }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -86,8 +81,7 @@ function PasswordGate({ shareId, shareName, onUnlock }: { shareId: string; share
     setLoading(true);
     setError('');
     try {
-      const hash = await sha256(password.trim());
-      onUnlock(hash);
+      onUnlock(password.trim());
     } finally {
       setLoading(false);
     }
@@ -188,19 +182,19 @@ export function CourseSharePage() {
   const [activeLesson, setActiveLesson] = useState<SharedLesson | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  const fetchShare = async (passwordHash?: string) => {
+  const fetchShare = async (password?: string) => {
     if (!shareId) return;
     setState({ status: 'loading' });
     try {
       const apiUrl = `${SUPABASE_URL}/functions/v1/get-course-share?id=${shareId}`;
       const res = await fetch(apiUrl, {
-        method: passwordHash ? 'POST' : 'GET',
+        method: password ? 'POST' : 'GET',
         headers: {
           'Authorization': `Bearer ${ANON_KEY}`,
           'Content-Type': 'application/json',
           'Apikey': ANON_KEY,
         },
-        ...(passwordHash ? { body: JSON.stringify({ password_hash: passwordHash }) } : {}),
+        ...(password ? { body: JSON.stringify({ password }) } : {}),
       });
 
       const data = await res.json();
@@ -230,8 +224,7 @@ export function CourseSharePage() {
 
   useEffect(() => { fetchShare(); }, [shareId]);
 
-  const handlePasswordUnlock = async (hash: string) => {
-    // Optimistically try the hash — re-fetch with it
+  const handlePasswordUnlock = async (plaintext: string) => {
     setState({ status: 'loading' });
     if (!shareId) return;
     try {
@@ -239,7 +232,7 @@ export function CourseSharePage() {
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json', 'Apikey': ANON_KEY },
-        body: JSON.stringify({ password_hash: hash }),
+        body: JSON.stringify({ password: plaintext }),
       });
       const data = await res.json();
       if (data.status === 'password_required') {

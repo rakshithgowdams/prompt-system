@@ -49,6 +49,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Admin-only: verify the caller has is_admin = true BEFORE rate limit checks
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile?.is_admin) {
+      await logAudit(supabase, {
+        action: "upload-cert-assets.forbidden_non_admin",
+        metadata: { user_id: user.id },
+        ip,
+      });
+      return new Response(JSON.stringify({ error: "forbidden", message: "Admin access required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Rate limit: 30/hr by IP
     const byIp = await checkRateLimit(supabase,
       { bucket: "cert-upload", max: 30, windowSeconds: 3600, keyBy: "ip" }, ip);

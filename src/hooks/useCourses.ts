@@ -748,31 +748,12 @@ export function useCertificateBySlug(slug: string | undefined) {
       if (!slug) return null;
 
       const { data, error } = await supabase
-        .from('course_certificates')
-        .select(
-          'id, user_id, course_id, certificate_number, issued_at, ' +
-          'department, internship_from, internship_to, growth_area, ' +
-          'instructor_name, student_name, course_title, course_category, ' +
-          'serial_number, share_slug, share_view_count'
-        )
-        .eq('share_slug', slug)
-        .maybeSingle();
+        .rpc('get_certificate_by_slug', { p_slug: slug });
 
-      if (error) {
-        console.error('[cert-by-slug] supabase error', {
-          slug,
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-        });
-        throw error;
-      }
+      if (error) throw error;
 
-      if (!data) {
-        console.warn('[cert-by-slug] no row returned for slug', slug);
-        return null;
-      }
+      const row = (data as CourseCertificate[] | null)?.[0] ?? null;
+      if (!row) return null;
 
       // Fire-and-forget view counter — never block render on this
       supabase
@@ -781,7 +762,7 @@ export function useCertificateBySlug(slug: string | undefined) {
           if (rpcErr) console.warn('[cert-by-slug] view increment failed', rpcErr.message);
         });
 
-      return data as CourseCertificate;
+      return row;
     },
     enabled: !!slug,
     staleTime: 1000 * 60 * 5,

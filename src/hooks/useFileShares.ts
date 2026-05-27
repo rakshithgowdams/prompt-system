@@ -49,26 +49,14 @@ interface CreateShareParams {
   expiresAt?: string | null;
 }
 
-// Simple password hash — NOT cryptographic, just obfuscation stored in DB.
-// A real app would use bcrypt via an Edge Function. We use a simple SHA-256-like
-// approach via SubtleCrypto so no extra package is needed.
-async function hashPassword(pw: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-export async function verifySharePassword(hash: string, attempt: string): Promise<boolean> {
-  const attemptHash = await hashPassword(attempt);
-  return hash === attemptHash;
-}
-
 export function useCreateFileShare() {
   const qc = useQueryClient();
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (p: CreateShareParams) => {
+      // Store plaintext — the get-share edge function hashes with argon2id server-side
       const passwordHash = p.accessType === 'password' && p.password
-        ? await hashPassword(p.password)
+        ? p.password
         : null;
       const { data, error } = await supabase
         .from('file_shares')

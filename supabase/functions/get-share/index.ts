@@ -6,6 +6,9 @@ import {
   isValidUuid, isValidString, logAudit, cacheGet, cacheSet, safeErrorResponse,
 } from "../_shared/security.ts";
 
+// argon2id for server-side password hashing
+import { hash as argon2Hash, verify as argon2Verify } from "npm:argon2@0.31.2";
+
 function json(data: unknown, status = 200, corsHeaders: Record<string, string>) {
   return new Response(JSON.stringify(data), {
     status,
@@ -56,7 +59,7 @@ Deno.serve(async (req: Request) => {
         return json({ error: "not_found" }, 404, corsHeaders);
       }
       share = data;
-      // Only cache open/public shares (not password-protected — password check needs fresh data)
+      // Only cache open/public shares (not password-protected — needs fresh hash data)
       if (data.access_type !== "password") {
         cacheSet(cacheKey, share, 30);
       }
@@ -71,34 +74,64 @@ Deno.serve(async (req: Request) => {
     // Password gate
     if (share.access_type === "password") {
       const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-      const attempt: unknown = body.password_hash;
+      const submittedPassword: unknown = body.password;
 
-      // Validate: password_hash must be a 64-char hex string (sha256)
-      if (!isValidString(attempt, 64, 64)) {
-        return json({
-          status: "password_required",
-          share: {
-            id: share.id,
-            share_name: share.share_name,
-            access_type: share.access_type,
-            allow_download: share.allow_download,
-            expires_at: share.expires_at,
-          },
-        }, 200, corsHeaders);
+      const passwordMeta = {
+        id: share.id,
+        share_name: share.share_name,
+        access_type: share.access_type,
+        allow_download: share.allow_download,
+        expires_at: share.expires_at,
+      };
+
+      // No password submitted — prompt
+      if (typeof submittedPassword !== "string" || submittedPassword.length === 0) {
+        return json({ status: "password_required", share: passwordMeta }, 200, corsHeaders);
       }
 
-      if (attempt !== share.password_hash) {
+      // Per-share brute-force limit: 5 attempts per 10 min per IP
+      const shareLimit = await checkRateLimit(supabase,
+        { bucket: `share-pw:${shareId}`, max: 5, windowSeconds: 600, keyBy: "ip" }, ip);
+      if (!shareLimit.allowed) {
+        await logAudit(supabase, { action: "get-share.brute_force_blocked", metadata: { share_id: shareId }, ip });
+        return tooManyRequestsResponse(shareLimit, corsHeaders);
+      }
+
+      let isValid = false;
+      const scheme = (share.password_hash_scheme as string) ?? "sha256_client";
+
+      if (scheme === "argon2id") {
+        try {
+          isValid = await argon2Verify(share.password_hash as string, submittedPassword);
+        } catch {
+          isValid = false;
+        }
+      } else {
+        // Legacy sha256_client: client used to send sha256(password), now sends plaintext
+        // Try plaintext sha256 comparison for backward compat
+        const sha = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(submittedPassword));
+        const clientHash = Array.from(new Uint8Array(sha))
+          .map((b) => b.toString(16).padStart(2, "0")).join("");
+        isValid = clientHash === (share.password_hash as string);
+
+        // Upgrade on correct login: re-hash with argon2id in background
+        if (isValid) {
+          EdgeRuntime.waitUntil((async () => {
+            try {
+              const newHash = await argon2Hash(submittedPassword, { type: 2 }); // argon2id
+              await supabase.from("file_shares")
+                .update({ password_hash: newHash, password_hash_scheme: "argon2id" })
+                .eq("id", shareId);
+            } catch (e) {
+              console.error("[get-share] argon2 upgrade failed:", e);
+            }
+          })());
+        }
+      }
+
+      if (!isValid) {
         await logAudit(supabase, { action: "get-share.wrong_password", metadata: { share_id: shareId }, ip });
-        return json({
-          status: "password_required",
-          share: {
-            id: share.id,
-            share_name: share.share_name,
-            access_type: share.access_type,
-            allow_download: share.allow_download,
-            expires_at: share.expires_at,
-          },
-        }, 200, corsHeaders);
+        return json({ status: "password_required", share: passwordMeta }, 200, corsHeaders);
       }
     }
 

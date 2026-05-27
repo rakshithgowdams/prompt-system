@@ -64,11 +64,6 @@ function fileColor(ft: string): string {
   }
 }
 
-async function hashPassword(pw: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 async function downloadBlob(file: SharedFile) {
   if (!file.signedUrl) return;
   try {
@@ -536,11 +531,11 @@ export function SharePage() {
 
   const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-share?id=${shareId}`;
 
-  const callEdgeFn = useCallback(async (passwordHash?: string) => {
+  const callEdgeFn = useCallback(async (password?: string) => {
     const res = await fetch(edgeFnUrl, {
-      method: passwordHash ? 'POST' : 'GET',
+      method: password ? 'POST' : 'GET',
       headers: authHeaders,
-      ...(passwordHash ? { body: JSON.stringify({ password_hash: passwordHash }) } : {}),
+      ...(password ? { body: JSON.stringify({ password }) } : {}),
     });
     return res.json() as Promise<Record<string, unknown>>;
   }, [shareId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -576,8 +571,7 @@ export function SharePage() {
     setVerifying(true);
     setPasswordError('');
     try {
-      const hash = await hashPassword(passwordInput);
-      const data = await callEdgeFn(hash);
+      const data = await callEdgeFn(passwordInput.trim());
       if (data.status === 'password_required') {
         setPasswordError('Incorrect password. Try again.');
       } else {
