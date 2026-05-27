@@ -20,30 +20,19 @@ import { CourseReviews } from '../components/courses/CourseReviews';
 import { cn } from '../lib/utils';
 import type { CourseLesson } from '../hooks/useCourses';
 
-const SIDEBAR_W = 300;
+const SIDEBAR_W = 380;
 const HEADER_H = 56;
 
 const YOUTUBE_EMBED = (url: string) => {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0` : null;
+  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0&autoplay=1` : null;
 };
 const VIMEO_EMBED = (url: string) => {
   const m = url.match(/vimeo\.com\/(\d+)/);
-  return m ? `https://player.vimeo.com/video/${m[1]}` : null;
+  return m ? `https://player.vimeo.com/video/${m[1]}?autoplay=1` : null;
 };
 
-function ProgressRing({ pct, size = 40, stroke = 3.5 }: { pct: number; size?: number; stroke?: number }) {
-  const r = (size - stroke * 2) / 2;
-  const circ = 2 * Math.PI * r;
-  return (
-    <svg width={size} height={size} className="-rotate-90 flex-shrink-0">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#10b981" strokeWidth={stroke}
-        strokeDasharray={circ} strokeDashoffset={circ * (1 - pct / 100)}
-        strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-    </svg>
-  );
-}
+// ── Confetti ──────────────────────────────────────────────────────────────────
 
 interface Particle { id: number; x: number; color: string; size: number; delay: number; duration: number; rotation: number; shape: 'rect' | 'circle' | 'star'; }
 const CONFETTI_COLORS = ['#f59e0b','#10b981','#3b82f6','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
@@ -73,18 +62,20 @@ function ConfettiBlast({ active }: { active: boolean }) {
   );
 }
 
+// ── Course Complete Popup ─────────────────────────────────────────────────────
+
 function CourseCompletePopup({ courseName, onViewCertificate, onDismiss }: {
   courseName: string; onViewCertificate: () => void; onDismiss: () => void;
 }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[90] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
     >
       <motion.div initial={{ scale: 0.7, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 20, stiffness: 260, delay: 0.1 }}
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
         <div className="relative h-36 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 flex flex-col items-center justify-center overflow-hidden">
           <div className="absolute inset-0 flex items-center justify-center">
@@ -105,40 +96,31 @@ function CourseCompletePopup({ courseName, onViewCertificate, onDismiss }: {
         </div>
         <div className="px-6 pt-5 pb-6">
           <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}>
-            <h2 className="text-xl font-display font-extrabold text-ink-900 text-center leading-tight mb-1">Congratulations!</h2>
-            <p className="text-sm text-ink-500 text-center leading-relaxed mb-1">You've successfully completed</p>
-            <p className="text-sm font-bold text-ink-800 text-center leading-snug mb-5 line-clamp-2">{courseName}</p>
-            <div className="flex items-center justify-center gap-6 mb-5">
-              {[{icon:'🏆',label:'Completed'},{icon:'📜',label:'Certificate'},{icon:'⭐',label:'Achievement'}].map((item) => (
-                <div key={item.label} className="flex flex-col items-center gap-1">
-                  <span className="text-2xl">{item.icon}</span>
-                  <span className="text-[10px] font-semibold text-ink-500 uppercase tracking-wide">{item.label}</span>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-xl font-bold text-ink-900 text-center leading-tight mb-1">Congratulations!</h2>
+            <p className="text-sm text-ink-500 text-center mb-1">You've successfully completed</p>
+            <p className="text-sm font-bold text-ink-800 text-center mb-5 line-clamp-2">{courseName}</p>
             <button onClick={onViewCertificate}
-              className="w-full h-12 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-200 transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <rect x="2" y="3" width="20" height="14" rx="2" stroke="white" strokeWidth="2"/>
-                <path d="M8 21h8M12 17v4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
+              <Icon name="workspace_premium" size={16} fill />
               View My Certificate
             </button>
-            <button onClick={onDismiss} className="w-full mt-2.5 h-10 rounded-2xl text-ink-500 hover:text-ink-800 text-sm font-medium transition-colors">
+            <button onClick={onDismiss} className="w-full mt-2 h-10 rounded-xl text-ink-500 hover:text-ink-800 text-sm font-medium">
               Continue Exploring
             </button>
           </motion.div>
         </div>
         <button onClick={onDismiss}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          <Icon name="close" size={14} />
         </button>
       </motion.div>
     </motion.div>
   );
 }
+
+// ── Notes Panel ───────────────────────────────────────────────────────────────
 
 function NotesPanel({ courseId, lessonId }: { courseId: string; lessonId: string }) {
   const { data: notes = [] } = useLessonNotes(courseId, lessonId);
@@ -149,52 +131,47 @@ function NotesPanel({ courseId, lessonId }: { courseId: string; lessonId: string
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  const handleCreate = async () => {
-    if (!draft.trim()) return;
-    await createNote.mutateAsync({ courseId, lessonId, content: draft.trim() });
-    setDraft('');
-  };
-
   return (
     <div className="space-y-3">
       <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleCreate(); }}
-        rows={3} placeholder="Write a note… (Ctrl+Enter to save)"
-        className="w-full px-3 py-2.5 rounded-xl bg-ink-50 border border-ink-200 text-ink-900 text-sm placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
+        onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey && draft.trim()) { createNote.mutateAsync({ courseId, lessonId, content: draft.trim() }).then(() => setDraft('')); } }}
+        rows={3} placeholder="Write a note for this lesson… (Ctrl+Enter to save)"
+        className="w-full px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#a435f0] focus:border-transparent resize-none"
       />
-      <button onClick={handleCreate} disabled={!draft.trim() || createNote.isPending}
-        className="w-full h-9 rounded-xl bg-ink-900 hover:bg-blue-600 disabled:opacity-40 text-white text-xs font-bold transition-colors"
+      <button onClick={() => { if (!draft.trim() || createNote.isPending) return; createNote.mutateAsync({ courseId, lessonId, content: draft.trim() }).then(() => setDraft('')); }}
+        disabled={!draft.trim() || createNote.isPending}
+        className="w-full h-9 rounded-lg bg-[#a435f0] hover:bg-[#8710d8] disabled:opacity-40 text-white text-xs font-bold transition-colors"
       >Save Note</button>
       {notes.length === 0 ? (
         <div className="text-center py-8">
-          <Icon name="edit_note" size={28} className="text-ink-300 mx-auto mb-2" />
-          <p className="text-xs text-ink-500 italic">No notes for this lesson yet.</p>
+          <Icon name="edit_note" size={28} className="text-gray-300 mx-auto mb-2" />
+          <p className="text-xs text-gray-400">No notes for this lesson yet.</p>
         </div>
       ) : (
-        <div className="space-y-2.5 pt-1">
+        <div className="space-y-2">
           {notes.map((note) => (
-            <div key={note.id} className="bg-ink-50 border border-ink-200 rounded-xl p-3.5">
+            <div key={note.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
               {editingId === note.id ? (
                 <div className="space-y-2">
                   <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3}
-                    className="w-full px-2.5 py-2 rounded-lg bg-white border border-ink-200 text-ink-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                    className="w-full px-2.5 py-2 rounded-lg bg-white border border-gray-300 text-gray-900 text-xs focus:outline-none resize-none"
                   />
                   <div className="flex gap-2">
                     <button onClick={async () => { await updateNote.mutateAsync({ id: note.id, content: editContent, courseId }); setEditingId(null); }}
-                      className="flex-1 h-7 rounded-lg bg-ink-900 text-white text-xs font-semibold">Save</button>
-                    <button onClick={() => setEditingId(null)} className="flex-1 h-7 rounded-lg border border-ink-200 text-ink-500 text-xs">Cancel</button>
+                      className="flex-1 h-7 rounded-lg bg-[#a435f0] text-white text-xs font-semibold">Save</button>
+                    <button onClick={() => setEditingId(null)} className="flex-1 h-7 rounded-lg border border-gray-300 text-gray-600 text-xs">Cancel</button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <p className="text-xs text-ink-700 leading-relaxed whitespace-pre-wrap">{note.content}</p>
-                  <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-ink-200">
+                  <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                  <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-gray-200">
                     <button onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
-                      className="p-1.5 text-ink-400 hover:text-ink-900 transition-colors rounded-md hover:bg-white">
+                      className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors rounded">
                       <Icon name="edit" size={12} />
                     </button>
                     <button onClick={() => deleteNote.mutate({ id: note.id, courseId })}
-                      className="p-1.5 text-ink-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50">
+                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded">
                       <Icon name="delete" size={12} />
                     </button>
                   </div>
@@ -208,18 +185,17 @@ function NotesPanel({ courseId, lessonId }: { courseId: string; lessonId: string
   );
 }
 
-// ── Resource preview helpers ──────────────────────────────────────────────────
+// ── Resource helpers ──────────────────────────────────────────────────────────
 
 function getResourceType(res: { name: string; mime_type?: string }): 'image' | 'video' | 'pdf' | 'text' | 'other' {
   const mime = res.mime_type ?? '';
   const ext = res.name.split('.').pop()?.toLowerCase() ?? '';
-  if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp','ico'].includes(ext)) return 'image';
-  if (mime.startsWith('video/') || ['mp4','webm','mov','avi','mkv'].includes(ext)) return 'video';
+  if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image';
+  if (mime.startsWith('video/') || ['mp4','webm','mov'].includes(ext)) return 'video';
   if (mime === 'application/pdf' || ext === 'pdf') return 'pdf';
-  if (mime.startsWith('text/') || ['txt','md','csv','json','xml','html','css','js','ts'].includes(ext)) return 'text';
+  if (mime.startsWith('text/') || ['txt','md','csv','json'].includes(ext)) return 'text';
   return 'other';
 }
-
 function resourceIcon(type: ReturnType<typeof getResourceType>) {
   switch (type) {
     case 'image': return 'image';
@@ -230,95 +206,36 @@ function resourceIcon(type: ReturnType<typeof getResourceType>) {
   }
 }
 
-interface ResourcePreviewProps {
-  name: string;
-  url: string;
-  type: ReturnType<typeof getResourceType>;
-  onClose: () => void;
-  onDownload: () => void;
-}
-
-function ResourcePreviewModal({ name, url, type, onClose, onDownload }: ResourcePreviewProps) {
+function ResourcePreviewModal({ name, url, type, onClose, onDownload }: { name: string; url: string; type: ReturnType<typeof getResourceType>; onClose: () => void; onDownload: () => void; }) {
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 12 }}
-          transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-          className="relative bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-w-4xl w-full max-h-[90dvh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-ink-200 bg-ink-50 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-white border border-ink-200 flex items-center justify-center flex-shrink-0">
-              <Icon name={resourceIcon(type)} size={16} className="text-ink-600" />
-            </div>
-            <p className="flex-1 text-sm font-semibold text-ink-900 truncate min-w-0">{name}</p>
-            <button
-              onClick={onDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-ink-200 bg-white text-ink-700 hover:bg-ink-100 text-xs font-semibold transition-colors flex-shrink-0"
-            >
-              <Icon name="download" size={14} />
-              Download
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+        <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96 }} transition={{ type: 'spring', stiffness: 340, damping: 30 }}
+          className="relative bg-[#1c1d1f] rounded-xl shadow-2xl overflow-hidden flex flex-col max-w-4xl w-full max-h-[90dvh]"
+          onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#3e4143] flex-shrink-0">
+            <Icon name={resourceIcon(type)} size={16} className="text-[#cec0fc]" />
+            <p className="flex-1 text-sm font-semibold text-white truncate">{name}</p>
+            <button onClick={onDownload} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#3e4143] text-[#cec0fc] hover:bg-[#2d2f31] text-xs font-semibold transition-colors">
+              <Icon name="download" size={14} />Download
             </button>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-ink-200 transition-colors flex-shrink-0"
-            >
-              <Icon name="close" size={18} className="text-ink-600" />
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#2d2f31] transition-colors">
+              <Icon name="close" size={18} className="text-[#6a6f73]" />
             </button>
           </div>
-
-          {/* Preview body */}
-          <div className="flex-1 overflow-auto min-h-0 bg-ink-100 flex items-center justify-center">
-            {type === 'image' && (
-              <img
-                src={url}
-                alt={name}
-                className="max-w-full max-h-full object-contain p-2"
-                draggable={false}
-              />
-            )}
-            {type === 'video' && (
-              <video
-                src={url}
-                controls
-                autoPlay
-                className="max-w-full max-h-full w-full"
-                style={{ background: '#000' }}
-              />
-            )}
-            {type === 'pdf' && (
-              <iframe
-                src={url}
-                title={name}
-                className="w-full h-full border-none"
-                style={{ minHeight: '70dvh' }}
-              />
-            )}
+          <div className="flex-1 overflow-auto min-h-0 bg-[#0f1011] flex items-center justify-center">
+            {type === 'image' && <img src={url} alt={name} className="max-w-full max-h-full object-contain p-2" />}
+            {type === 'video' && <video src={url} controls autoPlay className="max-w-full w-full" style={{ background: '#000' }} />}
+            {type === 'pdf' && <iframe src={url} title={name} className="w-full border-none" style={{ minHeight: '70dvh' }} />}
             {(type === 'text' || type === 'other') && (
-              <div className="flex flex-col items-center justify-center gap-4 py-12 px-6 text-center">
-                <div className="w-16 h-16 bg-white border border-ink-200 rounded-2xl flex items-center justify-center">
-                  <Icon name={resourceIcon(type)} size={32} className="text-ink-400" />
-                </div>
-                <div className="space-y-1">
-                  <p className="font-semibold text-ink-900">{name}</p>
-                  <p className="text-sm text-ink-500">Preview not available for this file type.</p>
-                </div>
-                <button
-                  onClick={onDownload}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ink-900 text-white text-sm font-bold hover:bg-ink-700 transition-colors"
-                >
-                  <Icon name="download" size={16} />
-                  Download to view
+              <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
+                <Icon name={resourceIcon(type)} size={48} className="text-[#6a6f73]" />
+                <p className="font-semibold text-white">{name}</p>
+                <p className="text-sm text-[#6a6f73]">Preview not available.</p>
+                <button onClick={onDownload} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#a435f0] text-white text-sm font-bold">
+                  <Icon name="download" size={16} />Download to view
                 </button>
               </div>
             )}
@@ -331,35 +248,21 @@ function ResourcePreviewModal({ name, url, type, onClose, onDownload }: Resource
 
 function ResourceList({ lesson }: { lesson: CourseLesson }) {
   const [preview, setPreview] = useState<{ name: string; url: string; type: ReturnType<typeof getResourceType> } | null>(null);
-
-  const getSignedUrl = async (path: string): Promise<string> => {
+  const getSignedUrl = async (path: string) => {
     const { data } = await supabase.storage.from('prompt-media').createSignedUrl(path, 300);
     if (!data?.signedUrl) throw new Error('Could not generate URL');
     return data.signedUrl;
   };
-
   const handlePreview = async (res: { name: string; path: string; mime_type?: string }) => {
-    try {
-      const url = await getSignedUrl(res.path);
-      const type = getResourceType(res);
-      setPreview({ name: res.name, url, type });
-    } catch { toast.error('Could not load preview'); }
+    try { const url = await getSignedUrl(res.path); setPreview({ name: res.name, url, type: getResourceType(res) }); }
+    catch { toast.error('Could not load preview'); }
   };
-
-  const handleDownload = async (res: { name: string; path: string }) => {
-    try {
-      const url = await getSignedUrl(res.path);
-      const a = document.createElement('a'); a.href = url; a.download = res.name; a.click();
-    } catch { toast.error('Download failed'); }
-  };
-
   if (!lesson.resources?.length) return (
     <div className="text-center py-10">
-      <Icon name="attach_file" size={28} className="text-ink-300 mx-auto mb-2" />
-      <p className="text-xs text-ink-500 italic">No resources for this lesson.</p>
+      <Icon name="attach_file" size={28} className="text-[#6a6f73] mx-auto mb-2" />
+      <p className="text-sm text-[#6a6f73]">No resources for this lesson.</p>
     </div>
   );
-
   return (
     <>
       <div className="space-y-2">
@@ -367,37 +270,30 @@ function ResourceList({ lesson }: { lesson: CourseLesson }) {
           const type = getResourceType(res);
           return (
             <button key={i} onClick={() => handlePreview(res)}
-              className="w-full flex items-center gap-3 p-3.5 bg-ink-50 hover:bg-ink-100 border border-ink-200 rounded-xl transition-colors text-left group">
-              <div className="w-9 h-9 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Icon name={resourceIcon(type)} size={16} className="text-blue-500" />
+              className="w-full flex items-center gap-3 p-3.5 bg-[#2d2f31] hover:bg-[#3e4143] border border-[#3e4143] rounded-lg transition-colors text-left group">
+              <div className="w-9 h-9 bg-[#1c1d1f] rounded-lg flex items-center justify-center flex-shrink-0">
+                <Icon name={resourceIcon(type)} size={18} className="text-[#cec0fc]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-ink-900 truncate group-hover:text-blue-600">{res.name}</p>
-                {res.size && <p className="text-xs text-ink-500">{(res.size / 1024 / 1024).toFixed(1)} MB</p>}
+                <p className="text-sm font-medium text-white truncate">{res.name}</p>
+                {res.size && <p className="text-xs text-[#6a6f73]">{(res.size / 1024 / 1024).toFixed(1)} MB</p>}
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <span className="text-[11px] text-ink-400 group-hover:text-blue-500 hidden sm:block">Preview</span>
-                <Icon name="open_in_new" size={14} className="text-ink-400 group-hover:text-blue-500" />
-              </div>
+              <Icon name="open_in_new" size={14} className="text-[#6a6f73] group-hover:text-[#cec0fc] flex-shrink-0" />
             </button>
           );
         })}
       </div>
-
       {preview && (
-        <ResourcePreviewModal
-          name={preview.name}
-          url={preview.url}
-          type={preview.type}
+        <ResourcePreviewModal name={preview.name} url={preview.url} type={preview.type}
           onClose={() => setPreview(null)}
-          onDownload={() => {
-            const a = document.createElement('a'); a.href = preview.url; a.download = preview.name; a.click();
-          }}
+          onDownload={() => { const a = document.createElement('a'); a.href = preview.url; a.download = preview.name; a.click(); }}
         />
       )}
     </>
   );
 }
+
+// ── Lesson icon helper ────────────────────────────────────────────────────────
 
 function lessonIcon(type: string) {
   switch (type) {
@@ -407,6 +303,8 @@ function lessonIcon(type: string) {
     default: return 'folder_zip';
   }
 }
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function CoursePlayerPage() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -425,10 +323,11 @@ export function CoursePlayerPage() {
   const savePosition = useSaveWatchPosition();
 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'discussion' | 'qna' | 'notes' | 'resources'>('discussion');
+  const [activeTab, setActiveTab] = useState<'overview' | 'qna' | 'notes' | 'resources' | 'reviews'>('overview');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -457,9 +356,7 @@ export function CoursePlayerPage() {
     }
   }, [lessons.length]);
 
-  useEffect(() => {
-    if (certificate) setCompletionBanner(true);
-  }, [certificate?.id]);
+  useEffect(() => { if (certificate) setCompletionBanner(true); }, [certificate?.id]);
 
   useEffect(() => {
     setVideoUrl(null);
@@ -491,17 +388,11 @@ export function CoursePlayerPage() {
       triggerCelebration();
       ;(async () => {
         try {
-          const { data: certId } = await supabase.rpc('issue_certificate_if_complete', {
-            p_course_id: courseId, p_user_id: user!.id,
-          });
+          const { data: certId } = await supabase.rpc('issue_certificate_if_complete', { p_course_id: courseId, p_user_id: user!.id });
           if (certId) {
             const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-certificate-email`;
             const { data: session } = await supabase.auth.getSession();
-            await fetch(fnUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-              body: JSON.stringify({ cert_id: certId }),
-            });
+            await fetch(fnUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}` }, body: JSON.stringify({ cert_id: certId }) });
           }
         } catch { /* best-effort */ }
       })();
@@ -514,23 +405,139 @@ export function CoursePlayerPage() {
   };
 
   const getEmbedUrl = (url: string) => YOUTUBE_EMBED(url) || VIMEO_EMBED(url) || null;
-  const toggleSection = (id: string) => setExpandedSections((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleSection = (id: string) => setExpandedSections((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const selectLesson = (id: string) => { setActiveLessonId(id); setMobileSidebarOpen(false); };
-
-  if (!course) return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
 
   const lessonIndex = activeLesson ? lessons.findIndex((l) => l.id === activeLesson.id) : -1;
   const prevLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
   const nextLesson = lessonIndex < lessons.length - 1 ? lessons[lessonIndex + 1] : null;
 
+  if (!course) return (
+    <div className="fixed inset-0 bg-[#1c1d1f] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-[#a435f0] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  // ── Curriculum sidebar content (shared between desktop + mobile drawer) ──
+  const CurriculumContent = () => (
+    <div className="flex flex-col h-full bg-[#1c1d1f]">
+      {/* Sidebar header */}
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#3e4143] flex-shrink-0">
+        <h2 className="text-sm font-bold text-white">Course Content</h2>
+        <button onClick={() => { setSidebarOpen(false); setMobileSidebarOpen(false); }}
+          className="p-1.5 rounded hover:bg-[#2d2f31] text-[#6a6f73] hover:text-white transition-colors">
+          <Icon name="close" size={16} />
+        </button>
+      </div>
+      {/* Progress bar */}
+      <div className="px-4 py-3 border-b border-[#3e4143] flex-shrink-0">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs text-[#6a6f73]">{completedIds.size}/{lessons.length} completed</span>
+          <span className="text-xs font-bold text-white">{pct}%</span>
+        </div>
+        <div className="h-1 w-full bg-[#3e4143] rounded-full overflow-hidden">
+          <div className="h-full bg-[#a435f0] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+      {/* Section list */}
+      <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
+        {sections.map((section) => {
+          const sLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
+          const isExpanded = expandedSections.has(section.id);
+          const sCompleted = sLessons.filter((l) => completedIds.has(l.id)).length;
+          const totalMins = sLessons.reduce((sum, l) => sum + (l.video_duration_minutes || 0), 0);
+          return (
+            <div key={section.id} className="border-b border-[#3e4143]">
+              <button onClick={() => toggleSection(section.id)}
+                className="w-full flex items-start gap-3 px-4 py-4 text-left hover:bg-[#2d2f31] transition-colors bg-[#2d2f31]/50">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white leading-snug">{section.title}</p>
+                  <p className="text-[11px] text-[#6a6f73] mt-1">{sCompleted}/{sLessons.length} · {totalMins > 0 ? `${totalMins} min` : `${sLessons.length} lessons`}</p>
+                </div>
+                <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.15 }}
+                  className="inline-flex text-[#6a6f73] flex-shrink-0 mt-0.5">
+                  <Icon name="expand_more" size={18} />
+                </motion.span>
+              </button>
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+                    transition={{ duration: 0.18 }} className="overflow-hidden">
+                    {sLessons.map((lesson) => {
+                      const done = completedIds.has(lesson.id);
+                      const active = activeLessonId === lesson.id;
+                      const accessible = isOwner || !!enrollment || lesson.is_preview;
+                      return (
+                        <button key={lesson.id}
+                          onClick={() => accessible && selectLesson(lesson.id)}
+                          disabled={!accessible}
+                          className={cn(
+                            'w-full flex items-start gap-3 px-4 py-3 text-left transition-all border-b border-[#3e4143]/60',
+                            active ? 'bg-[#3e4143]' : 'hover:bg-[#2d2f31]',
+                            !accessible && 'opacity-40 cursor-not-allowed',
+                          )}
+                        >
+                          {/* Checkbox */}
+                          <div className="flex-shrink-0 mt-0.5">
+                            <div className={cn(
+                              'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
+                              done ? 'bg-[#a435f0] border-[#a435f0]' : 'border-[#6a6f73]'
+                            )}>
+                              {done && <Icon name="check" size={9} className="text-white" />}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              'text-xs leading-snug line-clamp-2',
+                              active ? 'text-white font-semibold' : done ? 'text-[#8d96aa]' : 'text-[#d1d7dc]'
+                            )}>
+                              {lesson.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="inline-flex items-center gap-1 text-[10px] text-[#6a6f73]">
+                                <Icon name={lessonIcon(lesson.lesson_type)} size={10} />
+                                {lesson.lesson_type}
+                              </span>
+                              {lesson.video_duration_minutes > 0 && (
+                                <span className="text-[10px] text-[#6a6f73]">{lesson.video_duration_minutes}m</span>
+                              )}
+                              {lesson.is_preview && !enrollment && (
+                                <span className="text-[9px] font-bold text-[#cec0fc] bg-[#a435f0]/20 px-1.5 py-0.5 rounded">Preview</span>
+                              )}
+                              {!accessible && <Icon name="lock" size={10} className="text-[#6a6f73]" />}
+                            </div>
+                          </div>
+                          {active && <div className="w-0.5 h-full bg-[#a435f0] absolute left-0 top-0 rounded-r" />}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+      {/* Certificate */}
+      {certificate && (
+        <div className="p-3 border-t border-[#3e4143] flex-shrink-0">
+          <button onClick={() => { navigate(`/courses/${courseId}/certificate`); setMobileSidebarOpen(false); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all group">
+            <Icon name="workspace_premium" size={18} className="text-white" fill />
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-xs font-bold text-white">Your Certificate</p>
+              <p className="text-[10px] text-white/70">View &amp; Download</p>
+            </div>
+            <Icon name="chevron_right" size={14} className="text-white/70" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <>
-      {/* ── Global overlays ── */}
+    <div className="min-h-screen bg-[#1c1d1f]" style={{ fontFamily: 'inherit' }}>
+      {/* ── Overlays ── */}
       <ConfettiBlast active={showConfetti} />
       <AnimatePresence>
         {showCelebration && (
@@ -541,505 +548,403 @@ export function CoursePlayerPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Fixed header ─────────────────────────────────────────────────────── */}
-      <header
-        className="fixed top-0 right-0 z-30 bg-white border-b border-ink-200 flex items-center gap-3 px-4"
-        style={{
-          left: 0,
-          height: HEADER_H,
-        }}
-      >
-        {/* Hamburger — always visible, opens sidebar drawer on all screen sizes */}
-        <button
-          onClick={() => setMobileSidebarOpen(true)}
-          className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
-          aria-label="Open course lessons"
-        >
-          <Icon name="menu" size={20} />
-        </button>
-
-        <div className="w-px h-5 bg-ink-200 flex-shrink-0" />
-
+      {/* ── Fixed header ── */}
+      <header className="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 px-4 bg-[#1c1d1f] border-b border-[#3e4143]" style={{ height: HEADER_H }}>
+        <Link to="/courses" className="p-1.5 rounded hover:bg-[#2d2f31] text-[#6a6f73] hover:text-white transition-colors flex-shrink-0">
+          <Icon name="arrow_back" size={18} />
+        </Link>
+        <div className="w-px h-5 bg-[#3e4143] flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-display font-bold text-ink-900 truncate leading-tight">{course.title}</p>
+          <p className="text-sm font-bold text-white truncate leading-tight">{course.title}</p>
           {enrollment && (
             <div className="flex items-center gap-2 mt-0.5">
-              <div className="h-1 w-24 bg-ink-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+              <div className="h-1 w-28 bg-[#3e4143] rounded-full overflow-hidden">
+                <div className="h-full bg-[#a435f0] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
               </div>
-              <span className="text-[10px] text-ink-400 font-medium">{pct}%</span>
+              <span className="text-[10px] text-[#6a6f73] font-medium">{pct}% complete</span>
             </div>
           )}
         </div>
-
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {certificate && (
             <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors"
-            >
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/30 transition-colors">
               <Icon name="workspace_premium" size={14} fill />
               Certificate
             </button>
           )}
           {isOwner && (
             <button onClick={() => navigate(`/courses/${courseId}/edit`)}
-              className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors"
-            >
+              className="p-2 rounded hover:bg-[#2d2f31] text-[#6a6f73] hover:text-white transition-colors" title="Edit course">
               <Icon name="edit" size={16} />
             </button>
           )}
+          {/* Toggle sidebar button */}
+          <button
+            onClick={() => { setSidebarOpen((v) => !v); setMobileSidebarOpen((v) => !v); }}
+            className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-bold transition-all',
+              sidebarOpen ? 'bg-[#2d2f31] border-[#3e4143] text-white' : 'border-[#3e4143] text-[#6a6f73] hover:text-white hover:border-[#6a6f73]'
+            )}>
+            <Icon name="menu_book" size={14} />
+            <span className="hidden sm:block">Content</span>
+          </button>
         </div>
       </header>
 
-      {/* ── Sidebar drawer — shared for all screen sizes ─────────────────────── */}
+      {/* ── Mobile sidebar drawer ── */}
       <AnimatePresence>
         {mobileSidebarOpen && (
           <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40"
-              onClick={() => setMobileSidebarOpen(false)}
-            />
-            {/* Drawer */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
             <motion.aside
-              initial={{ x: -SIDEBAR_W - 20 }} animate={{ x: 0 }} exit={{ x: -SIDEBAR_W - 20 }}
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 32, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 z-50 bg-white border-r border-ink-200 shadow-2xl flex flex-col"
-              style={{ width: Math.min(SIDEBAR_W, typeof window !== 'undefined' ? window.innerWidth * 0.85 : SIDEBAR_W) }}
+              className="fixed inset-y-0 right-0 z-50 shadow-2xl lg:hidden overflow-hidden"
+              style={{ width: Math.min(SIDEBAR_W, typeof window !== 'undefined' ? window.innerWidth * 0.9 : SIDEBAR_W), top: HEADER_H }}
             >
-              {/* Drawer header */}
-              <div className="flex items-center gap-2.5 px-4 border-b border-ink-200 flex-shrink-0" style={{ height: HEADER_H }}>
-                <Link to="/" className="flex items-center gap-2 flex-1 min-w-0" onClick={() => setMobileSidebarOpen(false)}>
-                  <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith" className="h-7 w-7 object-contain flex-shrink-0" />
-                  <span className="font-display font-black text-ink-900 tracking-tight text-[13px] truncate">aiwithrakshith</span>
-                </Link>
-                <button
-                  onClick={() => setMobileSidebarOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-ink-100 text-ink-500 hover:text-ink-900 transition-colors flex-shrink-0"
-                >
-                  <Icon name="close" size={18} />
-                </button>
-              </div>
-
-              {/* Progress */}
-              <div className="px-4 py-4 border-b border-ink-200 flex-shrink-0">
-                <div className="flex items-center gap-3 mb-3">
-                  <ProgressRing pct={pct} size={44} stroke={4} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-display font-bold text-ink-900">{pct}% Complete</p>
-                    <p className="text-xs text-ink-500">{completedIds.size} of {lessons.length} lessons</p>
-                  </div>
-                </div>
-                <div className="h-1.5 w-full bg-ink-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-
-              {/* Course label */}
-              <div className="px-4 py-2.5 border-b border-ink-200 flex-shrink-0">
-                <p className="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-0.5">Course</p>
-                <p className="text-xs font-display font-bold text-ink-900 leading-snug line-clamp-2">{course.title}</p>
-              </div>
-
-              {/* Lesson list */}
-              <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
-                {sections.map((section, si) => {
-                  const sLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
-                  const isExpanded = expandedSections.has(section.id);
-                  const sCompleted = sLessons.filter((l) => completedIds.has(l.id)).length;
-                  return (
-                    <div key={section.id} className={cn('border-b border-ink-200', si === 0 && 'border-t')}>
-                      <button onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-ink-50 transition-colors"
-                      >
-                        <div className="flex-1 min-w-0 pr-2">
-                          <p className="text-xs font-bold text-ink-900 leading-snug line-clamp-1">{section.title}</p>
-                          <p className="text-[10px] text-ink-400 mt-0.5">{sCompleted}/{sLessons.length} completed</p>
-                        </div>
-                        <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }} className="inline-flex text-ink-400 flex-shrink-0">
-                          <Icon name="expand_more" size={18} />
-                        </motion.span>
-                      </button>
-                      <AnimatePresence initial={false}>
-                        {isExpanded && (
-                          <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                            transition={{ duration: 0.18 }} className="overflow-hidden bg-ink-50"
-                          >
-                            {sLessons.map((lesson, li) => {
-                              const done = completedIds.has(lesson.id);
-                              const active = activeLessonId === lesson.id;
-                              const accessible = isOwner || !!enrollment || lesson.is_preview;
-                              return (
-                                <button key={lesson.id}
-                                  onClick={() => accessible && selectLesson(lesson.id)}
-                                  disabled={!accessible}
-                                  className={cn(
-                                    'w-full flex items-start gap-3 px-4 py-3 text-left transition-all duration-150 border-b border-ink-200/60',
-                                    active ? 'bg-emerald-50 border-l-2 border-l-emerald-500' : 'hover:bg-white',
-                                    !accessible && 'opacity-40 cursor-not-allowed',
-                                  )}
-                                >
-                                  <div className="flex-shrink-0 mt-0.5">
-                                    {done ? (
-                                      <div className="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-                                        <Icon name="check" size={11} className="text-emerald-600" />
-                                      </div>
-                                    ) : (
-                                      <div className={cn(
-                                        'w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold',
-                                        active ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-ink-300 text-ink-500'
-                                      )}>
-                                        {li + 1}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className={cn(
-                                      'text-xs font-semibold leading-snug line-clamp-2',
-                                      active ? 'text-emerald-700' : done ? 'text-ink-400' : 'text-ink-900'
-                                    )}>
-                                      {lesson.title}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                      <span className={cn('inline-flex items-center gap-1 text-[10px] font-medium', active ? 'text-emerald-600' : 'text-ink-400')}>
-                                        <Icon name={lessonIcon(lesson.lesson_type)} size={10} />
-                                        {lesson.lesson_type}
-                                      </span>
-                                      {lesson.video_duration_minutes > 0 && (
-                                        <span className="text-[10px] text-ink-400">{lesson.video_duration_minutes}m</span>
-                                      )}
-                                      {lesson.is_preview && !enrollment && (
-                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">FREE</span>
-                                      )}
-                                      {!accessible && <Icon name="lock" size={10} className="text-ink-400" />}
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Certificate */}
-              {certificate && (
-                <div className="px-4 pt-3 pb-1 flex-shrink-0 border-t border-ink-200">
-                  <button onClick={() => { navigate(`/courses/${courseId}/certificate`); setMobileSidebarOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-100 transition-all duration-200 group"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-white/25 flex items-center justify-center flex-shrink-0">
-                      <Icon name="workspace_premium" size={18} className="text-white" fill />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest leading-none mb-0.5">Your Certificate</p>
-                      <p className="text-sm font-extrabold text-white leading-tight truncate">View &amp; Download</p>
-                    </div>
-                    <Icon name="chevron_right" size={16} className="text-white/70 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </button>
-                </div>
-              )}
-
-              {/* Back */}
-              <div className="px-4 py-3 border-t border-ink-200 flex-shrink-0">
-                <Link to="/courses" onClick={() => setMobileSidebarOpen(false)} className="flex items-center gap-2 text-xs font-semibold text-ink-400 hover:text-ink-900 transition-colors">
-                  <Icon name="arrow_back" size={14} />
-                  Back to all courses
-                </Link>
-              </div>
+              <CurriculumContent />
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      {/* ── Main content — always full width ─────────────────────────────────── */}
-      <main
-        style={{
-          paddingTop: HEADER_H,
-          minHeight: '100vh',
-          background: '#f9f9f9',
-        }}
-      >
-        {/* Completion banner */}
-        <AnimatePresence>
-          {completionBanner && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.35, ease: [0.22,1,0.36,1] }}
-              style={{ overflow: 'hidden' }}
-            >
-              <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-lg flex-shrink-0">🎉</span>
-                  <p className="text-white font-bold text-sm leading-tight">Congratulations! You completed this course!</p>
+      {/* ── Main layout ── */}
+      <div className="flex" style={{ paddingTop: HEADER_H }}>
+        {/* Content area */}
+        <div className={cn('flex-1 min-w-0 transition-all duration-300')}
+          style={{ marginRight: sidebarOpen ? SIDEBAR_W : 0 }}>
+
+          {/* Completion banner */}
+          <AnimatePresence>
+            {completionBanner && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} style={{ overflow: 'hidden' }}>
+                <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon name="workspace_premium" size={16} className="text-white flex-shrink-0" fill />
+                    <p className="text-white font-bold text-sm truncate">Congratulations! You completed this course!</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                      className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors">
+                      View Certificate
+                    </button>
+                    <button onClick={() => setCompletionBanner(false)}
+                      className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors">
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 transition-colors"
-                  >Certificate</button>
-                  <button onClick={() => setCompletionBanner(false)}
-                    className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                  </button>
-                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Enrollment banner */}
+          {!enrollment && !isOwner && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#2d2f31] border-b border-[#3e4143]">
+              <div className="flex items-center gap-2 min-w-0">
+                <Icon name="lock" size={15} className="text-[#a435f0] flex-shrink-0" />
+                <p className="text-sm text-[#d1d7dc] truncate">Enroll to unlock all lessons and track your progress.</p>
               </div>
-            </motion.div>
+              <button onClick={handleEnroll} disabled={enroll.isPending}
+                className="flex-shrink-0 px-4 py-1.5 rounded-lg bg-[#a435f0] hover:bg-[#8710d8] disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                {enroll.isPending ? 'Enrolling…' : 'Enroll Free'}
+              </button>
+            </div>
           )}
-        </AnimatePresence>
 
-        {/* Enrollment banner */}
-        {!enrollment && !isOwner && (
-          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-blue-50 border-b border-blue-100">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Icon name="school" size={16} className="text-blue-600 flex-shrink-0" />
-              <p className="text-sm text-blue-800 font-medium truncate">Enroll for free to unlock all lessons and track your progress.</p>
-            </div>
-            <Button size="sm" onClick={handleEnroll} loading={enroll.isPending} className="flex-shrink-0">Enroll Free</Button>
-          </div>
-        )}
-
-        {activeLesson && canAccess ? (
-          <>
-            {/* Video / media — dark background, full width */}
-            <div style={{ background: '#030712' }}>
-              {activeLesson.lesson_type === 'video' && videoUrl && (
-                getEmbedUrl(videoUrl) ? (
-                  <div className="relative aspect-video">
-                    <iframe src={getEmbedUrl(videoUrl)!}
-                      className="absolute inset-0 w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen title={activeLesson.title}
+          {activeLesson && canAccess ? (
+            <>
+              {/* ── Video / media area — black bg ── */}
+              <div className="bg-black w-full">
+                {activeLesson.lesson_type === 'video' && videoUrl && (
+                  getEmbedUrl(videoUrl) ? (
+                    <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                      <iframe src={getEmbedUrl(videoUrl)!} className="absolute inset-0 w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen title={activeLesson.title} />
+                    </div>
+                  ) : (
+                    <VideoPlayer src={videoUrl} title={activeLesson.title}
+                      markers={activeLesson.timeline_markers ?? []}
+                      videoRef={videoRef as React.RefObject<HTMLVideoElement>}
+                      onTimeUpdate={(s) => {
+                        if (saveTimer.current) clearTimeout(saveTimer.current);
+                        saveTimer.current = setTimeout(() => {
+                          savePosition.mutate({ lessonId: activeLesson.id, courseId: courseId!, seconds: s });
+                        }, 5000);
+                      }}
+                      initialTime={progressList.find((p) => p.lesson_id === activeLesson.id)?.watch_position_seconds}
                     />
-                  </div>
-                ) : (
-                  <VideoPlayer src={videoUrl} title={activeLesson.title}
-                    markers={activeLesson.timeline_markers ?? []}
-                    videoRef={videoRef as React.RefObject<HTMLVideoElement>}
-                    onTimeUpdate={(s) => {
-                      if (saveTimer.current) clearTimeout(saveTimer.current);
-                      saveTimer.current = setTimeout(() => {
-                        savePosition.mutate({ lessonId: activeLesson.id, courseId: courseId!, seconds: s });
-                      }, 5000);
-                    }}
-                    initialTime={progressList.find((p) => p.lesson_id === activeLesson.id)?.watch_position_seconds}
-                  />
-                )
-              )}
-              {activeLesson.lesson_type === 'video' && !videoUrl && (
-                <div className="aspect-video flex items-center justify-center bg-gray-900">
-                  {mediaLoading
-                    ? <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                    : <Icon name="play_circle" size={48} className="text-gray-600" />
-                  }
-                </div>
-              )}
-            </div>
-
-            {activeLesson.lesson_type === 'image' && (
-              <div className="p-4 sm:p-6 bg-white">
-                {mediaLoading ? (
-                  <div className="rounded-2xl border border-ink-200 min-h-[200px] bg-ink-100 animate-pulse" />
-                ) : videoUrl ? (
-                  <div className="rounded-2xl border border-ink-200 bg-ink-50 flex items-center justify-center overflow-hidden">
-                    <img src={videoUrl} alt={activeLesson.title} className="w-full object-contain max-h-[70vh]" />
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-ink-200 bg-ink-50 flex items-center justify-center min-h-[200px]">
-                    <Icon name="image" size={48} className="text-ink-300" />
+                  )
+                )}
+                {activeLesson.lesson_type === 'video' && !videoUrl && (
+                  <div className="aspect-video flex items-center justify-center">
+                    {mediaLoading
+                      ? <div className="w-8 h-8 border-2 border-[#a435f0] border-t-transparent rounded-full animate-spin" />
+                      : <Icon name="play_circle" size={56} className="text-[#3e4143]" />
+                    }
                   </div>
                 )}
-              </div>
-            )}
-
-            {activeLesson.lesson_type === 'text' && activeLesson.content && (
-              <div className="p-4 sm:p-6 lg:p-8">
-                <div className="max-w-3xl mx-auto bg-white border border-ink-200 rounded-2xl p-6 sm:p-8">
-                  <p className="text-sm text-ink-700 leading-relaxed whitespace-pre-wrap">{activeLesson.content}</p>
-                </div>
-              </div>
-            )}
-
-            {activeLesson.lesson_type === 'resource' && (
-              <div className="p-4 sm:p-6">
-                <div className="max-w-sm mx-auto bg-white border border-ink-200 rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
-                  <div className="w-16 h-16 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center">
-                    <Icon name="folder_zip" size={32} className="text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="font-display font-bold text-ink-900 mb-1">Downloadable Resources</p>
-                    <p className="text-sm text-ink-500">Open the Resources tab below to download files for this lesson.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Lesson meta + mark complete */}
-            <div className="bg-white border-b border-ink-200 px-4 sm:px-6 py-5">
-              <div className="flex items-start justify-between gap-4 flex-wrap max-w-4xl">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className={cn(
-                      'inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border',
-                      activeLesson.lesson_type === 'video' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      activeLesson.lesson_type === 'text' ? 'bg-green-50 text-green-700 border-green-200' :
-                      'bg-ink-100 text-ink-600 border-ink-200'
-                    )}>
-                      <Icon name={lessonIcon(activeLesson.lesson_type)} size={10} />
-                      {activeLesson.lesson_type.charAt(0).toUpperCase() + activeLesson.lesson_type.slice(1)}
-                    </span>
-                    {activeLesson.video_duration_minutes > 0 && (
-                      <span className="text-xs text-ink-400">{activeLesson.video_duration_minutes} min</span>
+                {activeLesson.lesson_type === 'image' && (
+                  <div className="flex items-center justify-center" style={{ minHeight: 240, background: '#0f1011' }}>
+                    {mediaLoading ? (
+                      <div className="w-8 h-8 border-2 border-[#a435f0] border-t-transparent rounded-full animate-spin" />
+                    ) : videoUrl ? (
+                      <img src={videoUrl} alt={activeLesson.title} className="max-w-full object-contain" style={{ maxHeight: '70vh' }} />
+                    ) : (
+                      <Icon name="image" size={56} className="text-[#3e4143]" />
                     )}
                   </div>
-                  <h2 className="text-lg sm:text-xl font-display font-extrabold text-ink-900 tracking-tight leading-tight mb-1">
-                    {activeLesson.title}
-                  </h2>
-                  {activeLesson.description && (
-                    <p className="text-sm text-ink-500 leading-relaxed mt-1">{activeLesson.description}</p>
+                )}
+                {(activeLesson.lesson_type === 'text' || activeLesson.lesson_type === 'resource') && (
+                  <div className="h-0" />
+                )}
+              </div>
+
+              {/* ── White content area below video ── */}
+              <div className="bg-white">
+                {activeLesson.lesson_type === 'text' && activeLesson.content && (
+                  <div className="px-6 py-8 border-b border-gray-200">
+                    <div className="max-w-3xl">
+                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{activeLesson.content}</p>
+                    </div>
+                  </div>
+                )}
+                {activeLesson.lesson_type === 'resource' && (
+                  <div className="px-6 py-8 border-b border-gray-200">
+                    <div className="flex items-center gap-4 p-5 bg-gray-50 rounded-xl border border-gray-200 max-w-sm">
+                      <div className="w-12 h-12 bg-[#a435f0]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Icon name="folder_zip" size={24} className="text-[#a435f0]" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">Downloadable Resources</p>
+                        <p className="text-xs text-gray-500 mt-0.5">See the Resources tab below to download files.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Lesson title + mark complete ── */}
+                <div className="px-6 py-5 border-b border-gray-200">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className={cn(
+                          'inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full',
+                          activeLesson.lesson_type === 'video' ? 'bg-blue-50 text-blue-700' :
+                          activeLesson.lesson_type === 'text' ? 'bg-green-50 text-green-700' :
+                          activeLesson.lesson_type === 'image' ? 'bg-amber-50 text-amber-700' :
+                          'bg-gray-100 text-gray-600'
+                        )}>
+                          <Icon name={lessonIcon(activeLesson.lesson_type)} size={10} />
+                          {activeLesson.lesson_type.charAt(0).toUpperCase() + activeLesson.lesson_type.slice(1)}
+                        </span>
+                        {activeLesson.video_duration_minutes > 0 && (
+                          <span className="text-xs text-gray-400">{activeLesson.video_duration_minutes} min</span>
+                        )}
+                        {activeLesson.is_preview && (
+                          <span className="text-[10px] font-bold text-[#a435f0] bg-[#a435f0]/10 px-2 py-0.5 rounded-full">Free Preview</span>
+                        )}
+                      </div>
+                      <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1">{activeLesson.title}</h2>
+                      {activeLesson.description && (
+                        <p className="text-sm text-gray-500 leading-relaxed mt-1">{activeLesson.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isCompleted ? (
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-50 text-green-700 border border-green-200 text-sm font-bold">
+                          <Icon name="check_circle" size={16} fill />
+                          Completed
+                        </div>
+                      ) : (enrollment || isOwner) ? (
+                        <button onClick={handleMarkComplete} disabled={markComplete.isPending}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#a435f0] hover:bg-[#8710d8] disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                          {markComplete.isPending
+                            ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            : <Icon name="check_circle" size={15} />
+                          }
+                          Mark Complete
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Prev / Next ── */}
+                <div className="px-6 py-3 border-b border-gray-200 flex items-center justify-between gap-3">
+                  <button onClick={() => prevLesson && setActiveLessonId(prevLesson.id)} disabled={!prevLesson}
+                    className="flex items-center gap-2 px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold">
+                    <Icon name="chevron_left" size={16} />
+                    Previous
+                  </button>
+                  <span className="text-xs text-gray-400 hidden sm:block font-medium">{lessonIndex + 1} / {lessons.length}</span>
+                  {nextLesson ? (
+                    <button onClick={() => setActiveLessonId(nextLesson.id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded bg-[#1c1d1f] hover:bg-black text-white text-sm font-bold transition-colors">
+                      Next <Icon name="chevron_right" size={16} />
+                    </button>
+                  ) : certificate ? (
+                    <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                      className="flex items-center gap-2 px-4 py-2 rounded bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition-colors">
+                      <Icon name="workspace_premium" size={15} fill />
+                      Get Certificate
+                    </button>
+                  ) : (
+                    <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                      className="flex items-center gap-2 px-4 py-2 rounded bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold transition-all">
+                      <Icon name="workspace_premium" size={15} fill />
+                      View Certificate
+                    </button>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {isCompleted ? (
-                    <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold">
-                      <Icon name="check_circle" size={16} fill />
-                      Completed
+
+                {/* ── Tab bar ── */}
+                <div className="border-b border-gray-200 px-6">
+                  <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
+                    {([
+                      ['overview',  'menu_book',           'Overview'],
+                      ['qna',       'help_outline',        'Q&A'],
+                      ['notes',     'edit_note',           'Notes'],
+                      ['resources', 'attach_file',         'Resources'],
+                      ['reviews',   'star_outline',        'Reviews'],
+                    ] as const).map(([key, icon, label]) => (
+                      <button key={key} onClick={() => setActiveTab(key)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-4 py-3.5 text-sm font-bold border-b-2 transition-all whitespace-nowrap',
+                          activeTab === key
+                            ? 'text-[#1c1d1f] border-[#1c1d1f]'
+                            : 'text-gray-400 border-transparent hover:text-gray-700'
+                        )}>
+                        <Icon name={icon} size={14} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Tab content ── */}
+                <div className="px-6 py-6">
+                  {activeTab === 'overview' && (
+                    <div className="max-w-3xl space-y-6">
+                      {/* Course description */}
+                      {course.description && (
+                        <div>
+                          <h3 className="text-base font-bold text-gray-900 mb-2">About this course</h3>
+                          <p className="text-sm text-gray-600 leading-relaxed">{course.description}</p>
+                        </div>
+                      )}
+                      {/* Lesson details */}
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900 mb-3">What you'll learn in this lesson</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                            { icon: 'play_circle', label: `${lessons.filter(l => l.lesson_type === 'video').length} Video lessons` },
+                            { icon: 'article', label: `${lessons.filter(l => l.lesson_type === 'text').length} Text lessons` },
+                            { icon: 'image', label: `${lessons.filter(l => l.lesson_type === 'image').length} Image lessons` },
+                            { icon: 'attach_file', label: `${lessons.filter(l => l.lesson_type === 'resource').length} Resource files` },
+                          ].filter(item => !item.label.startsWith('0')).map((item) => (
+                            <div key={item.label} className="flex items-center gap-2.5 text-sm text-gray-700">
+                              <Icon name={item.icon} size={16} className="text-[#a435f0] flex-shrink-0" />
+                              {item.label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Course progress summary */}
+                      {(enrollment || isOwner) && (
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-bold text-gray-900">Your Progress</h4>
+                            <span className="text-sm font-bold text-[#a435f0]">{pct}%</span>
+                          </div>
+                          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden mb-2">
+                            <div className="h-full bg-[#a435f0] rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                          </div>
+                          <p className="text-xs text-gray-500">{completedIds.size} of {lessons.length} lessons completed</p>
+                        </div>
+                      )}
                     </div>
-                  ) : (enrollment || isOwner) ? (
-                    <Button onClick={handleMarkComplete} loading={markComplete.isPending}>
-                      <Icon name="check_circle" size={15} />
-                      Mark Complete
-                    </Button>
-                  ) : null}
+                  )}
+
+                  {activeTab === 'qna' && (
+                    <div className="max-w-3xl">
+                      <CourseQnA courseId={courseId!} courseOwnerId={course.user_id} isEnrolled={!!enrollment} activeLessonId={activeLesson.id} />
+                    </div>
+                  )}
+
+                  {activeTab === 'notes' && (
+                    <div className="max-w-2xl">
+                      <h3 className="text-base font-bold text-gray-900 mb-4">My Notes</h3>
+                      <NotesPanel courseId={courseId!} lessonId={activeLesson.id} />
+                    </div>
+                  )}
+
+                  {activeTab === 'resources' && (
+                    <div className="max-w-2xl">
+                      <h3 className="text-base font-bold text-gray-900 mb-4">Lesson Resources</h3>
+                      <ResourceList lesson={activeLesson} />
+                    </div>
+                  )}
+
+                  {activeTab === 'reviews' && (
+                    <div className="max-w-3xl">
+                      <CourseReviews courseId={courseId!} courseOwnerId={course.user_id}
+                        isEnrolled={!!enrollment} avgRating={course.avg_rating ?? 0} reviewsCount={course.reviews_count ?? 0} />
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Prev / Next */}
-            <div className="px-4 sm:px-6 py-4 bg-white border-b border-ink-200">
-              <div className="flex items-center justify-between gap-3 max-w-4xl">
-                <button onClick={() => prevLesson && setActiveLessonId(prevLesson.id)} disabled={!prevLesson}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-ink-200 text-ink-600 hover:text-ink-900 hover:border-ink-400 hover:bg-ink-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold"
-                >
-                  <Icon name="chevron_left" size={16} />
-                  Previous
+            </>
+          ) : (
+            /* No lesson selected / no access */
+            <div className="flex flex-col items-center justify-center gap-6 p-8 text-center" style={{ minHeight: 'calc(100vh - 56px)', background: '#1c1d1f' }}>
+              <div className="w-20 h-20 bg-[#2d2f31] border border-[#3e4143] rounded-2xl flex items-center justify-center">
+                <Icon name={!enrollment && !isOwner ? 'lock' : 'school'} size={36} className="text-[#6a6f73]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {!enrollment && !isOwner ? 'Enroll to start learning' : 'Select a lesson to begin'}
+                </h3>
+                <p className="text-sm text-[#6a6f73] max-w-xs mx-auto leading-relaxed">
+                  {!enrollment && !isOwner
+                    ? 'Enroll for free to unlock all content and track your progress.'
+                    : 'Choose a lesson from the course content panel.'}
+                </p>
+              </div>
+              {!enrollment && !isOwner && (
+                <button onClick={handleEnroll} disabled={enroll.isPending}
+                  className="px-6 py-3 rounded-lg bg-[#a435f0] hover:bg-[#8710d8] disabled:opacity-50 text-white font-bold transition-colors">
+                  {enroll.isPending ? 'Enrolling…' : 'Enroll Now — Free'}
                 </button>
-                <span className="text-xs text-ink-400 hidden sm:block">{lessonIndex + 1} / {lessons.length}</span>
-                {nextLesson ? (
-                  <button onClick={() => setActiveLessonId(nextLesson.id)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ink-900 hover:bg-emerald-600 text-white text-sm font-bold transition-colors"
-                  >
-                    Next <Icon name="chevron_right" size={16} />
-                  </button>
-                ) : certificate ? (
-                  <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-sm font-bold hover:bg-amber-100 transition-colors"
-                  >
-                    <Icon name="workspace_premium" size={16} fill />
-                    Get Certificate
-                  </button>
-                ) : (
-                  <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold shadow-sm shadow-amber-200 transition-all"
-                  >
-                    <Icon name="workspace_premium" size={16} fill />
-                    View Certificate
-                  </button>
-                )}
-              </div>
+              )}
             </div>
+          )}
+        </div>
 
-            {/* Tab bar */}
-            <div className="bg-white border-b border-ink-200 px-4 sm:px-6">
-              <div className="flex items-center max-w-4xl">
-                {([
-                  ['discussion', 'chat_bubble_outline', 'Discussion'] as const,
-                  ['qna',        'help_outline',         'Q&A']        as const,
-                  ['notes',      'edit_note',            'My Notes']   as const,
-                  ['resources',  'attach_file',          'Resources']  as const,
-                ]).map(([key, icon, label]) => (
-                  <button key={key}
-                    onClick={() => setActiveTab(key)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold border-b-2 transition-all duration-150 mr-1',
-                      activeTab === key
-                        ? 'text-ink-900 border-ink-900'
-                        : 'text-ink-400 border-transparent hover:text-ink-700 hover:border-ink-300'
-                    )}
-                  >
-                    <Icon name={icon} size={13} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* ── Desktop right sidebar ── */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.aside
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: SIDEBAR_W, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed top-0 right-0 bottom-0 z-20 overflow-hidden hidden lg:block"
+              style={{ top: HEADER_H }}
+            >
+              <CurriculumContent />
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
 
-            {/* Tab content */}
-            <div className="max-w-4xl px-4 sm:px-6 py-6">
-              {activeTab === 'discussion' && (
-                <LessonComments lessonId={activeLesson.id} courseId={courseId!} courseOwnerId={course.user_id} />
-              )}
-              {activeTab === 'qna' && (
-                <CourseQnA
-                  courseId={courseId!}
-                  courseOwnerId={course.user_id}
-                  isEnrolled={!!enrollment}
-                  activeLessonId={activeLesson.id}
-                />
-              )}
-              {activeTab === 'notes' && (
-                <div className="bg-white rounded-2xl border border-ink-200 p-5">
-                  <h3 className="text-sm font-display font-bold text-ink-900 mb-4">Lesson Notes</h3>
-                  <NotesPanel courseId={courseId!} lessonId={activeLesson.id} />
-                </div>
-              )}
-              {activeTab === 'resources' && (
-                <div className="bg-white rounded-2xl border border-ink-200 p-5">
-                  <h3 className="text-sm font-display font-bold text-ink-900 mb-4">Resources</h3>
-                  <ResourceList lesson={activeLesson} />
-                </div>
-              )}
-            </div>
-
-            {/* Course-level reviews — below the lesson tabs */}
-            <div className="max-w-4xl px-4 sm:px-6 pb-20">
-              <CourseReviews
-                courseId={courseId!}
-                courseOwnerId={course.user_id}
-                isEnrolled={!!enrollment}
-                avgRating={course.avg_rating ?? 0}
-                reviewsCount={course.reviews_count ?? 0}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-6 p-8 text-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
-            <div className="w-20 h-20 bg-white border border-ink-200 rounded-2xl flex items-center justify-center shadow-sm">
-              <Icon name={!enrollment && !isOwner ? 'lock' : 'school'} size={36} className="text-ink-400" />
-            </div>
-            <div>
-              <h3 className="text-xl font-display font-extrabold text-ink-900 mb-2">
-                {!enrollment && !isOwner ? 'Enroll to start learning' : 'Select a lesson to begin'}
-              </h3>
-              <p className="text-sm text-ink-500 max-w-xs mx-auto leading-relaxed">
-                {!enrollment && !isOwner
-                  ? 'This course is free. Enroll to unlock all content and track your progress.'
-                  : 'Choose a lesson from the sidebar on the left.'}
-              </p>
-            </div>
-            {!enrollment && !isOwner && (
-              <Button onClick={handleEnroll} loading={enroll.isPending} size="lg">
-                <Icon name="school" size={16} />
-                Enroll Now — Free
-              </Button>
-            )}
-          </div>
-        )}
-      </main>
-    </>
+      <style>{`
+        .hide-scrollbar { scrollbar-width: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+      `}</style>
+    </div>
   );
 }
