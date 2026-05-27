@@ -11,6 +11,7 @@ declare global {
       getResponse: (widgetId?: string) => string | undefined;
     };
     __turnstileReady?: boolean;
+    __turnstileFailed?: boolean;
   }
 }
 
@@ -63,6 +64,7 @@ function InvisibleTurnstile({
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [ready, setReady] = useState(!!window.__turnstileReady);
+  const [loadError, setLoadError] = useState(!!window.__turnstileFailed);
   const [retryKey, setRetryKey] = useState(0);
 
   // Expose reset to parent
@@ -80,20 +82,29 @@ function InvisibleTurnstile({
 
   useEffect(() => {
     if (ready) return;
-    const handle = () => setReady(true);
-    window.addEventListener('turnstile:ready', handle);
+    const handleReady = () => setReady(true);
+    const handleFail = () => { setLoadError(true); onError?.(); };
+    window.addEventListener('turnstile:ready', handleReady);
+    window.addEventListener('turnstile:failed', handleFail);
     const poll = setInterval(() => {
       if (window.__turnstileReady) { setReady(true); clearInterval(poll); }
+      if (window.__turnstileFailed) { setLoadError(true); clearInterval(poll); onError?.(); }
     }, 200);
-    const timeout = setTimeout(() => {
-      if (!window.__turnstileReady) { onError?.(); }
-    }, 10000);
     return () => {
-      window.removeEventListener('turnstile:ready', handle);
+      window.removeEventListener('turnstile:ready', handleReady);
+      window.removeEventListener('turnstile:failed', handleFail);
       clearInterval(poll);
-      clearTimeout(timeout);
     };
   }, [ready, retryKey, onError]);
+
+  // If Turnstile failed to load, surface a non-blocking message instead of hanging
+  if (loadError) {
+    return (
+      <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
+        Security check temporarily unavailable. You can still submit — please refresh if the issue persists.
+      </div>
+    );
+  }
 
   const renderWidget = useCallback(() => {
     if (!ready || !containerRef.current || !window.turnstile) return;

@@ -4,6 +4,7 @@ import { X, Bug, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { TurnstileWidget, resetTurnstile } from '../auth/TurnstileWidget';
 
 interface BugReportModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function BugReportModal({ open, onClose, errorStack, errorTitle }: BugRep
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showStack, setShowStack] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const reset = () => {
     setTitle(errorTitle ?? '');
@@ -39,17 +41,21 @@ export function BugReportModal({ open, onClose, errorStack, errorTitle }: BugRep
     if (!title.trim()) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('bug_reports').insert({
-        title: title.trim(),
-        description: description.trim(),
-        page_url: window.location.href,
-        user_agent: navigator.userAgent,
-        error_stack: errorStack ?? null,
+      const { error } = await supabase.functions.invoke('submit-bug-report', {
+        body: {
+          title: title.trim(),
+          description: description.trim(),
+          page_url: window.location.href,
+          error_stack: errorStack ?? null,
+          captcha_token: captchaToken ?? '',
+        },
       });
       if (error) throw error;
       setSubmitted(true);
     } catch {
       toast.error('Failed to submit report. Please try again.');
+      resetTurnstile();
+      setCaptchaToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -182,6 +188,14 @@ export function BugReportModal({ open, onClose, errorStack, errorTitle }: BugRep
                   <p className="text-[11px] text-ink-400 leading-relaxed">
                     We'll also capture the current page URL and your browser info to help us reproduce the issue.
                   </p>
+
+                  {/* CAPTCHA */}
+                  <TurnstileWidget
+                    action="bug-report"
+                    onVerify={setCaptchaToken}
+                    onExpire={() => { setCaptchaToken(null); resetTurnstile(); }}
+                    onError={() => setCaptchaToken(null)}
+                  />
 
                   {/* Submit */}
                   <button

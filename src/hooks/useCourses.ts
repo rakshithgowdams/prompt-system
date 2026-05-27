@@ -1013,7 +1013,9 @@ export function useCourseQuestions(
       if (search.trim()) {
         const safe = escapePostgrestLike(search);
         if (safe.length > 0) {
-          q = (q as any).or(`title.ilike.%25${safe}%25,body.ilike.%25${safe}%25`);
+          // % is the PostgREST LIKE wildcard; escapePostgrestLike already %25-encoded
+          // any literal % the user typed, so these outer % are pure wildcards.
+          q = (q as any).or(`title.ilike.%${safe}%,body.ilike.%${safe}%`);
         }
       }
 

@@ -5,6 +5,7 @@ import { z } from 'zod/v4';
 import { toast } from 'sonner';
 import { X, Bell } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { TurnstileWidget, resetTurnstile } from '../auth/TurnstileWidget';
 
 const schema = z.object({
   email: z.email('Enter a valid email'),
@@ -19,6 +20,7 @@ interface Props {
 
 export function NotifyMeModal({ tier, onClose }: Props) {
   const [submitted, setSubmitted] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -31,13 +33,16 @@ export function NotifyMeModal({ tier, onClose }: Props) {
   const onSubmit = async (data: FormData) => {
     localStorage.setItem('notify_email', data.email);
     try {
-      const { error } = await supabase.from('notify_signups').insert({
-        email: data.email.toLowerCase(),
-        tier,
+      const { error } = await supabase.functions.invoke('submit-notify-signup', {
+        body: {
+          email: data.email.toLowerCase(),
+          tier,
+          captcha_token: captchaToken ?? '',
+        },
       });
-      if (error && !error.message.includes('duplicate')) throw error;
+      if (error) throw error;
     } catch {
-      // fallback — still show success
+      // fallback — still show success (UX: don't block user on infra issues)
     }
     setSubmitted(true);
     toast.success("You're on the list. We'll be in touch!");
@@ -98,6 +103,12 @@ export function NotifyMeModal({ tier, onClose }: Props) {
                   <p className="mt-1 text-xs text-danger">{errors.email.message}</p>
                 )}
               </div>
+              <TurnstileWidget
+                action="notify-signup"
+                onVerify={setCaptchaToken}
+                onExpire={() => { setCaptchaToken(null); resetTurnstile(); }}
+                onError={() => setCaptchaToken(null)}
+              />
               <button
                 type="submit"
                 disabled={isSubmitting}

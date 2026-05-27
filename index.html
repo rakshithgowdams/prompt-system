@@ -21,10 +21,20 @@
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileReady" defer></script>
     <script>
       window.__turnstileReady = false;
+      window.__turnstileFailed = false;
       window.onTurnstileReady = function () {
         window.__turnstileReady = true;
         window.dispatchEvent(new Event('turnstile:ready'));
       };
+      // If Turnstile script fails to load within 8 seconds, dispatch a failure event
+      // so TurnstileWidget can show a graceful fallback instead of hanging forever.
+      setTimeout(function () {
+        if (!window.__turnstileReady) {
+          window.__turnstileFailed = true;
+          window.dispatchEvent(new Event('turnstile:failed'));
+          console.warn('[turnstile] script failed to load within 8s — verify Cloudflare connectivity');
+        }
+      }, 8000);
     </script>
   </head>
   <body>

@@ -188,12 +188,15 @@ function ErrorReportForm({ errorStack }: { errorStack: string }) {
     e.preventDefault();
     setSending(true);
     try {
-      await supabase.from('bug_reports').insert({
-        title: 'App crashed: ' + errorStack.split('\n')[0].slice(0, 120),
-        description: description.trim(),
-        page_url: window.location.href,
-        user_agent: navigator.userAgent,
-        error_stack: errorStack,
+      // Use edge function so the direct anon INSERT policy is no longer needed
+      await supabase.functions.invoke('submit-bug-report', {
+        body: {
+          title: 'App crashed: ' + errorStack.split('\n')[0].slice(0, 120),
+          description: description.trim(),
+          page_url: window.location.href,
+          error_stack: errorStack,
+          captcha_token: '',
+        },
       });
       setSent(true);
     } catch {
