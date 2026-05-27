@@ -1,47 +1,90 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  adminClient, buildCorsHeaders, getClientIp,
+  checkRateLimit, tooManyRequestsResponse,
+  isValidUuid, logAudit,
+} from "../_shared/security.ts";
 import { createdEmail, sendResendEmail } from "../_shared/todo-email-templates.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
 
 const APP_URL = Deno.env.get("APP_URL") ?? "https://aiwithrakshith.tech";
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = buildCorsHeaders(origin, false);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return new Response("ok", { status: 200, headers: corsHeaders });
+  }
+
+  if (!corsHeaders["Access-Control-Allow-Origin"]) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), {
+      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "method_not_allowed" }), {
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Require auth
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
-    const { todo_id } = await req.json();
-    if (!todo_id) {
-      return new Response(JSON.stringify({ error: "todo_id required" }), {
+    let body: Record<string, unknown>;
+    try { body = await req.json(); } catch {
+      return new Response(JSON.stringify({ error: "invalid_json" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
-
-    // Verify caller is the todo owner
-    const authHeader = req.headers.get("Authorization");
-    let callerUserId: string | null = null;
-    if (authHeader?.startsWith("Bearer ")) {
-      const { data: { user } } = await supabase.auth.getUser(authHeader.slice(7));
-      callerUserId = user?.id ?? null;
+    const todo_id = typeof body.todo_id === "string" ? body.todo_id.trim() : "";
+    if (!isValidUuid(todo_id)) {
+      return new Response(JSON.stringify({ error: "invalid_todo_id" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    const ip = getClientIp(req);
+    const supabase = adminClient();
+
+    // Verify caller JWT
+    const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(authHeader.slice(7));
+    if (authErr || !caller) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Rate limit: 50/hr by IP
+    const byIp = await checkRateLimit(supabase,
+      { bucket: "todo-created", max: 50, windowSeconds: 3600, keyBy: "ip" }, ip);
+    if (!byIp.allowed) {
+      await logAudit(supabase, { action: "todo-created.rate_limited", metadata: { todo_id, by: "ip" }, ip });
+      return tooManyRequestsResponse(byIp, corsHeaders);
+    }
+
+    // Rate limit: 50/hr by email
+    const byEmail = await checkRateLimit(supabase,
+      { bucket: "todo-created", max: 50, windowSeconds: 3600, keyBy: "email" }, ip, caller.email ?? "");
+    if (!byEmail.allowed) {
+      await logAudit(supabase, { action: "todo-created.rate_limited", metadata: { todo_id, by: "email" }, ip });
+      return tooManyRequestsResponse(byEmail, corsHeaders);
+    }
+
+    const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
     const { data: todo, error: todoErr } = await supabase
       .from("todos")
       .select("id, user_id, title, notes, due_at, priority, created_email_sent_at")
       .eq("id", todo_id)
-      .single();
+      .maybeSingle();
 
     if (todoErr || !todo) {
       return new Response(JSON.stringify({ error: "todo not found" }), {
@@ -49,7 +92,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (callerUserId && callerUserId !== todo.user_id) {
+    if (caller.id !== todo.user_id) {
       return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -98,17 +141,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    await supabase
-      .from("todos")
-      .update({ created_email_sent_at: new Date().toISOString() })
-      .eq("id", todo_id);
+    await supabase.from("todos").update({ created_email_sent_at: new Date().toISOString() }).eq("id", todo_id);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("[todo-created] uncaught:", e);
-    return new Response(JSON.stringify({ error: String(e) }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

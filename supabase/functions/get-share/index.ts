@@ -1,13 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  adminClient, buildCorsHeaders, getClientIp,
+  checkRateLimit, tooManyRequestsResponse,
+  isValidUuid, isValidString, logAudit, cacheGet, cacheSet,
+} from "../_shared/security.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
-
-function json(data: unknown, status = 200) {
+function json(data: unknown, status = 200, corsHeaders: Record<string, string>) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -15,44 +14,67 @@ function json(data: unknown, status = 200) {
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = buildCorsHeaders(origin, true); // public endpoint
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: corsHeaders });
+    return new Response("ok", { status: 200, headers: corsHeaders });
   }
 
   try {
     const url = new URL(req.url);
     const shareId = url.searchParams.get("id");
-    if (!shareId) return json({ error: "Missing share id" }, 400);
 
-    // Use service role to bypass RLS — this is intentional and safe because
-    // we enforce all access rules manually below (expiry, is_active, password gate).
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } }
-    );
-
-    // 1. Fetch the share record
-    const { data: share, error: shareErr } = await admin
-      .from("file_shares")
-      .select("*")
-      .eq("id", shareId)
-      .maybeSingle();
-
-    if (shareErr || !share) return json({ error: "not_found" }, 404);
-    if (!share.is_active) return json({ error: "not_found" }, 404);
-
-    // 2. Check expiry
-    if (share.expires_at && new Date(share.expires_at) < new Date()) {
-      return json({ error: "expired" }, 410);
+    if (!isValidUuid(shareId)) {
+      return json({ error: "invalid_share_id" }, 400, corsHeaders);
     }
 
-    // 3. If password-protected, verify the password hash passed in the request
+    const ip = getClientIp(req);
+    const supabase = adminClient();
+
+    // Rate limit: 30 per 10 min per IP
+    const limit = await checkRateLimit(supabase,
+      { bucket: "get-share", max: 30, windowSeconds: 600, keyBy: "ip" }, ip);
+    if (!limit.allowed) {
+      await logAudit(supabase, { action: "get-share.rate_limited", metadata: { share_id: shareId }, ip });
+      return tooManyRequestsResponse(limit, corsHeaders);
+    }
+
+    // Check in-memory cache (30s TTL) — only for non-password shares
+    const cacheKey = `share:${shareId}`;
+    let share = cacheGet<Record<string, unknown>>(cacheKey);
+
+    if (!share) {
+      const { data, error: shareErr } = await supabase
+        .from("file_shares")
+        .select("*")
+        .eq("id", shareId)
+        .maybeSingle();
+
+      if (shareErr || !data) {
+        await logAudit(supabase, { action: "get-share.not_found", metadata: { share_id: shareId }, ip });
+        return json({ error: "not_found" }, 404, corsHeaders);
+      }
+      share = data;
+      // Only cache open/public shares (not password-protected — password check needs fresh data)
+      if (data.access_type !== "password") {
+        cacheSet(cacheKey, share, 30);
+      }
+    }
+
+    if (!share.is_active) return json({ error: "not_found" }, 404, corsHeaders);
+
+    if (share.expires_at && new Date(share.expires_at as string) < new Date()) {
+      return json({ error: "expired" }, 410, corsHeaders);
+    }
+
+    // Password gate
     if (share.access_type === "password") {
       const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-      const attempt: string | undefined = body.password_hash;
-      if (!attempt || attempt !== share.password_hash) {
-        // Return share metadata only — no files
+      const attempt: unknown = body.password_hash;
+
+      // Validate: password_hash must be a 64-char hex string (sha256)
+      if (!isValidString(attempt, 64, 64)) {
         return json({
           status: "password_required",
           share: {
@@ -62,78 +84,58 @@ Deno.serve(async (req: Request) => {
             allow_download: share.allow_download,
             expires_at: share.expires_at,
           },
-        });
+        }, 200, corsHeaders);
+      }
+
+      if (attempt !== share.password_hash) {
+        await logAudit(supabase, { action: "get-share.wrong_password", metadata: { share_id: shareId }, ip });
+        return json({
+          status: "password_required",
+          share: {
+            id: share.id,
+            share_name: share.share_name,
+            access_type: share.access_type,
+            allow_download: share.allow_download,
+            expires_at: share.expires_at,
+          },
+        }, 200, corsHeaders);
       }
     }
 
-    // 4. Increment view count (fire-and-forget, non-blocking)
-    admin.rpc("increment_share_view", { share_id: share.id }).then(() => {});
+    // Increment view count (fire-and-forget)
+    supabase.rpc("increment_share_view", { share_id: share.id }).then(() => {});
 
-    // 5. Fetch project name
-    const { data: project } = await admin
-      .from("projects")
-      .select("name")
-      .eq("id", share.project_id)
-      .maybeSingle();
+    const { data: project } = await supabase
+      .from("projects").select("name").eq("id", share.project_id).maybeSingle();
 
-    // 6. Fetch files based on share scope
     let rawFiles: Record<string, unknown>[] = [];
     let folderName = "";
 
     if (share.file_id) {
-      // ── Single file share ──────────────────────────────────────────────────
-      const { data } = await admin
-        .from("project_files")
-        .select("*")
-        .eq("id", share.file_id)
-        .maybeSingle();
+      const { data } = await supabase.from("project_files").select("*").eq("id", share.file_id).maybeSingle();
       if (data) rawFiles = [data];
-
     } else if (share.folder_id) {
-      // ── Folder share — include ALL files in this folder AND its sub-folders ─
-      const { data: folder } = await admin
-        .from("folders")
-        .select("name")
-        .eq("id", share.folder_id)
-        .maybeSingle();
+      const { data: folder } = await supabase.from("folders").select("name").eq("id", share.folder_id).maybeSingle();
       folderName = folder?.name ?? "";
-
-      // Recursively collect all descendant folder IDs
-      const allFolderIds = await collectFolderIds(admin, share.folder_id);
-
-      // Fetch files from all those folders
-      const { data } = await admin
-        .from("project_files")
-        .select("*")
-        .in("folder_id", allFolderIds)
-        .order("created_at", { ascending: true });
+      const allFolderIds = await collectFolderIds(supabase, share.folder_id as string);
+      const { data } = await supabase.from("project_files").select("*")
+        .in("folder_id", allFolderIds).order("created_at", { ascending: true });
       rawFiles = data ?? [];
-
     } else {
-      // ── Whole project share — include ALL files across all folders ─────────
-      const { data } = await admin
-        .from("project_files")
-        .select("*")
-        .eq("project_id", share.project_id)
-        .order("created_at", { ascending: true });
+      const { data } = await supabase.from("project_files").select("*")
+        .eq("project_id", share.project_id).order("created_at", { ascending: true });
       rawFiles = data ?? [];
     }
 
-    // 7. Generate signed URLs for all files (60-minute expiry)
     const files = await Promise.all(
       rawFiles.map(async (f) => {
         const filePath = f.file_path as string;
         if (!filePath) return { ...f, signedUrl: "" };
         try {
-          const { data: signed, error: signErr } = await admin.storage
-            .from("prompt-media")
-            .createSignedUrl(filePath, 3600);
-          if (signErr) {
-            console.error(`Failed to sign URL for ${filePath}:`, signErr.message);
-          }
+          const { data: signed } = await supabase.storage
+            .from("prompt-media").createSignedUrl(filePath, 3600);
           return { ...f, signedUrl: signed?.signedUrl ?? "" };
-        } catch (e) {
-          console.error(`Exception signing URL for ${filePath}:`, e);
+        } catch {
           return { ...f, signedUrl: "" };
         }
       })
@@ -142,46 +144,33 @@ Deno.serve(async (req: Request) => {
     return json({
       status: "ok",
       share: {
-        id: share.id,
-        share_name: share.share_name,
-        access_type: share.access_type,
-        allow_download: share.allow_download,
-        expires_at: share.expires_at,
-        project_id: share.project_id,
-        file_id: share.file_id,
-        folder_id: share.folder_id,
+        id: share.id, share_name: share.share_name, access_type: share.access_type,
+        allow_download: share.allow_download, expires_at: share.expires_at,
+        project_id: share.project_id, file_id: share.file_id, folder_id: share.folder_id,
       },
       projectName: project?.name ?? "",
       folderName,
       files,
-    });
+    }, 200, corsHeaders);
+
   } catch (err) {
     console.error("get-share error", err);
-    return json({ error: "internal_error" }, 500);
+    return json({ error: "internal_error" }, 500, corsHeaders);
   }
 });
 
-// ── Helper: collect folder ID and all descendant folder IDs ───────────────────
 async function collectFolderIds(
   admin: ReturnType<typeof createClient>,
-  rootFolderId: string
+  rootFolderId: string,
 ): Promise<string[]> {
   const ids: string[] = [rootFolderId];
   const queue: string[] = [rootFolderId];
-
   while (queue.length > 0) {
     const parentId = queue.shift()!;
-    const { data: children } = await admin
-      .from("folders")
-      .select("id")
-      .eq("parent_folder_id", parentId);
+    const { data: children } = await admin.from("folders").select("id").eq("parent_folder_id", parentId);
     if (children) {
-      for (const child of children) {
-        ids.push(child.id);
-        queue.push(child.id);
-      }
+      for (const child of children) { ids.push(child.id); queue.push(child.id); }
     }
   }
-
   return ids;
 }

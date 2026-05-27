@@ -1,15 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { adminClient } from "../_shared/security.ts";
 import { reminderEmail, sendResendEmail } from "../_shared/todo-email-templates.ts";
 
 const APP_URL = Deno.env.get("APP_URL") ?? "https://aiwithrakshith.tech";
 
 Deno.serve(async () => {
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = adminClient();
     const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
     const now = new Date();
