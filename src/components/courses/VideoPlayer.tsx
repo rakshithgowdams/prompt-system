@@ -242,7 +242,8 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
       onMouseMove={showControls}
       onMouseLeave={() => { if (playing) setControlsVisible(false); }}
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest('[data-controls]')) return;
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-controls]') || target.closest('[data-center-controls]')) return;
         togglePlay();
       }}
     >
@@ -262,16 +263,17 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
 
       {/* ── Centre overlay: skip-back | play/pause | skip-forward ──────────── */}
       <div
+        data-center-controls
         className={cn(
-          'absolute inset-0 flex items-center justify-center gap-8 pointer-events-none transition-opacity duration-300',
-          controlsVisible ? 'opacity-100' : 'opacity-0',
+          'absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-300',
+          controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Skip back 10s */}
         <button
-          data-controls
-          onClick={(e) => { e.stopPropagation(); skip(-10); }}
-          className="pointer-events-auto group/skip flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/10 transition-all"
+          onClick={() => skip(-10)}
+          className="group/skip flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/10 transition-all"
           title="Rewind 10s"
         >
           <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center group-hover/skip:bg-black/60 transition-all">
@@ -280,33 +282,24 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
           <span className="text-white/70 text-[10px] font-semibold">10s</span>
         </button>
 
-        {/* Centre play / pause indicator */}
-        <AnimatePresence mode="wait">
-          <motion.button
-            key={playing ? 'pause' : 'play'}
-            data-controls
-            initial={{ scale: 0.7, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.7, opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-            className="pointer-events-auto w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all hover:scale-110 border border-white/10"
-          >
-            <Icon
-              name={playing ? 'pause' : 'play_arrow'}
-              size={34}
-              className="text-white"
-              fill
-              style={!playing ? { marginLeft: 3 } : undefined}
-            />
-          </motion.button>
-        </AnimatePresence>
+        {/* Centre play / pause */}
+        <button
+          onClick={togglePlay}
+          className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all hover:scale-110 border border-white/10"
+        >
+          <Icon
+            name={playing ? 'pause' : 'play_arrow'}
+            size={34}
+            className="text-white"
+            fill
+            style={!playing ? { marginLeft: 3 } : undefined}
+          />
+        </button>
 
         {/* Skip forward 10s */}
         <button
-          data-controls
-          onClick={(e) => { e.stopPropagation(); skip(10); }}
-          className="pointer-events-auto group/skip flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/10 transition-all"
+          onClick={() => skip(10)}
+          className="group/skip flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/10 transition-all"
           title="Forward 10s"
         >
           <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center group-hover/skip:bg-black/60 transition-all">
