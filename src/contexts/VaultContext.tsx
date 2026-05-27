@@ -1,33 +1,15 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
 interface VaultContextValue {
-  masterPassword: string | null;
-  setMasterPassword: (mp: string | null) => void;
-  isUnlocked: boolean;
-  lockVault: () => void;
+  // Kept for backwards-compat; vault no longer requires a master password
 }
 
-const VaultContext = createContext<VaultContextValue | null>(null);
+const VaultContext = createContext<VaultContextValue>({});
 
 export function VaultProvider({ children }: { children: ReactNode }) {
-  const [masterPassword, setMasterPassword] = useState<string | null>(null);
-
-  const lockVault = () => setMasterPassword(null);
-
-  return (
-    <VaultContext.Provider value={{
-      masterPassword,
-      setMasterPassword,
-      isUnlocked: !!masterPassword,
-      lockVault,
-    }}>
-      {children}
-    </VaultContext.Provider>
-  );
+  return <VaultContext.Provider value={{}}>{children}</VaultContext.Provider>;
 }
 
 export function useVault() {
-  const ctx = useContext(VaultContext);
-  if (!ctx) throw new Error('useVault must be used inside VaultProvider');
-  return ctx;
+  return useContext(VaultContext);
 }
