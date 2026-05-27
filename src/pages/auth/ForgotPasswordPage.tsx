@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
+import { getRecaptchaToken, verifyRecaptchaServerSide } from '../../lib/recaptcha';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -23,6 +24,16 @@ export function ForgotPasswordPage() {
   });
 
   const onSubmit = async (data: FormData) => {
+    // reCAPTCHA v3 — invisible verification
+    const v3Token = await getRecaptchaToken('forgot_password');
+    if (v3Token) {
+      const ok = await verifyRecaptchaServerSide(v3Token, 'forgot_password');
+      if (!ok) {
+        toast.error('Security check failed. Please try again.');
+        return;
+      }
+    }
+
     try {
       const res = await fetch(`${supabaseUrl}/functions/v1/send-reset-email`, {
         method: 'POST',

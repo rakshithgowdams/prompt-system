@@ -4,8 +4,9 @@ import {
   tooManyRequestsResponse, isValidString, logAudit, safeErrorResponse, adminClient,
 } from "../_shared/security.ts";
 
-const RECAPTCHA_SECRET = Deno.env.get("RECAPTCHA_SECRET_KEY") ?? "";
-const MIN_SCORE = 0.5;
+const RECAPTCHA_SECRET_V3 = Deno.env.get("RECAPTCHA_SECRET_KEY") ?? "";
+const RECAPTCHA_SECRET_V2 = Deno.env.get("RECAPTCHA_V2_SECRET_KEY") ?? "";
+const MIN_SCORE_V3 = 0.5;
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
@@ -37,6 +38,8 @@ Deno.serve(async (req: Request) => {
 
     const token = typeof body.token === "string" ? body.token.trim() : "";
     const action = typeof body.action === "string" ? body.action.trim() : "";
+    // version: "v2" | "v3" (default v3)
+    const version = typeof body.version === "string" ? body.version : "v3";
 
     if (!isValidString(token, 1, 4096)) {
       return new Response(JSON.stringify({ error: "missing_token" }), {
@@ -51,13 +54,15 @@ Deno.serve(async (req: Request) => {
     const limit = await checkRateLimit(supabase,
       { bucket: "verify-recaptcha", max: 20, windowSeconds: 60, keyBy: "ip" }, ip);
     if (!limit.allowed) {
-      await logAudit(supabase, { action: "verify-recaptcha.rate_limited", metadata: { action }, ip });
+      await logAudit(supabase, { action: "verify-recaptcha.rate_limited", metadata: { action, version }, ip });
       return tooManyRequestsResponse(limit, corsHeaders);
     }
 
-    if (!RECAPTCHA_SECRET) {
-      // Secret not configured — skip verification in dev, warn
-      console.warn("[verify-recaptcha] RECAPTCHA_SECRET_KEY not set — skipping verification");
+    const secret = version === "v2" ? RECAPTCHA_SECRET_V2 : RECAPTCHA_SECRET_V3;
+
+    if (!secret) {
+      // Secret not configured — skip verification in dev
+      console.warn(`[verify-recaptcha] secret for ${version} not set — skipping`);
       return new Response(JSON.stringify({ success: true, score: 1.0, skipped: true }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -66,19 +71,19 @@ Deno.serve(async (req: Request) => {
     const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ secret: RECAPTCHA_SECRET, response: token }),
+      body: new URLSearchParams({ secret, response: token }),
     });
 
     const result = await verifyRes.json() as {
       success: boolean;
-      score: number;
-      action: string;
+      score?: number;
+      action?: string;
       "error-codes"?: string[];
     };
 
     if (!result.success) {
       await logAudit(supabase, {
-        action: "verify-recaptcha.google_failure",
+        action: `verify-recaptcha.${version}_failure`,
         metadata: { recaptcha_action: action, error_codes: result["error-codes"] },
         ip,
       });
@@ -87,30 +92,39 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (result.score < MIN_SCORE) {
-      await logAudit(supabase, {
-        action: "verify-recaptcha.low_score",
-        metadata: { recaptcha_action: action, score: result.score },
-        ip,
-      });
-      return new Response(JSON.stringify({ success: false, error: "bot_detected", score: result.score }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // v3-only: score check and action validation
+    if (version === "v3") {
+      const score = result.score ?? 0;
+      if (score < MIN_SCORE_V3) {
+        await logAudit(supabase, {
+          action: "verify-recaptcha.low_score",
+          metadata: { recaptcha_action: action, score },
+          ip,
+        });
+        return new Response(JSON.stringify({ success: false, error: "bot_detected", score }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (action && result.action && result.action !== action) {
+        await logAudit(supabase, {
+          action: "verify-recaptcha.action_mismatch",
+          metadata: { expected: action, received: result.action },
+          ip,
+        });
+        return new Response(JSON.stringify({ success: false, error: "action_mismatch" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, score: result.score }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Optionally validate action matches expected
-    if (action && result.action && result.action !== action) {
-      await logAudit(supabase, {
-        action: "verify-recaptcha.action_mismatch",
-        metadata: { expected: action, received: result.action },
-        ip,
-      });
-      return new Response(JSON.stringify({ success: false, error: "action_mismatch" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ success: true, score: result.score }), {
+    // v2: success = checkbox was solved
+    await logAudit(supabase, { action: "verify-recaptcha.v2_success", metadata: { recaptcha_action: action }, ip });
+    return new Response(JSON.stringify({ success: true }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
