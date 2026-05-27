@@ -97,6 +97,11 @@ export function ForgotPasswordPage() {
                   onError={() => setCaptchaToken(null)}
                   className="flex justify-center"
                 />
+
+                {!captchaToken && (
+                  <p className="text-center text-xs text-ink-400">Complete the security check above to continue.</p>
+                )}
+
                 <Button type="submit" variant="primary" className="w-full" size="lg" loading={isSubmitting} disabled={!captchaToken}>
                   Send Reset Link
                 </Button>
