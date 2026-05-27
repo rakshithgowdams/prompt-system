@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
+import { getRecaptchaToken } from '../../lib/recaptcha';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -43,6 +44,23 @@ export function LoginPage() {
   });
 
   const onSubmit = async (data: FormData) => {
+    // reCAPTCHA v3 — get token and verify server-side before proceeding
+    const recaptchaToken = await getRecaptchaToken('login');
+    if (recaptchaToken) {
+      const rcRes = await fetch(`${supabaseUrl}/functions/v1/verify-recaptcha`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ token: recaptchaToken, action: 'login' }),
+      }).catch(() => null);
+      if (rcRes) {
+        const rcData = await rcRes.json().catch(() => ({}));
+        if (!rcRes.ok || !rcData.success) {
+          toast.error('Security check failed. Please try again.');
+          return;
+        }
+      }
+    }
+
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,

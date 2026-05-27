@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
 import { PolicyModal, type PolicyType } from '../../components/legal/PolicyModal';
+import { getRecaptchaToken } from '../../lib/recaptcha';
 
 function GoogleIcon() {
   return (
@@ -291,6 +292,23 @@ export function SignupPage() {
   const acceptTerms = watch('acceptTerms');
 
   const onSubmit = async (data: FormData) => {
+    // reCAPTCHA v3 — verify before sending OTP
+    const recaptchaToken = await getRecaptchaToken('signup');
+    if (recaptchaToken) {
+      const rcRes = await fetch(`${supabaseUrl}/functions/v1/verify-recaptcha`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ token: recaptchaToken, action: 'signup' }),
+      }).catch(() => null);
+      if (rcRes) {
+        const rcData = await rcRes.json().catch(() => ({}));
+        if (!rcRes.ok || !rcData.success) {
+          toast.error('Security check failed. Please try again.');
+          return;
+        }
+      }
+    }
+
     const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
