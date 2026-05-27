@@ -16,6 +16,7 @@ interface VideoPlayerProps {
 }
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const HIDE_DELAY_MS = 3500;
 
 function formatTime(s: number): string {
   if (!isFinite(s) || isNaN(s)) return '0:00';
@@ -26,7 +27,6 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-// Ripple flash shown when seeking ±10s
 function SkipFlash({ direction, visible }: { direction: 'back' | 'forward'; visible: boolean }) {
   return (
     <AnimatePresence>
@@ -59,6 +59,8 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTapTime = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -77,25 +79,31 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState(0);
   const [seeking, setSeeking] = useState(false);
-  // flash state for center skip indicators
   const [skipFlash, setSkipFlash] = useState<'back' | 'forward' | null>(null);
   const skipFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ref = externalRef ?? internalRef;
 
+  const scheduleHide = useCallback(() => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setControlsVisible(false), HIDE_DELAY_MS);
+  }, []);
+
   const showControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    if (playing) {
-      hideTimer.current = setTimeout(() => setControlsVisible(false), 3000);
-    }
-  }, [playing]);
+    if (playing) scheduleHide();
+  }, [playing, scheduleHide]);
 
   useEffect(() => {
-    if (!playing) setControlsVisible(true);
-    else hideTimer.current = setTimeout(() => setControlsVisible(false), 3000);
+    if (!playing) {
+      setControlsVisible(true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    } else {
+      scheduleHide();
+    }
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-  }, [playing]);
+  }, [playing, scheduleHide]);
 
   useEffect(() => {
     const v = ref.current;
@@ -114,13 +122,40 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
     const v = ref.current;
     if (!v) return;
     v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + delta));
-    // show flash
     const dir = delta < 0 ? 'back' : 'forward';
     setSkipFlash(dir);
     if (skipFlashTimer.current) clearTimeout(skipFlashTimer.current);
     skipFlashTimer.current = setTimeout(() => setSkipFlash(null), 600);
     showControls();
   }, [ref, showControls]);
+
+  // Touch tap handler: single tap shows/hides controls; does NOT toggle play
+  const handleContainerTouchEnd = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // If the tap landed on a button or control, let it handle itself
+    if (target.closest('button') || target.closest('[data-controls]') || target.closest('[data-center-controls]')) return;
+
+    const now = Date.now();
+    const timeSinceLast = now - lastTapTime.current;
+    lastTapTime.current = now;
+
+    if (timeSinceLast < 300) {
+      // Double-tap: cancel pending single-tap and do nothing (or could seek)
+      if (tapTimer.current) { clearTimeout(tapTimer.current); tapTimer.current = null; }
+      return;
+    }
+
+    // Single tap: toggle controls visibility
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => {
+      if (controlsVisible) {
+        if (hideTimer.current) clearTimeout(hideTimer.current);
+        setControlsVisible(false);
+      } else {
+        showControls();
+      }
+    }, 200);
+  }, [controlsVisible, showControls]);
 
   const handleTimeUpdate = () => {
     const v = ref.current;
@@ -146,6 +181,18 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
     if (!v || !bar) return;
     const rect = bar.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    v.currentTime = pct * v.duration;
+    setCurrentTime(v.currentTime);
+  };
+
+  const seekToTouch = (e: React.TouchEvent) => {
+    const v = ref.current;
+    const bar = progressRef.current;
+    if (!v || !bar) return;
+    e.stopPropagation();
+    const touch = e.touches[0] ?? e.changedTouches[0];
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
     v.currentTime = pct * v.duration;
     setCurrentTime(v.currentTime);
   };
@@ -231,21 +278,23 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPct = duration > 0 ? (buffered / duration) * 100 : 0;
-
-  // Build timeline chapter tick marks from markers
   const timelineTicks = markers.filter(m => duration > 0 && m.time_seconds > 0 && m.time_seconds < duration);
 
   return (
     <div
       ref={containerRef}
-      className="relative aspect-video bg-black group/player select-none"
+      className="relative aspect-video bg-black select-none"
       onMouseMove={showControls}
       onMouseLeave={() => { if (playing) setControlsVisible(false); }}
+      // Desktop click on video background toggles play
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('[data-controls]') || target.closest('[data-center-controls]')) return;
+        // Only toggle play on pointer (mouse) clicks, not touch (handled separately)
+        if (e.nativeEvent instanceof PointerEvent && e.nativeEvent.pointerType === 'touch') return;
         togglePlay();
       }}
+      onTouchEnd={handleContainerTouchEnd}
     >
       <video
         ref={ref}
@@ -265,27 +314,33 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
       <div
         data-center-controls
         className={cn(
-          'absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-300',
+          'absolute inset-0 flex items-center justify-center gap-6 sm:gap-8 transition-opacity duration-300',
           controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
         onClick={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       >
-        {/* Skip back 10s */}
+        {/* Skip back 10s — large touch target */}
         <button
-          onClick={() => skip(-10)}
-          className="group/skip flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/10 transition-all"
-          title="Rewind 10s"
+          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); skip(-10); showControls(); }}
+          onClick={(e) => { e.stopPropagation(); skip(-10); }}
+          className="flex flex-col items-center gap-1 rounded-2xl active:bg-white/10 transition-all"
+          style={{ padding: '12px', minWidth: '64px', minHeight: '64px', touchAction: 'manipulation' }}
+          aria-label="Rewind 10 seconds"
         >
-          <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center group-hover/skip:bg-black/60 transition-all">
-            <Icon name="replay_10" size={26} className="text-white" />
+          <div className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center active:bg-black/60 transition-all">
+            <Icon name="replay_10" size={28} className="text-white" />
           </div>
-          <span className="text-white/70 text-[10px] font-semibold">10s</span>
+          <span className="text-white/80 text-[11px] font-bold">10s</span>
         </button>
 
         {/* Centre play / pause */}
         <button
-          onClick={togglePlay}
-          className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all hover:scale-110 border border-white/10"
+          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); togglePlay(); showControls(); }}
+          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+          className="w-16 h-16 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all active:scale-95 hover:scale-110 border border-white/10"
+          style={{ touchAction: 'manipulation' }}
+          aria-label={playing ? 'Pause' : 'Play'}
         >
           <Icon
             name={playing ? 'pause' : 'play_arrow'}
@@ -296,20 +351,22 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
           />
         </button>
 
-        {/* Skip forward 10s */}
+        {/* Skip forward 10s — large touch target */}
         <button
-          onClick={() => skip(10)}
-          className="group/skip flex flex-col items-center gap-1 p-2 rounded-2xl hover:bg-white/10 transition-all"
-          title="Forward 10s"
+          onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); skip(10); showControls(); }}
+          onClick={(e) => { e.stopPropagation(); skip(10); }}
+          className="flex flex-col items-center gap-1 rounded-2xl active:bg-white/10 transition-all"
+          style={{ padding: '12px', minWidth: '64px', minHeight: '64px', touchAction: 'manipulation' }}
+          aria-label="Forward 10 seconds"
         >
-          <div className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center group-hover/skip:bg-black/60 transition-all">
-            <Icon name="forward_10" size={26} className="text-white" />
+          <div className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center active:bg-black/60 transition-all">
+            <Icon name="forward_10" size={28} className="text-white" />
           </div>
-          <span className="text-white/70 text-[10px] font-semibold">10s</span>
+          <span className="text-white/80 text-[11px] font-bold">10s</span>
         </button>
       </div>
 
-      {/* ── Skip flash feedback (ripple on left/right) ────────────────────── */}
+      {/* ── Skip flash feedback ───────────────────────────────────────────── */}
       <SkipFlash direction="back" visible={skipFlash === 'back'} />
       <SkipFlash direction="forward" visible={skipFlash === 'forward'} />
 
@@ -320,8 +377,9 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
           'absolute inset-x-0 bottom-0 transition-opacity duration-300',
           controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
+        onClick={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       >
-        {/* Gradient scrim */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
         <div className="relative px-3 pb-3 pt-12">
@@ -329,19 +387,18 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
           {/* ── Timeline / progress bar ── */}
           <div
             ref={progressRef}
-            className="relative h-6 flex items-end cursor-pointer group/bar mb-1"
+            className="relative h-8 flex items-end cursor-pointer group/bar mb-1"
             onClick={seekTo}
+            onTouchStart={(e) => { e.stopPropagation(); seekToTouch(e); }}
+            onTouchMove={(e) => { e.stopPropagation(); seekToTouch(e); }}
             onMouseMove={handleProgressHover}
             onMouseLeave={() => { setHoverTime(null); setHoveredMarker(null); }}
           >
             {/* Track */}
-            <div className="absolute left-0 right-0 h-1 group-hover/bar:h-[5px] bg-white/20 rounded-full transition-all bottom-0">
-              {/* Buffered */}
+            <div className="absolute left-0 right-0 h-1.5 group-hover/bar:h-2 bg-white/20 rounded-full transition-all bottom-0">
               <div className="absolute inset-y-0 left-0 bg-white/25 rounded-full" style={{ width: `${bufferedPct}%` }} />
-              {/* Progress filled */}
               <div className="absolute inset-y-0 left-0 bg-red-500 rounded-full" style={{ width: `${progress}%` }} />
 
-              {/* ── Chapter ticks (YouTube-style) ── */}
               {timelineTicks.map((marker, i) => {
                 const pct = (marker.time_seconds / duration) * 100;
                 return (
@@ -354,15 +411,13 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
               })}
             </div>
 
-            {/* ── Chapter timestamp labels ── */}
             {timelineTicks.map((marker, i) => {
               const pct = (marker.time_seconds / duration) * 100;
-              // Clamp so label doesn't bleed out of the bar
               const clampedPct = Math.max(2, Math.min(95, pct));
               return (
                 <div
                   key={`label-${i}`}
-                  className="absolute bottom-[10px] -translate-x-1/2 pointer-events-none z-20"
+                  className="absolute bottom-[12px] -translate-x-1/2 pointer-events-none z-20"
                   style={{ left: `${clampedPct}%` }}
                 >
                   <span className="text-[9px] text-white/50 font-mono whitespace-nowrap">
@@ -372,14 +427,13 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
               );
             })}
 
-            {/* Marker dots */}
             {timelineTicks.map((marker, i) => {
               const pct = (marker.time_seconds / duration) * 100;
               return (
                 <div
                   key={`dot-${i}`}
-                  className="absolute w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white/80 shadow-sm cursor-pointer z-10 hover:scale-150 transition-transform bottom-[-2px]"
-                  style={{ left: `${pct}%`, marginLeft: '-5px' }}
+                  className="absolute w-3 h-3 bg-amber-400 rounded-full border-2 border-white/80 shadow-sm cursor-pointer z-10 active:scale-150 hover:scale-150 transition-transform bottom-[-3px]"
+                  style={{ left: `${pct}%`, marginLeft: '-6px' }}
                   onMouseEnter={() => setHoveredMarker(marker)}
                   onMouseLeave={() => setHoveredMarker(null)}
                   onClick={(e) => {
@@ -390,16 +444,14 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
               );
             })}
 
-            {/* Playhead thumb */}
             <div
-              className="absolute w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white shadow-md opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 bottom-[-3px]"
-              style={{ left: `${progress}%`, marginLeft: '-7px' }}
+              className="absolute w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-md opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 bottom-[-4px]"
+              style={{ left: `${progress}%`, marginLeft: '-8px' }}
             />
 
-            {/* Hover time tooltip */}
             {hoverTime !== null && (
               <div
-                className="absolute -translate-x-1/2 pointer-events-none z-30 bottom-[14px]"
+                className="absolute -translate-x-1/2 pointer-events-none z-30 bottom-[16px]"
                 style={{ left: `${hoverPos}%` }}
               >
                 <div className="px-2 py-1 bg-gray-900/95 rounded text-white text-[10px] font-mono whitespace-nowrap shadow-xl border border-white/10">
@@ -409,10 +461,9 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
               </div>
             )}
 
-            {/* Marker tooltip */}
             {hoveredMarker && (
               <div
-                className="absolute -translate-x-1/2 pointer-events-none z-30 bottom-[14px]"
+                className="absolute -translate-x-1/2 pointer-events-none z-30 bottom-[16px]"
                 style={{ left: `${duration > 0 ? (hoveredMarker.time_seconds / duration) * 100 : 0}%` }}
               >
                 <div className="px-2.5 py-1.5 bg-amber-500 rounded text-white text-[10px] font-bold whitespace-nowrap shadow-xl max-w-[140px] truncate">
@@ -429,8 +480,11 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
             {/* Volume */}
             <div className="flex items-center gap-0.5 group/vol">
               <button
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); toggleMute(); showControls(); }}
                 onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                className="p-1.5 text-white hover:text-white/80 transition-colors"
+                className="p-2 text-white hover:text-white/80 transition-colors"
+                style={{ touchAction: 'manipulation' }}
+                aria-label={muted ? 'Unmute' : 'Mute'}
               >
                 <Icon name={muted || volume === 0 ? 'volume_off' : volume < 0.5 ? 'volume_down' : 'volume_up'} size={20} />
               </button>
@@ -439,7 +493,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                 value={muted ? 0 : volume}
                 onChange={handleVolumeChange}
                 onClick={(e) => e.stopPropagation()}
-                className="w-0 group-hover/vol:w-14 transition-all duration-200 h-1 accent-white cursor-pointer opacity-0 group-hover/vol:opacity-100"
+                className="w-0 group-hover/vol:w-14 transition-all duration-200 h-1 accent-white cursor-pointer opacity-0 group-hover/vol:opacity-100 hidden sm:block"
               />
             </div>
 
@@ -453,8 +507,10 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
             {/* Speed */}
             <div className="relative">
               <button
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); setShowSpeed((v) => !v); setShowQuality(false); showControls(); }}
                 onClick={(e) => { e.stopPropagation(); setShowSpeed((v) => !v); setShowQuality(false); }}
-                className="px-2 py-1 text-white text-[11px] font-bold hover:bg-white/10 rounded transition-colors whitespace-nowrap"
+                className="px-2 py-1.5 text-white text-[11px] font-bold hover:bg-white/10 active:bg-white/10 rounded transition-colors whitespace-nowrap"
+                style={{ touchAction: 'manipulation', minWidth: '40px' }}
               >
                 {speed}x
               </button>
@@ -465,11 +521,13 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                   </div>
                   {SPEEDS.map((s) => (
                     <button key={s}
+                      onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); changeSpeed(s); }}
                       onClick={(e) => { e.stopPropagation(); changeSpeed(s); }}
                       className={cn(
-                        'block w-full px-4 py-2 text-left text-[12px] font-medium hover:bg-white/10 transition-colors',
+                        'block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10 transition-colors',
                         s === speed ? 'text-red-400 font-bold bg-white/5' : 'text-white'
                       )}
+                      style={{ touchAction: 'manipulation' }}
                     >
                       {s === 1 ? 'Normal' : `${s}x`}
                     </button>
@@ -482,10 +540,12 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
             {nativeHeight > 0 && (
               <div className="relative">
                 <button
+                  onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); setShowQuality((v) => !v); setShowSpeed(false); showControls(); }}
                   onClick={(e) => { e.stopPropagation(); setShowQuality((v) => !v); setShowSpeed(false); }}
-                  className="flex items-center gap-1 px-2 py-1 text-white text-[11px] font-bold hover:bg-white/10 rounded transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1 px-2 py-1.5 text-white text-[11px] font-bold hover:bg-white/10 active:bg-white/10 rounded transition-colors whitespace-nowrap"
+                  style={{ touchAction: 'manipulation' }}
                 >
-                  <Icon name="settings" size={13} />
+                  <Icon name="settings" size={15} />
                   <span className="hidden sm:inline">{quality === 'Auto' ? `Auto (${nativeHeight}p)` : quality}</span>
                 </button>
                 {showQuality && (
@@ -495,11 +555,13 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                     </div>
                     {qualityOptions.map((q) => (
                       <button key={q}
+                        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); changeQuality(q); }}
                         onClick={(e) => { e.stopPropagation(); changeQuality(q); }}
                         className={cn(
-                          'block w-full px-4 py-2 text-left text-[12px] font-medium hover:bg-white/10 transition-colors',
+                          'block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10 transition-colors',
                           q === quality ? 'text-red-400 font-bold bg-white/5' : 'text-white'
                         )}
+                        style={{ touchAction: 'manipulation' }}
                       >
                         {q}{q === 'Auto' && nativeHeight > 0 ? ` (${nativeHeight}p)` : ''}
                       </button>
@@ -511,8 +573,11 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
 
             {/* Fullscreen */}
             <button
+              onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); toggleFullscreen(); showControls(); }}
               onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-              className="p-1.5 text-white hover:text-white/80 transition-colors"
+              className="p-2 text-white hover:text-white/80 transition-colors"
+              style={{ touchAction: 'manipulation' }}
+              aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             >
               <Icon name={fullscreen ? 'fullscreen_exit' : 'fullscreen'} size={22} />
             </button>
