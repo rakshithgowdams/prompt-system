@@ -237,7 +237,7 @@ export function PortfolioPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -513,6 +513,16 @@ export function PortfolioPage() {
           </div>
         )}
       </section>
+
+      {/* MDN logo — fixed bottom-left */}
+      <div className="fixed bottom-5 left-5 z-50 pointer-events-none select-none">
+        <img
+          src="/mdn-logo copy.png"
+          alt="MyDesignNexus"
+          className="h-7 w-auto opacity-70"
+          draggable={false}
+        />
+      </div>
     </div>
   );
 }
