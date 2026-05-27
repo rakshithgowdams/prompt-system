@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type RefObject } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -16,6 +16,59 @@ import { cn } from '../lib/utils';
 import { CourseShareModal } from '../components/courses/CourseShareModal';
 import type { CourseSection, CourseLesson, TimelineMarker, CourseGalleryItem } from '../hooks/useCourses';
 
+
+// ── Smooth-scroll hook ────────────────────────────────────────────────────────
+// Intercepts wheel events on a container and applies eased momentum scrolling
+// so trackpad two-finger scroll feels fluid rather than choppy.
+
+function useSmoothScroll(containerRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let targetY = el.scrollTop;
+    let currentY = el.scrollTop;
+    let rafId: number | null = null;
+    const EASE = 0.12; // lower = more inertia / smoother
+
+    const animate = () => {
+      const diff = targetY - currentY;
+      if (Math.abs(diff) < 0.5) {
+        currentY = targetY;
+        el.scrollTop = targetY;
+        rafId = null;
+        return;
+      }
+      currentY += diff * EASE;
+      el.scrollTop = currentY;
+      rafId = requestAnimationFrame(animate);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      // Only handle vertical wheel; let horizontal pass through
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+
+      const delta = e.deltaMode === 1 ? e.deltaY * 20   // line mode (Firefox)
+                  : e.deltaMode === 2 ? e.deltaY * 300  // page mode
+                  : e.deltaY;                            // pixel mode (trackpad)
+
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      targetY = Math.max(0, Math.min(maxScroll, targetY + delta));
+
+      if (!rafId) {
+        currentY = el.scrollTop;
+        rafId = requestAnimationFrame(animate);
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [containerRef]);
+}
 
 // ── Debounce hook ─────────────────────────────────────────────────────────────
 
@@ -192,6 +245,8 @@ function LessonEditor({
   onClose: () => void;
 }) {
   const { user } = useAuth();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useSmoothScroll(scrollRef);
   const [tab, setTab] = useState<LessonTab>('content');
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description);
@@ -458,7 +513,11 @@ function LessonEditor({
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+        style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+      >
         {tab === 'content' && (
           <>
             {/* Title */}
@@ -1204,6 +1263,14 @@ export function CourseEditorPage() {
   const [saving, setSaving] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
+  // Smooth-scroll refs for each scrollable panel
+  const curriculumScrollRef = useRef<HTMLDivElement>(null);
+  const detailsScrollRef = useRef<HTMLDivElement>(null);
+  const settingsScrollRef = useRef<HTMLDivElement>(null);
+  useSmoothScroll(curriculumScrollRef);
+  useSmoothScroll(detailsScrollRef);
+  useSmoothScroll(settingsScrollRef);
+
   // Course fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -1399,7 +1466,11 @@ export function CourseEditorPage() {
                 </Button>
               </div>
 
-              <div className="flex-1 lg:overflow-y-auto p-3 space-y-2">
+              <div
+                ref={curriculumScrollRef}
+                className="flex-1 lg:overflow-y-auto p-3 space-y-2"
+                style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+              >
                 {sections.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-16 text-center">
                     <Icon name="auto_awesome_mosaic" size={32} className="text-ink-300" />
@@ -1499,7 +1570,11 @@ export function CourseEditorPage() {
 
         {/* ── Details tab ── */}
         {activeTab === 'details' && (
-          <div className="flex-1 lg:overflow-y-auto p-4 lg:p-8">
+          <div
+            ref={detailsScrollRef}
+            className="flex-1 lg:overflow-y-auto p-4 lg:p-8"
+            style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+          >
             <div className="max-w-2xl mx-auto space-y-6">
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* Cover */}
@@ -1607,7 +1682,11 @@ export function CourseEditorPage() {
 
         {/* ── Settings tab ── */}
         {activeTab === 'settings' && (
-          <div className="flex-1 lg:overflow-y-auto p-4 lg:p-8">
+          <div
+            ref={settingsScrollRef}
+            className="flex-1 lg:overflow-y-auto p-4 lg:p-8"
+            style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+          >
             <div className="max-w-lg mx-auto space-y-4">
               <h2 className="text-base font-semibold text-ink-900 mb-4">Course Settings</h2>
 
