@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useProjects } from '../hooks/useProjects';
 import { usePrompts } from '../hooks/usePrompts';
@@ -9,6 +9,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { PromptCard } from '../components/prompts/PromptCard';
 import { FileShareModal } from '../components/files/FileShareModal';
 import { Icon } from '../components/ui/Icon';
+import { ImageReducerTool } from '../components/tools/ImageReducerTool';
 import { getSignedUrl } from '../lib/storage';
 import { cn, PROJECT_COLORS, PROJECT_BORDER_COLORS } from '../lib/utils';
 import type { Project } from '../lib/database.types';
@@ -108,6 +109,7 @@ export function DashboardPage() {
   const { data: recentPrompts, isLoading: promptsLoading } = usePrompts();
   const [shareProject, setShareProject] = useState<Project | null>(null);
   const [promptPage, setPromptPage] = useState(0);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   useEffect(() => { setPromptPage(0); }, [recentPrompts?.length]);
 
@@ -177,6 +179,66 @@ export function DashboardPage() {
               description="Projects are created automatically when you sign up."
             />
           )}
+        </section>
+
+        {/* Tools */}
+        <section>
+          <button
+            onClick={() => setToolsOpen((v) => !v)}
+            className="w-full flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                <Icon name="construction" size={16} className="text-emerald-600" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-base font-display font-bold text-ink-900 leading-tight">Tools</h2>
+                <p className="text-[11px] text-ink-400 leading-none">Image reducer &amp; more</p>
+              </div>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                NEW
+              </span>
+            </div>
+            <div className={cn(
+              'w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 border',
+              toolsOpen
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 rotate-180'
+                : 'bg-ink-50 border-ink-200 text-ink-400 group-hover:border-ink-400',
+            )}>
+              <Icon name="expand_more" size={16} />
+            </div>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {toolsOpen && (
+              <motion.div
+                key="tools-panel"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 32 }}
+                className="overflow-hidden"
+              >
+                {/* Image Reducer card */}
+                <div className="mt-4 bg-gradient-to-br from-emerald-50/60 to-white border border-emerald-200/60 rounded-2xl p-5 space-y-4">
+                  {/* Card header */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0">
+                      <Icon name="photo_size_select_large" size={20} className="text-emerald-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-ink-900">Image Size Reducer</h3>
+                      <p className="text-xs text-ink-500 mt-0.5 leading-relaxed">
+                        Compress large images to your target size. Works entirely in your browser — no uploads, no storage used.
+                      </p>
+                    </div>
+                  </div>
+
+                  <ImageReducerTool />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
         {/* Recent Prompts */}
