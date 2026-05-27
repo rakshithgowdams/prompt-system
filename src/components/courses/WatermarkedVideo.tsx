@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Icon } from '../ui/Icon';
@@ -42,31 +40,7 @@ function useLessonVideoUrl(lessonId: string | undefined) {
 }
 
 export function WatermarkedVideo({ lessonId, title, markers = [], videoRef, onTimeUpdate, initialTime, className }: Props) {
-  const { user } = useAuth();
   const { data, isLoading, error } = useLessonVideoUrl(lessonId);
-  const [pos1, setPos1] = useState({ top: '15%', left: '10%' });
-  const [pos2, setPos2] = useState({ top: '60%', left: '70%' });
-
-  const watermarkText =
-    data?.watermark ?? user?.email ?? user?.id?.slice(0, 8) ?? 'protected';
-  const shortId = (data?.user_id ?? user?.id ?? '').slice(0, 8);
-
-  useEffect(() => {
-    if (!watermarkText) return;
-    const move = () => {
-      setPos1({
-        top: `${10 + Math.random() * 65}%`,
-        left: `${5 + Math.random() * 60}%`,
-      });
-      setPos2({
-        top: `${10 + Math.random() * 65}%`,
-        left: `${30 + Math.random() * 60}%`,
-      });
-    };
-    move();
-    const interval = setInterval(move, 4000);
-    return () => clearInterval(interval);
-  }, [watermarkText]);
 
   if (isLoading) {
     return (
@@ -110,60 +84,14 @@ export function WatermarkedVideo({ lessonId, title, markers = [], videoRef, onTi
         initialTime={initialTime}
       />
 
-      {/* Primary moving watermark */}
-      <div
-        className="absolute pointer-events-none select-none transition-all duration-[2000ms] ease-in-out z-[5]"
-        style={{
-          top: pos1.top,
-          left: pos1.left,
-          opacity: 0.45,
-          color: 'white',
-          fontSize: 'clamp(11px, 1.4vw, 16px)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          fontWeight: 700,
-          textShadow: '0 0 12px rgba(0,0,0,0.95), 0 0 4px rgba(0,0,0,0.95), 1px 1px 2px rgba(0,0,0,0.9)',
-          mixBlendMode: 'difference',
-          letterSpacing: '0.05em',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {watermarkText}
-      </div>
-
-      {/* Secondary watermark */}
-      <div
-        className="absolute pointer-events-none select-none transition-all duration-[2000ms] ease-in-out z-[5]"
-        style={{
-          top: pos2.top,
-          left: pos2.left,
-          opacity: 0.35,
-          color: 'white',
-          fontSize: 'clamp(9px, 1.1vw, 13px)',
-          fontFamily: 'system-ui, sans-serif',
-          fontWeight: 600,
-          textShadow: '0 0 10px rgba(0,0,0,0.95), 1px 1px 2px rgba(0,0,0,0.9)',
-          mixBlendMode: 'difference',
-          letterSpacing: '0.04em',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        aiwithrakshith.tech | {shortId}
-      </div>
-
-      {/* Persistent corner watermark */}
-      <div
-        className="absolute pointer-events-none select-none bottom-14 right-3 z-[5]"
-        style={{
-          opacity: 0.55,
-          color: 'white',
-          fontSize: '10px',
-          fontFamily: 'ui-monospace, monospace',
-          textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7)',
-          letterSpacing: '0.06em',
-          fontWeight: 600,
-        }}
-      >
-        {shortId}
+      {/* Logo watermark — top right */}
+      <div className="absolute top-3 right-3 pointer-events-none select-none z-[5]">
+        <img
+          src="/aiwithrakshith-tech-logo.png"
+          alt=""
+          className="w-8 h-8 sm:w-10 sm:h-10 opacity-60 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]"
+          draggable={false}
+        />
       </div>
     </div>
   );
