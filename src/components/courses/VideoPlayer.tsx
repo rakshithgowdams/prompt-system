@@ -162,6 +162,11 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPos, setHoverPos] = useState(0);
   const [seeking, setSeeking] = useState(false);
+  const [barHovered, setBarHovered] = useState(false);
+
+  // rAF-driven progress for smooth scrubbing
+  const rafRef = useRef<number | null>(null);
+  const seekingRef = useRef(false);
 
   // Ripple state
   const [leftRipple, setLeftRipple] = useState<{ count: number; visible: boolean }>({ count: 0, visible: false });
@@ -279,13 +284,28 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
     }, 250);
   }, [controlsVisible, showControls, triggerSkip, ref]);
 
+  // ── rAF-driven progress sync ──────────────────────────────────────────────
+
+  const syncProgress = useCallback(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (!seekingRef.current) {
+      setCurrentTime(v.currentTime);
+      if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1));
+    }
+    rafRef.current = requestAnimationFrame(syncProgress);
+  }, [ref]);
+
+  useEffect(() => {
+    rafRef.current = requestAnimationFrame(syncProgress);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [syncProgress]);
+
   // ── Video events ──────────────────────────────────────────────────────────
 
   const handleTimeUpdate = () => {
     const v = ref.current;
-    if (!v || seeking) return;
-    setCurrentTime(v.currentTime);
-    if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1));
+    if (!v || seekingRef.current) return;
     onTimeUpdate?.(Math.floor(v.currentTime));
   };
 
@@ -306,12 +326,13 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
     return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   };
 
-  const seekTo = (clientX: number) => {
+  const seekTo = useCallback((pct: number) => {
     const v = ref.current;
     if (!v || !duration) return;
-    v.currentTime = getProgressPct(clientX) * duration;
-    setCurrentTime(v.currentTime);
-  };
+    const t = pct * duration;
+    v.currentTime = t;
+    setCurrentTime(t);
+  }, [ref, duration]);
 
   // ── Volume / speed / quality / fullscreen ─────────────────────────────────
 
@@ -479,73 +500,117 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
 
             <div className="relative px-3 sm:px-4 pb-3 pt-10">
 
-              {/* ── Progress bar ── */}
+              {/* ── Progress bar (YouTube-style) ── */}
               <div
                 ref={progressRef}
-                className="relative h-8 flex items-center cursor-pointer group/bar mb-1"
-                onClick={(e) => seekTo(e.clientX)}
+                className="relative cursor-pointer mb-1"
+                style={{ height: 16, marginBottom: 4 }}
+                onMouseEnter={() => setBarHovered(true)}
+                onMouseLeave={() => { setBarHovered(false); setHoverTime(null); setHoveredMarker(null); }}
                 onMouseMove={(e) => {
                   const pct = getProgressPct(e.clientX);
                   setHoverTime(pct * duration);
                   setHoverPos(pct * 100);
                 }}
-                onMouseLeave={() => { setHoverTime(null); setHoveredMarker(null); }}
+                onClick={(e) => { e.stopPropagation(); seekTo(getProgressPct(e.clientX)); }}
                 onPointerDown={(e) => {
-                  if (e.pointerType === 'touch') {
-                    e.stopPropagation();
-                    setSeeking(true);
-                    seekTo(e.clientX);
-                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                  }
+                  e.stopPropagation();
+                  seekingRef.current = true;
+                  setSeeking(true);
+                  setBarHovered(true);
+                  seekTo(getProgressPct(e.clientX));
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                 }}
-                onPointerMove={(e) => { if (seeking && e.pointerType === 'touch') seekTo(e.clientX); }}
-                onPointerUp={() => setSeeking(false)}
+                onPointerMove={(e) => {
+                  if (!seekingRef.current) return;
+                  e.stopPropagation();
+                  const pct = getProgressPct(e.clientX);
+                  seekTo(pct);
+                  setHoverTime(pct * duration);
+                  setHoverPos(pct * 100);
+                }}
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  seekingRef.current = false;
+                  setSeeking(false);
+                }}
               >
-                {/* Track */}
-                <div className="absolute left-0 right-0 bottom-2 h-1 group-hover/bar:h-[5px] bg-white/25 rounded-full transition-all duration-100">
-                  <div className="absolute inset-y-0 left-0 bg-white/30 rounded-full" style={{ width: `${bufferedPct}%` }} />
+                {/* Hit area + track container — vertically centred */}
+                <div className="absolute inset-x-0" style={{ bottom: 3, height: barHovered || seeking ? 5 : 3, transition: 'height 0.1s ease' }}>
+                  {/* Background track */}
+                  <div className="absolute inset-0 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
+                  {/* Buffered */}
+                  <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${bufferedPct}%`, background: 'rgba(255,255,255,0.35)' }} />
+                  {/* Played — YouTube red */}
                   <div
                     className="absolute inset-y-0 left-0 rounded-full"
-                    style={{ width: `${progress}%`, background: '#00A8E1' }}
+                    style={{ width: `${progress}%`, background: '#FF0000' }}
                   />
+                  {/* Chapter tick marks */}
                   {timelineTicks.map((marker, i) => (
-                    <div key={i} className="absolute top-0 bottom-0 w-px bg-black/60 z-10"
-                      style={{ left: `${(marker.time_seconds / duration) * 100}%` }} />
+                    <div
+                      key={i}
+                      className="absolute inset-y-0 w-[3px] z-10"
+                      style={{ left: `calc(${(marker.time_seconds / duration) * 100}% - 1px)`, background: 'rgba(0,0,0,0.5)' }}
+                    />
                   ))}
                 </div>
 
-                {/* Playhead */}
+                {/* Playhead knob — YouTube red circle, appears on hover/drag */}
                 <div
-                  className="absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 bottom-1.5"
-                  style={{ left: `${progress}%`, transform: 'translateX(-50%)', background: '#00A8E1' }}
+                  className="absolute rounded-full z-20 shadow-md"
+                  style={{
+                    width: barHovered || seeking ? 13 : 0,
+                    height: barHovered || seeking ? 13 : 0,
+                    bottom: barHovered || seeking ? -1 : 2,
+                    left: `${progress}%`,
+                    transform: 'translateX(-50%)',
+                    background: '#FF0000',
+                    transition: 'width 0.1s ease, height 0.1s ease, bottom 0.1s ease',
+                    pointerEvents: 'none',
+                  }}
                 />
 
-                {/* Chapter dots */}
+                {/* Chapter marker dots */}
                 {timelineTicks.map((marker, i) => (
                   <div
                     key={`dot-${i}`}
-                    className="absolute w-2.5 h-2.5 bg-amber-400 rounded-full border border-white/80 shadow z-10 bottom-1.5 cursor-pointer hover:scale-150 active:scale-150 transition-transform"
-                    style={{ left: `${(marker.time_seconds / duration) * 100}%`, transform: 'translateX(-50%)' }}
+                    className="absolute z-10 cursor-pointer"
+                    style={{
+                      width: 8, height: 8,
+                      bottom: barHovered ? 0 : 1,
+                      left: `${(marker.time_seconds / duration) * 100}%`,
+                      transform: 'translateX(-50%)',
+                      background: '#FFD700',
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255,255,255,0.8)',
+                      transition: 'transform 0.1s ease',
+                    }}
                     onMouseEnter={() => setHoveredMarker(marker)}
                     onMouseLeave={() => setHoveredMarker(null)}
-                    onPointerUp={(e) => { e.stopPropagation(); if (ref.current) ref.current.currentTime = marker.time_seconds; }}
+                    onClick={(e) => { e.stopPropagation(); if (ref.current) ref.current.currentTime = marker.time_seconds; }}
                   />
                 ))}
 
-                {/* Hover time */}
+                {/* Hover time tooltip */}
                 {hoverTime !== null && (
-                  <div className="absolute pointer-events-none z-30 bottom-8" style={{ left: `${hoverPos}%`, transform: 'translateX(-50%)' }}>
-                    <div className="px-2 py-0.5 bg-gray-900/95 rounded text-white text-[10px] font-mono whitespace-nowrap border border-white/10">
+                  <div
+                    className="absolute pointer-events-none z-30"
+                    style={{ bottom: 20, left: `${hoverPos}%`, transform: 'translateX(-50%)' }}
+                  >
+                    <div className="px-2 py-0.5 bg-[rgba(28,28,28,0.9)] rounded text-white text-[11px] font-medium font-mono whitespace-nowrap shadow-lg">
                       {formatTime(hoverTime)}
                     </div>
                   </div>
                 )}
 
-                {/* Marker tooltip */}
+                {/* Chapter label tooltip */}
                 {hoveredMarker && (
-                  <div className="absolute pointer-events-none z-30 bottom-8"
-                    style={{ left: `${(hoveredMarker.time_seconds / duration) * 100}%`, transform: 'translateX(-50%)' }}>
-                    <div className="px-2 py-1 bg-amber-500 rounded text-white text-[10px] font-bold whitespace-nowrap shadow-xl max-w-[140px] truncate">
+                  <div
+                    className="absolute pointer-events-none z-30"
+                    style={{ bottom: 20, left: `${(hoveredMarker.time_seconds / duration) * 100}%`, transform: 'translateX(-50%)' }}
+                  >
+                    <div className="px-2 py-1 bg-[rgba(28,28,28,0.95)] rounded text-white text-[11px] font-semibold whitespace-nowrap shadow-xl max-w-[160px] truncate border border-white/10">
                       {hoveredMarker.label}
                     </div>
                   </div>
