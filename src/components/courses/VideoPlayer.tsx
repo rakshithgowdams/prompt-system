@@ -13,6 +13,7 @@ interface VideoPlayerProps {
   onTimeUpdate?: (seconds: number) => void;
   initialTime?: number;
   videoRef?: React.RefObject<HTMLVideoElement>;
+  watermarkSrc?: string;
 }
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -105,11 +106,39 @@ function RippleZone({ direction, count, visible }: RippleZoneProps) {
   );
 }
 
-export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTime, videoRef: externalRef }: VideoPlayerProps) {
+const CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const;
+type Corner = typeof CORNERS[number];
+
+function cornerStyle(corner: Corner): React.CSSProperties {
+  switch (corner) {
+    case 'top-left':     return { top: 12, left: 12 };
+    case 'top-right':    return { top: 12, right: 12 };
+    case 'bottom-left':  return { bottom: 56, left: 12 };
+    case 'bottom-right': return { bottom: 56, right: 12 };
+  }
+}
+
+export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTime, videoRef: externalRef, watermarkSrc }: VideoPlayerProps) {
   const internalRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Watermark corner — cycles on resize
+  const [wmCorner, setWmCorner] = useState<Corner>('top-right');
+  const wmCornerRef = useRef<Corner>('top-right');
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(() => {
+      const next = CORNERS[(CORNERS.indexOf(wmCornerRef.current) + 1) % CORNERS.length];
+      wmCornerRef.current = next;
+      setWmCorner(next);
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
 
   // Double-tap tracking
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -368,6 +397,23 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
         playsInline
       />
 
+      {/* ── Watermark logo ─────────────────────────────────────────────────── */}
+      {watermarkSrc && (
+        <motion.div
+          className="absolute z-40 pointer-events-none select-none"
+          animate={cornerStyle(wmCorner)}
+          transition={{ duration: 0.6, ease: 'easeInOut' }}
+          style={cornerStyle(wmCorner)}
+        >
+          <img
+            src={watermarkSrc}
+            alt=""
+            draggable={false}
+            className="w-8 h-8 sm:w-10 sm:h-10 opacity-50 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
+          />
+        </motion.div>
+      )}
+
       {/* ── Tap zones (left / center / right) ──────────────────────────────── */}
       {/* Left zone: 30% */}
       <div
@@ -576,20 +622,22 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                     {speed}x
                   </button>
                   {showSpeed && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-gray-900/95 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl border border-white/10 z-50 min-w-[100px]">
-                      <div className="px-3 py-2 border-b border-white/10">
+                    <div className="absolute bottom-full right-0 mb-2 bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-white/10 z-50 min-w-[100px] flex flex-col" style={{ maxHeight: 'min(220px, 60vh)' }}>
+                      <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
                         <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider">Speed</span>
                       </div>
-                      {SPEEDS.map((s) => (
-                        <button key={s}
-                          onClick={(e) => { e.stopPropagation(); changeSpeed(s); }}
-                          className={cn('block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10',
-                            s === speed ? 'font-bold bg-white/5' : 'text-white')}
-                          style={{ color: s === speed ? '#00A8E1' : undefined, WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                        >
-                          {s === 1 ? 'Normal' : `${s}x`}
-                        </button>
-                      ))}
+                      <div className="overflow-y-auto">
+                        {SPEEDS.map((s) => (
+                          <button key={s}
+                            onClick={(e) => { e.stopPropagation(); changeSpeed(s); }}
+                            className={cn('block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10',
+                              s === speed ? 'font-bold bg-white/5' : 'text-white')}
+                            style={{ color: s === speed ? '#00A8E1' : undefined, WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                          >
+                            {s === 1 ? 'Normal' : `${s}x`}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -606,20 +654,22 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                       <span className="hidden sm:inline">{quality === 'Auto' ? `Auto (${nativeHeight}p)` : quality}</span>
                     </button>
                     {showQuality && (
-                      <div className="absolute bottom-full right-0 mb-2 bg-gray-900/95 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl border border-white/10 z-50 min-w-[110px]">
-                        <div className="px-3 py-2 border-b border-white/10">
+                      <div className="absolute bottom-full right-0 mb-2 bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-white/10 z-50 min-w-[110px] flex flex-col" style={{ maxHeight: 'min(240px, 60vh)' }}>
+                        <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
                           <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider">Quality</span>
                         </div>
-                        {qualityOptions.map((q) => (
-                          <button key={q}
-                            onClick={(e) => { e.stopPropagation(); changeQuality(q); }}
-                            className={cn('block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10',
-                              q === quality ? 'font-bold bg-white/5' : 'text-white')}
-                            style={{ color: q === quality ? '#00A8E1' : undefined, WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                          >
-                            {q}{q === 'Auto' && nativeHeight > 0 ? ` (${nativeHeight}p)` : ''}
-                          </button>
-                        ))}
+                        <div className="overflow-y-auto">
+                          {qualityOptions.map((q) => (
+                            <button key={q}
+                              onClick={(e) => { e.stopPropagation(); changeQuality(q); }}
+                              className={cn('block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10',
+                                q === quality ? 'font-bold bg-white/5' : 'text-white')}
+                              style={{ color: q === quality ? '#00A8E1' : undefined, WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                            >
+                              {q}{q === 'Auto' && nativeHeight > 0 ? ` (${nativeHeight}p)` : ''}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
