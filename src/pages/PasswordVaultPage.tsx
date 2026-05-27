@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -16,15 +16,27 @@ import { cn } from '../lib/utils';
 
 // ── Favicon helpers ───────────────────────────────────────────────────────────
 
-function autoFaviconUrl(siteUrl: string): string {
-  if (!siteUrl.trim()) return '';
+function parseHostname(siteUrl: string): string | null {
+  if (!siteUrl.trim()) return null;
   try {
     const raw = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
-    const { hostname } = new URL(raw);
-    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+    return new URL(raw).hostname;
   } catch {
-    return '';
+    return null;
   }
+}
+
+function autoFaviconUrl(siteUrl: string): string {
+  const host = parseHostname(siteUrl);
+  if (!host) return '';
+  return `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
+}
+
+function platformFromHostname(hostname: string): string {
+  // strip www. then capitalise the first segment
+  const clean = hostname.replace(/^www\./, '');
+  const name = clean.split('.')[0];
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 const COLORS = [
@@ -128,10 +140,56 @@ function EntryForm({
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM, ...initial });
   const [showPw, setShowPw] = useState(false);
   const [faviconOk, setFaviconOk] = useState(true);
-  const faviconPreview = form.faviconUrl || (faviconOk ? autoFaviconUrl(form.siteUrl) : '');
+  const [fetchingFavicon, setFetchingFavicon] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Resolve favicon + auto-fill platform name whenever siteUrl changes
+  const resolveFavicon = useCallback((url: string) => {
+    const host = parseHostname(url);
+    if (!host) {
+      setForm(f => ({ ...f, faviconUrl: '' }));
+      setFaviconOk(true);
+      return;
+    }
+    const favicon = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
+    setFetchingFavicon(true);
+    setFaviconOk(true);
+    // Pre-check favicon loads by creating an img element
+    const img = new Image();
+    img.onload = () => {
+      setForm(f => ({
+        ...f,
+        faviconUrl: favicon,
+        // Auto-fill platform only if user hasn't typed one yet
+        platform: f.platform.trim() ? f.platform : platformFromHostname(host),
+      }));
+      setFetchingFavicon(false);
+    };
+    img.onerror = () => {
+      setForm(f => ({
+        ...f,
+        faviconUrl: '',
+        platform: f.platform.trim() ? f.platform : platformFromHostname(host),
+      }));
+      setFaviconOk(false);
+      setFetchingFavicon(false);
+    };
+    img.src = favicon;
+  }, []);
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setForm(f => ({ ...f, siteUrl: val }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => resolveFavicon(val), 600);
+  };
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setForm(f => ({ ...f, [key]: e.target.value }));
+
+  const faviconPreview = form.faviconUrl && faviconOk ? form.faviconUrl : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,12 +213,37 @@ function EntryForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+
+      {/* Website URL — first so favicon auto-fills platform */}
+      <div>
+        <label className="text-xs font-semibold text-ink-600 block mb-1.5">
+          Website URL <span className="text-ink-400 font-normal">(auto-fetches favicon)</span>
+        </label>
+        <div className="relative">
+          <input
+            autoFocus
+            type="text"
+            value={form.siteUrl}
+            onChange={handleUrlChange}
+            placeholder="e.g. github.com or https://gmail.com"
+            className={field}
+          />
+          {fetchingFavicon && (
+            <svg className="animate-spin w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400"
+              fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          )}
+        </div>
+      </div>
+
       {/* Preview + Platform */}
       <div className="flex items-end gap-3">
-        <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-ink-100 border border-ink-200 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-ink-100 border border-ink-200 flex items-center justify-center relative">
           {faviconPreview ? (
             <img src={faviconPreview} alt="" className="w-full h-full object-contain p-2"
-              onError={() => { setFaviconOk(false); }} />
+              onError={() => setFaviconOk(false)} />
           ) : form.platform ? (
             <div className={cn('w-full h-full bg-gradient-to-br flex items-center justify-center',
               COLORS[(form.platform.charCodeAt(0) ?? 0) % COLORS.length])}>
@@ -169,32 +252,22 @@ function EntryForm({
           ) : (
             <Icon name="language" size={24} className="text-ink-400" />
           )}
+          {fetchingFavicon && (
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-xl">
+              <svg className="animate-spin w-5 h-5 text-brand-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <label className="text-xs font-semibold text-ink-600 block mb-1.5">
             Platform Name <span className="text-red-400">*</span>
           </label>
-          <input autoFocus type="text" value={form.platform} onChange={set('platform')}
+          <input type="text" value={form.platform} onChange={set('platform')}
             placeholder="e.g. GitHub, Gmail, Netflix…" className={field} />
         </div>
-      </div>
-
-      {/* Site URL */}
-      <div>
-        <label className="text-xs font-semibold text-ink-600 block mb-1.5">
-          Website URL <span className="text-ink-400 font-normal">(for auto-favicon)</span>
-        </label>
-        <input type="text" value={form.siteUrl} onChange={(e) => { set('siteUrl')(e); setFaviconOk(true); }}
-          placeholder="e.g. github.com or https://gmail.com" className={field} />
-      </div>
-
-      {/* Custom favicon URL */}
-      <div>
-        <label className="text-xs font-semibold text-ink-600 block mb-1.5">
-          Custom Favicon URL <span className="text-ink-400 font-normal">(optional — overrides auto)</span>
-        </label>
-        <input type="text" value={form.faviconUrl} onChange={set('faviconUrl')}
-          placeholder="https://example.com/favicon.ico" className={field} />
       </div>
 
       {/* Username / ID */}
