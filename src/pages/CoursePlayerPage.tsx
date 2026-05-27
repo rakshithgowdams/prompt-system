@@ -7,7 +7,7 @@ import {
   useEnrollment, useEnroll, useCourseProgress,
   useMarkLessonComplete, useSaveWatchPosition,
   useLessonNotes, useCreateNote, useUpdateNote, useDeleteNote,
-  useMyCertificate,
+  useMyCertificate, useCourseGallery,
 } from '../hooks/useCourses';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -18,7 +18,7 @@ import { CourseQnA } from '../components/courses/CourseQnA';
 import { CourseReviews } from '../components/courses/CourseReviews';
 import { activateContentProtection, deactivateContentProtection } from '../lib/contentProtection';
 import { cn } from '../lib/utils';
-import type { CourseLesson } from '../hooks/useCourses';
+import type { CourseLesson, CourseGalleryItem } from '../hooks/useCourses';
 
 const SIDEBAR_W = 340;
 const HEADER_H = 56;
@@ -31,6 +31,197 @@ const VIMEO_EMBED = (url: string) => {
   const m = url.match(/vimeo\.com\/(\d+)/);
   return m ? `https://player.vimeo.com/video/${m[1]}?autoplay=1` : null;
 };
+
+// ── Course Gallery Viewer ─────────────────────────────────────────────────────
+
+function CourseGalleryViewer({ courseId: _courseId, items }: { courseId: string; items: CourseGalleryItem[] }) {
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [lightbox, setLightbox] = useState<CourseGalleryItem | null>(null);
+  const [activeSection, setActiveSection] = useState<'images' | 'videos'>('images');
+
+  const images = items.filter(i => i.media_type === 'image');
+  const videos = items.filter(i => i.media_type === 'video');
+
+  useEffect(() => {
+    if (!items.length) return;
+    const paths = items.map(i => i.storage_path).filter(p => !signedUrls[p]);
+    if (!paths.length) return;
+    Promise.all(paths.map(p =>
+      supabase.storage.from('prompt-media').createSignedUrl(p, 3600)
+        .then(({ data }) => ({ path: p, url: data?.signedUrl ?? '' }))
+    )).then(results => {
+      setSignedUrls(prev => {
+        const next = { ...prev };
+        results.forEach(({ path, url }) => { if (url) next[path] = url; });
+        return next;
+      });
+    });
+  }, [items]);
+
+  const hasImages = images.length > 0;
+  const hasVideos = videos.length > 0;
+  const currentSection = activeSection === 'images' && hasImages ? 'images' : 'videos';
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+          <Icon name="collections" size={15} className="text-blue-500" />
+          Course Gallery
+        </h3>
+        {hasImages && hasVideos && (
+          <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl">
+            {(['images', 'videos'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setActiveSection(s)}
+                className={cn(
+                  'px-3 py-1 rounded-lg text-xs font-semibold transition-all',
+                  currentSection === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                {s === 'images' ? `Images (${images.length})` : `Videos (${videos.length})`}
+              </button>
+            ))}
+          </div>
+        )}
+        {!hasImages && hasVideos && (
+          <span className="text-xs text-gray-400">{videos.length} video{videos.length !== 1 ? 's' : ''}</span>
+        )}
+        {hasImages && !hasVideos && (
+          <span className="text-xs text-gray-400">{images.length} image{images.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+
+      {/* Images grid */}
+      {currentSection === 'images' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          {images.map((item, idx) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.04 }}
+              className="group relative aspect-video rounded-xl overflow-hidden bg-gray-100 cursor-pointer border border-gray-200 hover:border-gray-400 transition-colors"
+              onClick={() => setLightbox(item)}
+            >
+              {signedUrls[item.storage_path] ? (
+                <img
+                  src={signedUrls[item.storage_path]}
+                  alt={item.caption || ''}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                <Icon name="zoom_in" size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+              </div>
+              {item.caption && (
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-white text-[11px] font-medium truncate">{item.caption}</p>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Videos grid */}
+      {currentSection === 'videos' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {videos.map((item, idx) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.06 }}
+              className="rounded-xl overflow-hidden border border-gray-200 bg-black shadow-sm"
+            >
+              {signedUrls[item.storage_path] ? (
+                <video
+                  src={signedUrls[item.storage_path]}
+                  controls
+                  className="w-full aspect-video object-contain bg-black"
+                  controlsList="nodownload"
+                  disablePictureInPicture
+                  playsInline
+                />
+              ) : (
+                <div className="aspect-video flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
+              {item.caption && (
+                <div className="px-3 py-2 bg-white border-t border-gray-100">
+                  <p className="text-xs text-gray-600 font-medium">{item.caption}</p>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.92)' }}
+            onClick={() => setLightbox(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.88, opacity: 0 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+              className="relative max-w-4xl w-full"
+              onClick={e => e.stopPropagation()}
+            >
+              {signedUrls[lightbox.storage_path] && (
+                <img
+                  src={signedUrls[lightbox.storage_path]}
+                  alt={lightbox.caption}
+                  className="w-full rounded-2xl shadow-2xl object-contain max-h-[85vh]"
+                />
+              )}
+              {lightbox.caption && (
+                <p className="text-white/70 text-sm text-center mt-3">{lightbox.caption}</p>
+              )}
+              {/* Prev / Next */}
+              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none px-2">
+                {items.filter(i => i.media_type === 'image').indexOf(lightbox) > 0 && (
+                  <button
+                    className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
+                    onClick={e => { e.stopPropagation(); const imgs = items.filter(i => i.media_type === 'image'); const idx = imgs.indexOf(lightbox); if (idx > 0) setLightbox(imgs[idx - 1]); }}
+                  >
+                    <Icon name="chevron_left" size={20} />
+                  </button>
+                )}
+                <div className="flex-1" />
+                {items.filter(i => i.media_type === 'image').indexOf(lightbox) < items.filter(i => i.media_type === 'image').length - 1 && (
+                  <button
+                    className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
+                    onClick={e => { e.stopPropagation(); const imgs = items.filter(i => i.media_type === 'image'); const idx = imgs.indexOf(lightbox); if (idx < imgs.length - 1) setLightbox(imgs[idx + 1]); }}
+                  >
+                    <Icon name="chevron_right" size={20} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setLightbox(null)}
+                className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 // ── Confetti ──────────────────────────────────────────────────────────────────
 
@@ -519,6 +710,7 @@ export function CoursePlayerPage() {
   const { data: enrollment } = useEnrollment(courseId ?? '');
   const { data: progressList = [] } = useCourseProgress(courseId ?? '');
   const { data: certificate } = useMyCertificate(courseId ?? '');
+  const { data: galleryItems = [] } = useCourseGallery(courseId ?? '');
 
   const enroll = useEnroll();
   const markComplete = useMarkLessonComplete();
@@ -1081,6 +1273,11 @@ export function CoursePlayerPage() {
                           </div>
                           <p className="text-xs text-gray-500">{completedIds.size} of {lessons.length} lessons completed</p>
                         </div>
+                      )}
+
+                      {/* ── Course Gallery (enrolled only) ── */}
+                      {(enrollment || isOwner) && galleryItems.length > 0 && (
+                        <CourseGalleryViewer courseId={courseId!} items={galleryItems} />
                       )}
                     </div>
                   )}

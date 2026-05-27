@@ -1282,3 +1282,78 @@ export function useInstructorRespond() {
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-reviews', vars.course_id] }),
   });
 }
+
+// ── Course Gallery ────────────────────────────────────────────────────────────
+
+export interface CourseGalleryItem {
+  id: string;
+  course_id: string;
+  user_id: string;
+  media_type: 'image' | 'video';
+  storage_path: string;
+  caption: string;
+  position: number;
+  created_at: string;
+}
+
+export function useCourseGallery(courseId: string) {
+  return useQuery({
+    queryKey: ['course-gallery', courseId],
+    queryFn: async () => {
+      if (!courseId) return [] as CourseGalleryItem[];
+      const { data, error } = await supabase
+        .from('course_gallery')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('position', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as CourseGalleryItem[];
+    },
+    enabled: !!courseId,
+  });
+}
+
+export function useAddGalleryItem() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (p: { course_id: string; media_type: 'image' | 'video'; storage_path: string; caption: string; position: number }) => {
+      const { data, error } = await supabase
+        .from('course_gallery')
+        .insert({ ...p, user_id: user!.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as CourseGalleryItem;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-gallery', vars.course_id] }),
+  });
+}
+
+export function useUpdateGalleryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { id: string; course_id: string; caption: string }) => {
+      const { error } = await supabase
+        .from('course_gallery')
+        .update({ caption: p.caption })
+        .eq('id', p.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-gallery', vars.course_id] }),
+  });
+}
+
+export function useDeleteGalleryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { id: string; course_id: string }) => {
+      const { error } = await supabase
+        .from('course_gallery')
+        .delete()
+        .eq('id', p.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['course-gallery', vars.course_id] }),
+  });
+}

@@ -6,6 +6,7 @@ import {
   useCourse, useUpdateCourse, useDeleteCourse, useCourseSections, useCourseLessons,
   useCreateSection, useUpdateSection, useDeleteSection,
   useCreateLesson, useUpdateLesson, useDeleteLesson,
+  useCourseGallery, useAddGalleryItem, useDeleteGalleryItem, useUpdateGalleryItem,
 } from '../hooks/useCourses';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -13,7 +14,7 @@ import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import { CourseShareModal } from '../components/courses/CourseShareModal';
-import type { CourseSection, CourseLesson, TimelineMarker } from '../hooks/useCourses';
+import type { CourseSection, CourseLesson, TimelineMarker, CourseGalleryItem } from '../hooks/useCourses';
 
 
 // ── Debounce hook ─────────────────────────────────────────────────────────────
@@ -923,6 +924,260 @@ function LessonEditor({
   );
 }
 
+// ── Gallery Editor ────────────────────────────────────────────────────────────
+
+function CourseGalleryEditor({ courseId }: { courseId: string }) {
+  const { user } = useAuth();
+  const { data: items = [] } = useCourseGallery(courseId);
+  const addItem = useAddGalleryItem();
+  const deleteItem = useDeleteGalleryItem();
+  const updateItem = useUpdateGalleryItem();
+
+  const imgInputRef = useRef<HTMLInputElement>(null);
+  const vidInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [editingCaption, setEditingCaption] = useState<{ id: string; value: string } | null>(null);
+  const [lightbox, setLightbox] = useState<CourseGalleryItem | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!items.length) return;
+    const paths = items.map(i => i.storage_path).filter(p => !signedUrls[p]);
+    if (!paths.length) return;
+    Promise.all(paths.map(p =>
+      supabase.storage.from('prompt-media').createSignedUrl(p, 3600)
+        .then(({ data }) => ({ path: p, url: data?.signedUrl ?? '' }))
+    )).then(results => {
+      setSignedUrls(prev => {
+        const next = { ...prev };
+        results.forEach(({ path, url }) => { if (url) next[path] = url; });
+        return next;
+      });
+    });
+  }, [items]);
+
+  const upload = async (file: File, type: 'image' | 'video') => {
+    if (!user) return;
+    const maxMb = type === 'video' ? 500 : 100;
+    if (file.size > maxMb * 1024 * 1024) { toast.error(`Max ${maxMb} MB`); return; }
+    setUploading(true); setUploadPct(0);
+    try {
+      const ext = file.name.split('.').pop() ?? 'bin';
+      const path = `course-gallery/${courseId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('prompt-media').upload(path, file, {
+        cacheControl: '3600', upsert: false,
+      });
+      if (upErr) throw upErr;
+      setUploadPct(100);
+      await addItem.mutateAsync({ course_id: courseId, media_type: type, storage_path: path, caption: '', position: items.length });
+      toast.success(`${type === 'image' ? 'Image' : 'Video'} added to gallery`);
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Upload failed');
+    } finally { setUploading(false); setUploadPct(0); }
+  };
+
+  const saveCaption = async () => {
+    if (!editingCaption) return;
+    await updateItem.mutateAsync({ id: editingCaption.id, course_id: courseId, caption: editingCaption.value });
+    setEditingCaption(null);
+  };
+
+  const handleDelete = async (item: CourseGalleryItem) => {
+    if (!confirm('Remove this item from the gallery?')) return;
+    await supabase.storage.from('prompt-media').remove([item.storage_path]).catch(() => {});
+    await deleteItem.mutateAsync({ id: item.id, course_id: courseId });
+    toast.success('Removed');
+  };
+
+  const images = items.filter(i => i.media_type === 'image');
+  const videos = items.filter(i => i.media_type === 'video');
+
+  return (
+    <div className="space-y-6">
+      {/* Upload buttons */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          onClick={() => !uploading && imgInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-ink-100 hover:bg-ink-200 border border-ink-300 text-ink-700 text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          <Icon name="add_photo_alternate" size={16} className="text-green-500" />
+          Add Image
+        </button>
+        <button
+          onClick={() => !uploading && vidInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-ink-100 hover:bg-ink-200 border border-ink-300 text-ink-700 text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          <Icon name="video_call" size={16} className="text-brand-400" />
+          Add Video
+        </button>
+        {uploading && (
+          <div className="flex items-center gap-2 text-sm text-ink-500">
+            <Spinner size={14} />
+            <span>Uploading… {uploadPct}%</span>
+          </div>
+        )}
+      </div>
+      <input ref={imgInputRef} type="file" accept="image/*" className="hidden"
+        onChange={e => { if (e.target.files?.[0]) { upload(e.target.files[0], 'image'); e.target.value = ''; } }} />
+      <input ref={vidInputRef} type="file" accept="video/*" className="hidden"
+        onChange={e => { if (e.target.files?.[0]) { upload(e.target.files[0], 'video'); e.target.value = ''; } }} />
+
+      {items.length === 0 ? (
+        <div className="text-center py-12 border-2 border-dashed border-ink-200 rounded-xl">
+          <Icon name="collections" size={36} className="text-ink-200 mx-auto mb-2" />
+          <p className="text-sm text-ink-400 font-medium">No gallery items yet</p>
+          <p className="text-xs text-ink-300 mt-1">Add images or short videos to showcase your course</p>
+        </div>
+      ) : (
+        <>
+          {/* Images section */}
+          {images.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Icon name="image" size={13} className="text-green-500" />
+                Images ({images.length})
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {images.map(item => (
+                  <div key={item.id} className="group relative rounded-xl overflow-hidden border border-ink-200 bg-ink-50">
+                    <div className="aspect-video bg-ink-100 cursor-pointer" onClick={() => setLightbox(item)}>
+                      {signedUrls[item.storage_path] ? (
+                        <img src={signedUrls[item.storage_path]} alt={item.caption || ''} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Spinner size={18} />
+                        </div>
+                      )}
+                    </div>
+                    {/* Caption + actions */}
+                    <div className="p-2">
+                      {editingCaption?.id === item.id ? (
+                        <div className="flex gap-1">
+                          <input
+                            autoFocus
+                            value={editingCaption.value}
+                            onChange={e => setEditingCaption({ ...editingCaption, value: e.target.value })}
+                            onBlur={saveCaption}
+                            onKeyDown={e => { if (e.key === 'Enter') saveCaption(); if (e.key === 'Escape') setEditingCaption(null); }}
+                            className="flex-1 text-xs px-2 py-1 rounded bg-ink-100 border border-ink-300 text-ink-900 focus:outline-none"
+                            placeholder="Add caption…"
+                          />
+                        </div>
+                      ) : (
+                        <p
+                          className="text-[11px] text-ink-500 truncate cursor-pointer hover:text-ink-700"
+                          onClick={() => setEditingCaption({ id: item.id, value: item.caption })}
+                        >
+                          {item.caption || <span className="italic text-ink-300">Add caption…</span>}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                    >
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Videos section */}
+          {videos.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-ink-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Icon name="smart_display" size={13} className="text-brand-400" />
+                Videos ({videos.length})
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {videos.map(item => (
+                  <div key={item.id} className="group relative rounded-xl overflow-hidden border border-ink-200 bg-black">
+                    {signedUrls[item.storage_path] ? (
+                      <video
+                        src={signedUrls[item.storage_path]}
+                        controls
+                        className="w-full aspect-video object-contain bg-black"
+                        controlsList="nodownload"
+                        disablePictureInPicture
+                      />
+                    ) : (
+                      <div className="aspect-video flex items-center justify-center">
+                        <Spinner size={20} />
+                      </div>
+                    )}
+                    <div className="p-2 bg-white">
+                      {editingCaption?.id === item.id ? (
+                        <div className="flex gap-1">
+                          <input
+                            autoFocus
+                            value={editingCaption.value}
+                            onChange={e => setEditingCaption({ ...editingCaption, value: e.target.value })}
+                            onBlur={saveCaption}
+                            onKeyDown={e => { if (e.key === 'Enter') saveCaption(); if (e.key === 'Escape') setEditingCaption(null); }}
+                            className="flex-1 text-xs px-2 py-1 rounded bg-ink-100 border border-ink-300 text-ink-900 focus:outline-none"
+                            placeholder="Add caption…"
+                          />
+                        </div>
+                      ) : (
+                        <p
+                          className="text-[11px] text-ink-500 truncate cursor-pointer hover:text-ink-700"
+                          onClick={() => setEditingCaption({ id: item.id, value: item.caption })}
+                        >
+                          {item.caption || <span className="italic text-ink-300">Add caption…</span>}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                    >
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Lightbox for images */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.92)' }}
+            onClick={() => setLightbox(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.88, opacity: 0 }}
+              transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+              className="relative max-w-4xl w-full"
+              onClick={e => e.stopPropagation()}
+            >
+              {signedUrls[lightbox.storage_path] && (
+                <img src={signedUrls[lightbox.storage_path]} alt={lightbox.caption} className="w-full rounded-2xl shadow-2xl object-contain max-h-[80vh]" />
+              )}
+              {lightbox.caption && (
+                <p className="text-white/70 text-sm text-center mt-3">{lightbox.caption}</p>
+              )}
+              <button onClick={() => setLightbox(null)} className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+                <Icon name="close" size={16} />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── Main Editor ───────────────────────────────────────────────────────────────
 
 export function CourseEditorPage() {
@@ -1332,6 +1587,20 @@ export function CourseEditorPage() {
                 <Icon name="save" size={16} />
                 Save Details
               </Button>
+
+              {/* ── Gallery section ── */}
+              <div className="pt-4 border-t border-ink-200">
+                <div className="mb-4">
+                  <h3 className="text-sm font-bold text-ink-900 flex items-center gap-2">
+                    <Icon name="collections" size={16} className="text-brand-400" />
+                    Course Gallery
+                  </h3>
+                  <p className="text-xs text-ink-400 mt-0.5">
+                    Upload images and short preview videos. Enrolled students will see this gallery on the course overview page.
+                  </p>
+                </div>
+                <CourseGalleryEditor courseId={course.id} />
+              </div>
             </div>
           </div>
         )}
