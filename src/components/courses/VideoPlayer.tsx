@@ -427,7 +427,6 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
             transition={{ duration: 0.2 }}
             className="absolute inset-x-0 bottom-0 z-30"
             onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
           >
             {/* Gradient scrim */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
@@ -510,34 +509,31 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
               {/* ── Control row ── */}
               <div className="flex items-center gap-1 mt-0.5">
 
-                {/* Play/Pause (bottom bar) */}
+                {/* Play/Pause */}
                 <button
-                  className="p-1.5 text-white"
+                  className="p-1.5 text-white hover:text-white/80 active:scale-90 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                  onPointerUp={(e) => { e.stopPropagation(); togglePlay(); }}
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                   aria-label={playing ? 'Pause' : 'Play'}
                 >
                   <Icon name={playing ? 'pause' : 'play_arrow'} size={22} className="text-white" fill />
                 </button>
 
-                {/* Skip back */}
+                {/* Skip back 10s */}
                 <button
-                  className="p-1.5 text-white"
+                  className="p-1.5 text-white hover:text-white/80 active:scale-90 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                  onPointerUp={(e) => { e.stopPropagation(); triggerSkip(-10); }}
+                  onClick={(e) => { e.stopPropagation(); triggerSkip(-10); }}
                   aria-label="Rewind 10s"
                 >
                   <Icon name="replay_10" size={20} className="text-white" />
                 </button>
 
-                {/* Skip forward */}
+                {/* Skip forward 10s */}
                 <button
-                  className="p-1.5 text-white"
+                  className="p-1.5 text-white hover:text-white/80 active:scale-90 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                  onPointerUp={(e) => { e.stopPropagation(); triggerSkip(10); }}
+                  onClick={(e) => { e.stopPropagation(); triggerSkip(10); }}
                   aria-label="Forward 10s"
                 >
                   <Icon name="forward_10" size={20} className="text-white" />
@@ -546,10 +542,9 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                 {/* Volume */}
                 <div className="flex items-center gap-0.5 group/vol ml-0.5">
                   <button
-                    className="p-1.5 text-white"
+                    className="p-1.5 text-white hover:text-white/80 active:scale-90 transition-transform"
                     style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                    onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                    onPointerUp={(e) => { e.stopPropagation(); toggleMute(); }}
+                    onClick={(e) => { e.stopPropagation(); toggleMute(); }}
                     aria-label={muted ? 'Unmute' : 'Mute'}
                   >
                     <Icon name={muted || volume === 0 ? 'volume_off' : volume < 0.5 ? 'volume_down' : 'volume_up'} size={20} className="text-white" />
@@ -558,7 +553,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                     type="range" min={0} max={1} step={0.05}
                     value={muted ? 0 : volume}
                     onChange={handleVolumeChange}
-                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="hidden sm:block w-0 group-hover/vol:w-16 transition-all duration-200 h-1 cursor-pointer opacity-0 group-hover/vol:opacity-100"
                     style={{ accentColor: '#00A8E1' }}
                   />
@@ -576,8 +571,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                   <button
                     className="px-2 py-1.5 text-white text-[11px] font-bold rounded hover:bg-white/10 active:bg-white/10"
                     style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', minWidth: 36 }}
-                    onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                    onPointerUp={(e) => { e.stopPropagation(); setShowSpeed(v => !v); setShowQuality(false); }}
+                    onClick={(e) => { e.stopPropagation(); setShowSpeed(v => !v); setShowQuality(false); }}
                   >
                     {speed}x
                   </button>
@@ -588,8 +582,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                       </div>
                       {SPEEDS.map((s) => (
                         <button key={s}
-                          onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                          onPointerUp={(e) => { e.stopPropagation(); changeSpeed(s); }}
+                          onClick={(e) => { e.stopPropagation(); changeSpeed(s); }}
                           className={cn('block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10',
                             s === speed ? 'font-bold bg-white/5' : 'text-white')}
                           style={{ color: s === speed ? '#00A8E1' : undefined, WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
@@ -607,8 +600,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                     <button
                       className="flex items-center gap-1 px-2 py-1.5 text-white text-[11px] font-bold rounded hover:bg-white/10 active:bg-white/10"
                       style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                      onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                      onPointerUp={(e) => { e.stopPropagation(); setShowQuality(v => !v); setShowSpeed(false); }}
+                      onClick={(e) => { e.stopPropagation(); setShowQuality(v => !v); setShowSpeed(false); }}
                     >
                       <Icon name="settings" size={15} />
                       <span className="hidden sm:inline">{quality === 'Auto' ? `Auto (${nativeHeight}p)` : quality}</span>
@@ -620,8 +612,7 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
                         </div>
                         {qualityOptions.map((q) => (
                           <button key={q}
-                            onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                            onPointerUp={(e) => { e.stopPropagation(); changeQuality(q); }}
+                            onClick={(e) => { e.stopPropagation(); changeQuality(q); }}
                             className={cn('block w-full px-4 py-2.5 text-left text-[12px] font-medium hover:bg-white/10 active:bg-white/10',
                               q === quality ? 'font-bold bg-white/5' : 'text-white')}
                             style={{ color: q === quality ? '#00A8E1' : undefined, WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
@@ -636,10 +627,9 @@ export function VideoPlayer({ src, title, markers = [], onTimeUpdate, initialTim
 
                 {/* Fullscreen */}
                 <button
-                  className="p-1.5 text-white"
+                  className="p-1.5 text-white hover:text-white/80 active:scale-90 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onPointerDown={(e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); }}
-                  onPointerUp={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                  onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
                   aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
                 >
                   <Icon name={fullscreen ? 'fullscreen_exit' : 'fullscreen'} size={22} className="text-white" />
