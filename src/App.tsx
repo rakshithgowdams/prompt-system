@@ -47,8 +47,8 @@ const PublicPortfolioPage    = lazy(() => import('./pages/PublicPortfolioPage').
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
+      staleTime: 5 * 60_000,
+      gcTime: 15 * 60_000,
       refetchOnWindowFocus: false,
       retry: (failureCount, error: unknown) => {
         const status = (error as { status?: number })?.status;

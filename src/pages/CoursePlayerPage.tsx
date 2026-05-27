@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -547,9 +547,18 @@ export function CoursePlayerPage() {
     setTimeout(() => setShowConfetti(false), 5000);
   }, []);
 
-  const activeLesson = lessons.find((l) => l.id === activeLessonId) ?? null;
-  const completedIds = new Set(progressList.filter((p) => p.completed).map((p) => p.lesson_id));
-  const pct = lessons.length > 0 ? Math.round((completedIds.size / lessons.length) * 100) : 0;
+  const activeLesson = useMemo(
+    () => lessons.find((l) => l.id === activeLessonId) ?? null,
+    [lessons, activeLessonId],
+  );
+  const completedIds = useMemo(
+    () => new Set(progressList.filter((p) => p.completed).map((p) => p.lesson_id)),
+    [progressList],
+  );
+  const pct = useMemo(
+    () => lessons.length > 0 ? Math.round((completedIds.size / lessons.length) * 100) : 0,
+    [completedIds.size, lessons.length],
+  );
   const isOwner = course?.user_id === user?.id;
   const isCompleted = activeLesson ? completedIds.has(activeLesson.id) : false;
   const canAccess = isOwner || !!enrollment || activeLesson?.is_preview;
@@ -563,13 +572,21 @@ export function CoursePlayerPage() {
 
   useEffect(() => { if (certificate) setCompletionBanner(true); }, [certificate?.id]);
 
+  const videoUrlCache = useRef<Map<string, string>>(new Map());
+
   useEffect(() => {
     setVideoUrl(null);
     if (!activeLesson) return;
     if (activeLesson.video_path) {
+      const cached = videoUrlCache.current.get(activeLesson.video_path);
+      if (cached) { setVideoUrl(cached); return; }
       setMediaLoading(true);
-      supabase.storage.from('prompt-media').createSignedUrl(activeLesson.video_path, 3600)
-        .then(({ data }) => setVideoUrl(data?.signedUrl ?? null))
+      supabase.storage.from('prompt-media').createSignedUrl(activeLesson.video_path, 86400)
+        .then(({ data }) => {
+          const url = data?.signedUrl ?? null;
+          if (url) videoUrlCache.current.set(activeLesson.video_path!, url);
+          setVideoUrl(url);
+        })
         .catch(() => {})
         .finally(() => setMediaLoading(false));
     } else if (activeLesson.video_url) {

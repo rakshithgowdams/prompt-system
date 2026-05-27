@@ -21,7 +21,7 @@ html.lenis body { height: auto; }
   font-family: 'Material Symbols Rounded';
   font-style: normal;
   font-weight: normal;
-  font-display: block;
+  font-display: swap;
   display: inline-flex;
   align-items: center;
   justify-content: center;

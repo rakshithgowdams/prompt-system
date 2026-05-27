@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -15,6 +16,31 @@ import { CourseShareModal } from '../components/courses/CourseShareModal';
 import { cn, formatRelative } from '../lib/utils';
 import type { Course } from '../hooks/useCourses';
 
+function useCourseCoverUrls(courses: Course[]) {
+  const paths = useMemo(
+    () => courses.map((c) => c.cover_image).filter(Boolean) as string[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [courses.map((c) => c.cover_image).join(',')],
+  );
+  return useQuery({
+    queryKey: ['course-cover-urls', paths],
+    queryFn: async () => {
+      if (paths.length === 0) return {} as Record<string, string>;
+      const { data, error } = await supabase.storage
+        .from('prompt-media')
+        .createSignedUrls(paths, 3600);
+      if (error) return {} as Record<string, string>;
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((item) => {
+        if (item.signedUrl) map[item.path] = item.signedUrl;
+      });
+      return map;
+    },
+    enabled: paths.length > 0,
+    staleTime: 50 * 60_000,
+  });
+}
+
 const CATEGORIES = ['All', 'General', 'Design', 'Development', 'Marketing', 'Business', 'Photography', 'Music', 'Health', 'Other'];
 const LEVELS = ['All', 'beginner', 'intermediate', 'advanced'];
 
@@ -24,24 +50,16 @@ const LEVEL_COLORS: Record<string, string> = {
   advanced: 'bg-red-50 text-red-700 border-red-200',
 };
 
-function CourseCover({ course, className = '' }: { course: Course; className?: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!!course.cover_image);
+function CourseCover({ course, coverUrls, urlsLoading, className = '' }: {
+  course: Course;
+  coverUrls: Record<string, string>;
+  urlsLoading: boolean;
+  className?: string;
+}) {
   const [failed, setFailed] = useState(false);
+  const url = course.cover_image ? coverUrls[course.cover_image] : null;
 
-  useEffect(() => {
-    if (!course.cover_image) { setLoading(false); return; }
-    setLoading(true);
-    setFailed(false);
-    supabase.storage.from('prompt-media').createSignedUrl(course.cover_image, 3600)
-      .then(({ data, error }) => {
-        if (error || !data?.signedUrl) { setFailed(true); } else { setUrl(data.signedUrl); }
-      })
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false));
-  }, [course.cover_image]);
-
-  if (loading) {
+  if (urlsLoading && course.cover_image) {
     return (
       <div className={`w-full h-full relative overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite] ${className}`} />
     );
@@ -51,6 +69,9 @@ function CourseCover({ course, className = '' }: { course: Course; className?: s
       <img
         src={url}
         alt={course.title}
+        loading="lazy"
+        width={400}
+        height={225}
         className={`w-full h-full object-cover ${className}`}
         onError={() => setFailed(true)}
       />
@@ -85,7 +106,7 @@ function CreatorBadge({ userId }: { userId: string }) {
 }
 
 function CourseCard({
-  course, isEnrolled, isOwner, onEnroll, onOpen, onEdit, onDelete, onShare,
+  course, isEnrolled, isOwner, onEnroll, onOpen, onEdit, onDelete, onShare, coverUrls, urlsLoading,
 }: {
   course: Course;
   isEnrolled: boolean;
@@ -95,6 +116,8 @@ function CourseCard({
   onEdit: () => void;
   onDelete: () => void;
   onShare: () => void;
+  coverUrls: Record<string, string>;
+  urlsLoading: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -109,7 +132,7 @@ function CourseCard({
       )}
     >
       <div className="relative aspect-video overflow-hidden bg-ink-100">
-        <CourseCover course={course} />
+        <CourseCover course={course} coverUrls={coverUrls} urlsLoading={urlsLoading} />
 
         <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
           <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full border', LEVEL_COLORS[course.level] ?? LEVEL_COLORS.beginner)}>
@@ -346,6 +369,16 @@ export function CoursesPage() {
   const { data: exploreCourses = [], isLoading: exploreLoading } = useExploreCourses();
   const { data: myCourses = [], isLoading: myLoading } = useMyCourses();
   const { data: enrollments = [] } = useMyEnrollments();
+
+  const allCourses = useMemo(() => {
+    const seen = new Set<string>();
+    return [...exploreCourses, ...myCourses].filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+  }, [exploreCourses, myCourses]);
+  const { data: coverUrls = {}, isLoading: urlsLoading } = useCourseCoverUrls(allCourses);
   const enroll = useEnroll();
   const deleteCourse = useDeleteCourse();
 
@@ -557,6 +590,8 @@ export function CoursesPage() {
                 onEdit={() => navigate(`/courses/${course.id}/edit`)}
                 onDelete={() => handleDelete(course.id)}
                 onShare={() => setSharingCourse(course)}
+                coverUrls={coverUrls}
+                urlsLoading={urlsLoading}
               />
             ))}
           </div>

@@ -131,11 +131,13 @@ export function useExploreCourses() {
         .select('*')
         .eq('is_published', true)
         .eq('is_hidden', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data as Course[];
     },
     enabled: !!user,
+    staleTime: 10 * 60_000,
   });
 }
 
@@ -165,11 +167,13 @@ export function useMyCourses() {
         .from('courses')
         .select('*')
         .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data as Course[];
     },
     enabled: !!user,
+    staleTime: 10 * 60_000,
   });
 }
 
@@ -910,26 +914,19 @@ export function useLessonComments(lessonId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lesson_comments')
-        .select('*')
+        .select('*, user_profiles!lesson_comments_user_id_fkey(display_name, avatar_url)')
         .eq('lesson_id', lessonId)
         .order('created_at', { ascending: true });
       if (error) throw error;
-      const comments = (data ?? []) as LessonComment[];
-
-      // Fetch profiles for all unique user_ids
-      const userIds = [...new Set(comments.map((c) => c.user_id))];
-      if (userIds.length === 0) return comments;
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('id, display_name, avatar_url')
-        .in('id', userIds);
-      const profileMap = new Map((profiles ?? []).map((p: { id: string; display_name?: string; avatar_url?: string }) => [p.id, p]));
-      return comments.map((c) => {
-        const p = profileMap.get(c.user_id) as { display_name?: string; avatar_url?: string } | undefined;
-        return { ...c, user_display_name: p?.display_name ?? null, user_avatar_url: p?.avatar_url ?? null };
-      });
+      return (data ?? []).map((c: any) => ({
+        ...c,
+        user_display_name: c.user_profiles?.display_name ?? null,
+        user_avatar_url: c.user_profiles?.avatar_url ?? null,
+        user_profiles: undefined,
+      })) as LessonComment[];
     },
     enabled: !!user && !!lessonId,
+    staleTime: 2 * 60_000,
   });
 }
 
@@ -1050,7 +1047,7 @@ export function useCourseQuestions(
       })) as CourseQuestion[];
     },
     enabled: !!courseId,
-    staleTime: 30_000,
+    staleTime: 3 * 60_000,
   });
 }
 
@@ -1088,7 +1085,7 @@ export function useCourseAnswers(questionId: string) {
       })) as CourseAnswer[];
     },
     enabled: !!questionId,
-    staleTime: 30_000,
+    staleTime: 3 * 60_000,
   });
 }
 

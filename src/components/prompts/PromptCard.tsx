@@ -46,21 +46,16 @@ export function PromptCard({ prompt, onShare }: PromptCardProps) {
           {thumbnailLoading ? (
             <div className="w-full aspect-video relative overflow-hidden bg-ink-200 before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:animate-[skeleton-sweep_1.8s_ease-in-out_infinite]" />
           ) : thumbnail ? (
-            <>
-              <img
-                src={thumbnail}
-                alt=""
-                aria-hidden
-                className="w-full block invisible"
-                loading="lazy"
-              />
+            <div className="w-full aspect-video overflow-hidden">
               <img
                 src={thumbnail}
                 alt={prompt.title}
                 loading="lazy"
-                className="absolute inset-0 w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-300"
+                width={640}
+                height={360}
+                className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-300"
               />
-            </>
+            </div>
           ) : (
             <div className="w-full aspect-video flex items-center justify-center text-ink-300">
               <Icon name="image" size={36} weight={200} />
