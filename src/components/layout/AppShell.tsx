@@ -265,6 +265,7 @@ const mainNav: NavItem[] = [
   { label: 'Certificates / Portfolio', href: '/portfolio', icon: 'workspace_premium' },
   { label: 'Todos', href: '/todos', icon: 'checklist' },
   { label: 'Image Reducer', href: '/image-reducer', icon: 'photo_size_select_large', badge: 'NEW' },
+  { label: 'Image Converter', href: '/image-converter', icon: 'swap_horiz', badge: 'NEW' },
   { label: 'Password Vault', href: '/vault', icon: 'shield' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];

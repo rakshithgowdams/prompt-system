@@ -45,6 +45,7 @@ const ExplorePromptsPage     = lazy(() => import('./pages/ExplorePromptsPage').t
 const PublicCertificatePage  = lazy(() => import('./pages/PublicCertificatePage').then((m) => ({ default: m.PublicCertificatePage })));
 const PublicPortfolioPage    = lazy(() => import('./pages/PublicPortfolioPage').then((m) => ({ default: m.PublicPortfolioPage })));
 const ImageReducerPage       = lazy(() => import('./pages/ImageReducerPage').then((m) => ({ default: m.ImageReducerPage })));
+const ImageConverterPage     = lazy(() => import('./pages/ImageConverterPage').then((m) => ({ default: m.ImageConverterPage })));
 
 // Re-throws chunk-load errors so the root ErrorBoundary in main.tsx catches them
 // and shows the "App updated — please reload" screen instead of a blank skeleton.
@@ -142,6 +143,7 @@ export default function App() {
                 <Route path="/vault" element={<PasswordVaultPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/image-reducer" element={<ImageReducerPage />} />
+                <Route path="/image-converter" element={<ImageConverterPage />} />
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />
                 <Route path="/courses/:courseId/certificate" element={<CertificatePage />} />
