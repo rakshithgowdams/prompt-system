@@ -10,6 +10,7 @@ const sections = [
   { id: 'acceptable',    label: 'Acceptable Use' },
   { id: 'ip',            label: 'Intellectual Property' },
   { id: 'content',       label: 'Your Content' },
+  { id: 'protection',    label: 'Content Protection' },
   { id: 'disclaimer',    label: 'Disclaimer of Warranties' },
   { id: 'liability',     label: 'Limitation of Liability' },
   { id: 'termination',   label: 'Termination' },
@@ -295,9 +296,64 @@ export function TermsPage() {
 
             <div className="border-t border-ink-300" />
 
-            <section id="disclaimer" className="scroll-mt-24">
+            <section id="protection" className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-5">
                 <SectionNum n={7} />
+                <h2 className="text-xl font-display font-bold text-ink-900">Content Protection and Acceptable Use</h2>
+              </div>
+              <div className="space-y-5 text-sm text-ink-700 leading-relaxed">
+                <p>
+                  All course videos, written materials, downloadable resources, prompts, and documentation on aiwithrakshith.tech (the "Content") are the intellectual property of aiwithrakshith.tech or its licensors and are protected by Indian and international copyright law.
+                </p>
+
+                <div>
+                  <p className="font-bold text-ink-900 mb-3">7.1 Prohibited Actions</p>
+                  <p className="mb-3">By using the Platform, you agree NOT to:</p>
+                  <ul className="space-y-2.5">
+                    <CrossItem>Download, copy, record, screenshot, screen-record, or otherwise reproduce any Content except as expressly permitted by the Platform's built-in features (e.g., downloading a certificate you earned).</CrossItem>
+                    <CrossItem>Share, re-upload, post, distribute, or make available any Content to any third party, platform, messaging service, or storage service, including but not limited to Telegram, WhatsApp, YouTube, Google Drive, torrents, or any file-sharing service.</CrossItem>
+                    <CrossItem>Bypass, attempt to bypass, or assist others in bypassing any technical protection measures, including but not limited to: visible watermarks, signed URL expiry, session-based access controls, enrollment checks, or developer-tool detection.</CrossItem>
+                    <CrossItem>Use automated tools (downloaders, scrapers, browser extensions, bots) to access or extract Content in any form.</CrossItem>
+                    <CrossItem>Share your account credentials with any other person, or use another person's account to access Content you have not personally paid for.</CrossItem>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-bold text-ink-900 mb-3">7.2 Watermarking and Monitoring</p>
+                  <p className="mb-3">You explicitly acknowledge and consent that:</p>
+                  <ul className="space-y-2.5">
+                    <CheckItem>All video Content displayed to you contains a visible watermark that identifies your account, including your email address and a unique account identifier.</CheckItem>
+                    <CheckItem>Every video playback, attempted download, right-click event, developer tool activation, and suspicious page-interaction event is recorded in our audit log with your account identifier, IP address, user agent, and timestamp.</CheckItem>
+                    <CheckItem>This information constitutes forensic evidence and may be used in DMCA takedown requests, civil lawsuits, and criminal complaints filed with Indian law enforcement under the Information Technology Act, 2000 and the Indian Copyright Act, 1957.</CheckItem>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-bold text-ink-900 mb-3">7.3 Consequences of Violation</p>
+                  <p className="mb-3">Violation of this Section may result in:</p>
+                  <ul className="space-y-2.5">
+                    <CrossItem>Immediate termination of your account without refund.</CrossItem>
+                    <CrossItem>Civil action under the Indian Copyright Act, 1957, with statutory damages of up to Rs. 2,00,000 (Two Lakh Rupees) per infringed work for first-time infringement.</CrossItem>
+                    <CrossItem>Criminal complaint under Section 63 of the Copyright Act, 1957 (imprisonment of six months to three years, plus fine).</CrossItem>
+                    <CrossItem>DMCA takedown requests filed against any third-party platform hosting infringing copies of the Content.</CrossItem>
+                    <CrossItem>Cooperation with Indian law enforcement under Section 43A of the Information Technology Act, 2000 (unauthorized access) or Section 66 (computer-related offenses).</CrossItem>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+                  <p className="text-xs font-bold text-red-800 uppercase tracking-wide mb-1">Report Infringement</p>
+                  <p className="text-sm text-red-700">
+                    If you discover Content from aiwithrakshith.tech posted on any third-party platform without authorization, please report it to <strong>legal@aiwithrakshith.tech</strong> with the URL of the infringing content and any visible watermark you can identify. We will issue a takedown promptly and take appropriate action against the source account.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <div className="border-t border-ink-300" />
+
+            <section id="disclaimer" className="scroll-mt-24">
+              <div className="flex items-center gap-3 mb-5">
+                <SectionNum n={8} />
                 <h2 className="text-xl font-display font-bold text-ink-900">Disclaimer of Warranties</h2>
               </div>
               <p className="text-sm text-ink-700 leading-relaxed">
@@ -309,7 +365,7 @@ export function TermsPage() {
 
             <section id="liability" className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-5">
-                <SectionNum n={8} />
+                <SectionNum n={9} />
                 <h2 className="text-xl font-display font-bold text-ink-900">Limitation of Liability</h2>
               </div>
               <p className="text-sm text-ink-700 leading-relaxed">
@@ -321,7 +377,7 @@ export function TermsPage() {
 
             <section id="termination" className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-5">
-                <SectionNum n={9} />
+                <SectionNum n={10} />
                 <h2 className="text-xl font-display font-bold text-ink-900">Termination</h2>
               </div>
               <p className="text-sm text-ink-700 leading-relaxed">
@@ -333,7 +389,7 @@ export function TermsPage() {
 
             <section id="governing" className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-5">
-                <SectionNum n={10} />
+                <SectionNum n={11} />
                 <h2 className="text-xl font-display font-bold text-ink-900">Governing Law</h2>
               </div>
               <p className="text-sm text-ink-700 leading-relaxed">
@@ -345,7 +401,7 @@ export function TermsPage() {
 
             <section id="changes" className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-5">
-                <SectionNum n={11} />
+                <SectionNum n={12} />
                 <h2 className="text-xl font-display font-bold text-ink-900">Changes to Terms</h2>
               </div>
               <p className="text-sm text-ink-700 leading-relaxed">
@@ -357,7 +413,7 @@ export function TermsPage() {
 
             <section id="contact" className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-5">
-                <SectionNum n={12} />
+                <SectionNum n={13} />
                 <h2 className="text-xl font-display font-bold text-ink-900">Contact</h2>
               </div>
               <div className="p-6 rounded-2xl bg-ink-900 text-white">

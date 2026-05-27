@@ -13,8 +13,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
 import { VideoPlayer } from '../components/courses/VideoPlayer';
+import { WatermarkedVideo } from '../components/courses/WatermarkedVideo';
 import { CourseQnA } from '../components/courses/CourseQnA';
 import { CourseReviews } from '../components/courses/CourseReviews';
+import { activateContentProtection, deactivateContentProtection } from '../lib/contentProtection';
 import { cn } from '../lib/utils';
 import type { CourseLesson } from '../hooks/useCourses';
 
@@ -572,6 +574,22 @@ export function CoursePlayerPage() {
 
   useEffect(() => { if (certificate) setCompletionBanner(true); }, [certificate?.id]);
 
+  // Content protection — active only on course player pages
+  useEffect(() => {
+    if (!courseId || !activeLessonId) return;
+    activateContentProtection({
+      courseId,
+      lessonId: activeLessonId,
+      onDevToolsDetected: () => {
+        toast.error('Developer tools detected. Please close them to continue watching.', {
+          duration: 6000,
+          id: 'devtools-warning',
+        });
+      },
+    });
+    return () => deactivateContentProtection();
+  }, [courseId, activeLessonId]);
+
   const videoUrlCache = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
@@ -830,7 +848,22 @@ export function CoursePlayerPage() {
             <>
               {/* ── Video / media — always 100% width ── */}
               <div className="w-full bg-black">
-                {activeLesson.lesson_type === 'video' && videoUrl && (
+                {activeLesson.lesson_type === 'video' && activeLesson.video_path && (
+                  <WatermarkedVideo
+                    lessonId={activeLesson.id}
+                    title={activeLesson.title}
+                    markers={activeLesson.timeline_markers ?? []}
+                    videoRef={videoRef as React.RefObject<HTMLVideoElement>}
+                    onTimeUpdate={(s) => {
+                      if (saveTimer.current) clearTimeout(saveTimer.current);
+                      saveTimer.current = setTimeout(() => {
+                        savePosition.mutate({ lessonId: activeLesson.id, courseId: courseId!, seconds: s });
+                      }, 5000);
+                    }}
+                    initialTime={progressList.find((p) => p.lesson_id === activeLesson.id)?.watch_position_seconds}
+                  />
+                )}
+                {activeLesson.lesson_type === 'video' && !activeLesson.video_path && videoUrl && (
                   getEmbedUrl(videoUrl) ? (
                     <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                       <iframe
@@ -857,7 +890,7 @@ export function CoursePlayerPage() {
                     />
                   )
                 )}
-                {activeLesson.lesson_type === 'video' && !videoUrl && (
+                {activeLesson.lesson_type === 'video' && !activeLesson.video_path && !videoUrl && (
                   <div className="aspect-video w-full flex items-center justify-center bg-gray-950">
                     {mediaLoading
                       ? <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
