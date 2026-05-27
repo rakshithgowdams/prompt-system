@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import { uploadImage, uploadVideo, uploadAnyFile, getFileCategory, formatFileSize } from '../../lib/storage';
 import { useAddMediaFile } from '../../hooks/usePrompts';
+import { isAllowedMime } from '../../lib/mimeValidation';
 import { Icon } from '../ui/Icon';
 import { cn } from '../../lib/utils';
 import type { MediaFile } from '../../lib/database.types';
@@ -118,8 +119,12 @@ export function MediaUpload({ promptId, existingFiles, onFilesChange }: MediaUpl
   }, []);
 
   const processFile = async (file: File) => {
+    if (!isAllowedMime(file)) {
+      toast.error(`${file.name}: file type not allowed for security reasons`);
+      return;
+    }
     const category = getFileCategory(file.type);
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id = crypto.randomUUID();
 
     if (category === 'image' && file.size > MAX_IMAGE_SIZE) {
       toast.error(`${file.name}: images must be under 10 MB`);

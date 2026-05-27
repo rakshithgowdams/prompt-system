@@ -31,6 +31,7 @@ import { MoveToModal } from '../components/files/MoveToModal';
 import { Lightbox } from '../components/prompts/Lightbox';
 import { uploadProjectFile, getSignedUrl, downloadFile } from '../lib/storage';
 import { detectFileType, formatFileSize } from '../lib/fileTypes';
+import { isAllowedMime } from '../lib/mimeValidation';
 import { extractEntries, extractFromInput, splitPath, type UploadEntry } from '../lib/folderUpload';
 import { cn, PROJECT_COLORS, formatRelative } from '../lib/utils';
 import { supabase } from '../lib/supabase';
@@ -167,6 +168,10 @@ export function ProjectFilesPage() {
     displayName?: string,
   ) => {
     if (!project || !user) return;
+    if (!isAllowedMime(file)) {
+      toast.error(`${file.name}: file type not allowed for security reasons`);
+      return;
+    }
     const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const name = displayName || file.name;
     setUploads((prev) => [...prev, { id: uid, name, size: file.size, progress: 0, status: 'uploading' }]);

@@ -223,3 +223,22 @@ export function cacheSet<T>(key: string, value: T, ttlSeconds: number): void {
   }
   memCache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
 }
+
+// ─── Safe error response ────────────────────────────────────────────────────
+
+/**
+ * Convert any caught error into a safe response.
+ * The real error is logged server-side only — never sent to the client.
+ */
+export function safeErrorResponse(
+  err: unknown,
+  corsHeaders: Record<string, string>,
+  status = 500,
+  publicMessage = "Something went wrong. Please try again.",
+): Response {
+  console.error("[edge-function-error]", err);
+  return new Response(
+    JSON.stringify({ error: "internal_error", message: publicMessage }),
+    { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}

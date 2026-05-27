@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   adminClient, buildCorsHeaders, getClientIp,
   checkRateLimit, tooManyRequestsResponse,
-  isValidEmail, logAudit,
+  isValidEmail, logAudit, safeErrorResponse,
 } from "../_shared/security.ts";
 
 function buildResetEmailHtml(resetUrl: string, email: string): string {
@@ -149,9 +149,6 @@ Deno.serve(async (req: Request) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("send-reset-email error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse(err, corsHeaders);
   }
 });

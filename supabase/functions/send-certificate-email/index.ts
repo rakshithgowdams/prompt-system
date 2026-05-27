@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   adminClient, buildCorsHeaders, getClientIp,
   checkRateLimit, tooManyRequestsResponse,
-  isValidUuid, logAudit,
+  isValidUuid, logAudit, safeErrorResponse,
 } from "../_shared/security.ts";
 
 function buildCertEmailHtml(params: {
@@ -225,9 +225,6 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (err) {
-    console.error("send-certificate-email error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse(err, corsHeaders);
   }
 });

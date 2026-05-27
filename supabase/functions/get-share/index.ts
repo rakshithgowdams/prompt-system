@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   adminClient, buildCorsHeaders, getClientIp,
   checkRateLimit, tooManyRequestsResponse,
-  isValidUuid, isValidString, logAudit, cacheGet, cacheSet,
+  isValidUuid, isValidString, logAudit, cacheGet, cacheSet, safeErrorResponse,
 } from "../_shared/security.ts";
 
 function json(data: unknown, status = 200, corsHeaders: Record<string, string>) {
@@ -154,8 +154,7 @@ Deno.serve(async (req: Request) => {
     }, 200, corsHeaders);
 
   } catch (err) {
-    console.error("get-share error", err);
-    return json({ error: "internal_error" }, 500, corsHeaders);
+    return safeErrorResponse(err, corsHeaders);
   }
 });
 

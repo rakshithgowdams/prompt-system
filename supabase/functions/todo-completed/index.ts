@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   adminClient, buildCorsHeaders, getClientIp,
   checkRateLimit, tooManyRequestsResponse,
-  isValidUuid, logAudit,
+  isValidUuid, logAudit, safeErrorResponse,
 } from "../_shared/security.ts";
 import { completedEmail, sendResendEmail } from "../_shared/todo-email-templates.ts";
 
@@ -153,9 +153,6 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("[todo-completed] uncaught:", e);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse(e, corsHeaders);
   }
 });

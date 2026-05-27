@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { escapePostgrestLike } from '../lib/safeFilters';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1020,8 +1021,10 @@ export function useCourseQuestions(
       else                       q = q.order('created_at',   { ascending: false });
 
       if (search.trim()) {
-        const term = `%${search.trim()}%`;
-        q = (q as any).or(`title.ilike.${term},body.ilike.${term}`);
+        const safe = escapePostgrestLike(search);
+        if (safe.length > 0) {
+          q = (q as any).or(`title.ilike.%25${safe}%25,body.ilike.%25${safe}%25`);
+        }
       }
 
       const { data, error } = await q;

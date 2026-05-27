@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   adminClient, buildCorsHeaders, getClientIp,
   checkRateLimit, tooManyRequestsResponse,
-  logAudit,
+  logAudit, safeErrorResponse,
 } from "../_shared/security.ts";
 
 const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -122,9 +122,6 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (err) {
-    console.error("upload-cert-assets error:", err);
-    return new Response(JSON.stringify({ success: false, error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse(err, corsHeaders);
   }
 });

@@ -42,7 +42,7 @@ export async function uploadImage(
   });
 
   const ext = file.name.split('.').pop() ?? 'jpg';
-  const path = `${userId}/images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `${userId}/images/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, compressed, {
     contentType: file.type,
@@ -54,7 +54,7 @@ export async function uploadImage(
 
 export async function uploadVideo(userId: string, file: File): Promise<string> {
   const ext = file.name.split('.').pop() ?? 'mp4';
-  const path = `${userId}/videos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path = `${userId}/videos/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
@@ -72,9 +72,8 @@ export async function uploadAnyFile(userId: string, file: File): Promise<string>
     : category === 'audio' ? 'audio'
     : 'documents';
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = safeName.split('.').pop() ?? 'bin';
-  const path = `${userId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const ext = (file.name.split('.').pop() ?? 'bin').replace(/[^a-zA-Z0-9]/g, '');
+  const path = `${userId}/${folder}/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,
@@ -92,9 +91,8 @@ export async function uploadProjectFile(userId: string, projectId: string, file:
     : category === 'audio' ? 'audio'
     : 'documents';
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const ext = safeName.split('.').pop() ?? 'bin';
-  const path = `${userId}/projects/${projectId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const ext = (file.name.split('.').pop() ?? 'bin').replace(/[^a-zA-Z0-9]/g, '');
+  const path = `${userId}/projects/${projectId}/${folder}/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type,

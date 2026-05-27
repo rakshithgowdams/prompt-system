@@ -2,8 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   adminClient, buildCorsHeaders, getClientIp,
   checkRateLimit, tooManyRequestsResponse,
-  isValidEmail, isValidString, timingSafeEqual, logAudit,
+  isValidEmail, isValidString, timingSafeEqual, logAudit, safeErrorResponse,
 } from "../_shared/security.ts";
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
@@ -64,24 +67,33 @@ Deno.serve(async (req: Request) => {
       return tooManyRequestsResponse(byEmail, corsHeaders);
     }
 
-    // Find valid unused non-expired OTP row (without otp_code in query — use timing-safe compare)
-    const { data: otpRow, error: fetchError } = await supabase
+    // Fetch most recent unused OTP (includes lockout columns)
+    const { data: latestOtp } = await supabase
       .from("email_otps")
-      .select("id, otp_code, expires_at, used")
+      .select("id, otp_code, expires_at, used, failed_attempts, locked_until")
       .eq("email", email)
       .eq("used", false)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (fetchError || !otpRow) {
+    // Check account lockout before anything else
+    if (latestOtp?.locked_until && new Date(latestOtp.locked_until) > new Date()) {
+      await logAudit(supabase, { action: "verify-otp.locked_account_attempt", metadata: { email }, ip });
+      return new Response(JSON.stringify({
+        error: "account_locked",
+        message: "Too many failed attempts. Try again in 15 minutes.",
+      }), { status: 423, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (!latestOtp) {
       await logAudit(supabase, { action: "verify-otp.not_found", metadata: { email }, ip });
       return new Response(JSON.stringify({ error: "Invalid or expired code" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (new Date(otpRow.expires_at) < new Date()) {
+    if (new Date(latestOtp.expires_at) < new Date()) {
       await logAudit(supabase, { action: "verify-otp.expired", metadata: { email }, ip });
       return new Response(JSON.stringify({ error: "Code has expired. Please request a new one." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -89,15 +101,32 @@ Deno.serve(async (req: Request) => {
     }
 
     // Timing-safe OTP comparison
-    if (!timingSafeEqual(otp_code, otpRow.otp_code)) {
+    if (!timingSafeEqual(otp_code, latestOtp.otp_code)) {
+      const newAttempts = (latestOtp.failed_attempts ?? 0) + 1;
+      const update: Record<string, unknown> = { failed_attempts: newAttempts };
+
+      if (newAttempts >= MAX_FAILED_ATTEMPTS) {
+        update.locked_until = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString();
+        await logAudit(supabase, {
+          action: "verify-otp.account_locked",
+          metadata: { email, attempts: newAttempts },
+          ip,
+        });
+      }
+
+      await supabase.from("email_otps").update(update).eq("id", latestOtp.id);
+
       await logAudit(supabase, { action: "verify-otp.wrong_code", metadata: { email }, ip });
-      return new Response(JSON.stringify({ error: "Invalid or expired code" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({
+        error: "Invalid or expired code",
+        attempts_remaining: Math.max(0, MAX_FAILED_ATTEMPTS - newAttempts),
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Immediately mark as used to prevent replay
-    await supabase.from("email_otps").update({ used: true }).eq("id", otpRow.id);
+    // OTP correct — reset lockout state and mark used
+    await supabase.from("email_otps")
+      .update({ used: true, failed_attempts: 0, locked_until: null })
+      .eq("id", latestOtp.id);
 
     // Check if user already exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -152,9 +181,6 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    console.error("verify-otp error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse(err, corsHeaders);
   }
 });

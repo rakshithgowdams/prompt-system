@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
 import JSZip from 'jszip';
 import { Icon } from '../ui/Icon';
@@ -240,16 +241,27 @@ function JsonView({ url }: { url: string }) {
   );
 }
 
+const DOMPURIFY_CONFIG: DOMPurify.Config = {
+  ALLOWED_TAGS: ['p','br','span','strong','em','b','i','u','s','del','h1','h2','h3','h4','h5','h6','ul','ol','li','blockquote','pre','code','a','img','table','thead','tbody','tr','td','th','hr','div'],
+  ALLOWED_ATTR: ['href','title','target','rel','src','alt','width','height','class','style'],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  ADD_ATTR: ['target'],
+};
+
 function MarkdownView({ url }: { url: string }) {
-  const [html, setHtml] = useState<string | null>(null);
+  const [rawHtml, setRawHtml] = useState<string | null>(null);
   useEffect(() => {
-    fetch(url).then((r) => r.text()).then((md) => setHtml(renderMarkdown(md)));
+    fetch(url).then((r) => r.text()).then((md) => setRawHtml(renderMarkdown(md)));
   }, [url]);
-  if (html === null) return <SpinnerView />;
+  const safeHtml = useMemo(
+    () => rawHtml !== null ? DOMPurify.sanitize(rawHtml, DOMPURIFY_CONFIG) as string : null,
+    [rawHtml],
+  );
+  if (safeHtml === null) return <SpinnerView />;
   return (
     <div
       className="p-6 max-w-3xl mx-auto text-ink-900 bg-white"
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: safeHtml }}
     />
   );
 }
