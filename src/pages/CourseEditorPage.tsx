@@ -974,9 +974,9 @@ function LessonEditor({
       </div>
 
       <div className="p-3 border-t border-ink-300 flex-shrink-0">
-        <Button className="w-full" onClick={save}>
-          <Icon name="save" size={14} />
-          Save Lesson
+        <Button className="w-full" onClick={save} loading={uploading}>
+          {!uploading && <Icon name="save" size={14} />}
+          {uploading ? 'Uploading…' : 'Save Lesson'}
         </Button>
       </div>
     </div>
@@ -1261,6 +1261,7 @@ export function CourseEditorPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [editingLesson, setEditingLesson] = useState<CourseLesson | null>(null);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   // Smooth-scroll refs for each scrollable panel
@@ -1314,12 +1315,14 @@ export function CourseEditorPage() {
   };
 
   const handlePublish = async () => {
-    if (!course) return;
+    if (!course || publishing) return;
     const newState = !course.is_published;
+    setPublishing(true);
     try {
       await updateCourse.mutateAsync({ id: course.id, is_published: newState });
       toast.success(newState ? 'Course published!' : 'Course unpublished');
     } catch { toast.error('Failed'); }
+    finally { setPublishing(false); }
   };
 
   const handleAddSection = async () => {
@@ -1350,6 +1353,7 @@ export function CourseEditorPage() {
       const merged = { ...editingLesson, ...patch };
       const updated = await updateLesson.mutateAsync({ id: editingLesson.id, ...merged });
       setEditingLesson(updated);
+      toast.success('Lesson saved');
     } catch { toast.error('Failed to save lesson'); }
   }, [editingLesson, updateLesson]);
 
@@ -1408,14 +1412,21 @@ export function CourseEditorPage() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={handlePublish}
-            className={cn('flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold border transition-colors',
+          <button onClick={handlePublish} disabled={publishing}
+            className={cn('flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold border transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
               course.is_published
                 ? 'border-ink-300 text-ink-500 hover:border-ink-400 hover:text-ink-900'
                 : 'border-emerald-500/50 text-success hover:bg-green-50'
             )}>
-            <Icon name={course.is_published ? 'unpublished' : 'publish'} size={15} className="flex-shrink-0" />
-            <span className="hidden sm:inline">{course.is_published ? 'Unpublish' : 'Publish'}</span>
+            {publishing ? (
+              <svg className="animate-spin w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <Icon name={course.is_published ? 'unpublished' : 'publish'} size={15} className="flex-shrink-0" />
+            )}
+            <span className="hidden sm:inline">{publishing ? (course.is_published ? 'Unpublishing…' : 'Publishing…') : (course.is_published ? 'Unpublish' : 'Publish')}</span>
           </button>
           <button onClick={() => setShareOpen(true)}
             className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-semibold bg-teal-600/20 text-teal-300 border border-teal-500/30 hover:bg-teal-600/30 transition-colors">

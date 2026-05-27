@@ -255,6 +255,8 @@ function TodoForm({ initial, defaultDate, onSubmit, onCancel, loading }: TodoFor
     await onSubmit({ title: title.trim(), notes: notes.trim(), due_at, priority });
   };
 
+  const inputCls = 'w-full bg-ink-50 border border-ink-300 rounded-xl px-3.5 py-2.5 text-sm text-ink-900 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 transition-all';
+
   return (
     <motion.form
       initial={{ opacity: 0, y: -8 }}
@@ -263,60 +265,88 @@ function TodoForm({ initial, defaultDate, onSubmit, onCancel, loading }: TodoFor
       onSubmit={handleSubmit}
       className="bg-white border border-ink-300 rounded-xl p-5 space-y-4 shadow-card"
     >
-      <input
-        ref={titleRef}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="What needs to be done?"
-        className="w-full bg-transparent text-ink-900 text-base font-medium placeholder-ink-400 focus:outline-none"
-        required
-      />
-
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Add notes (optional)"
-        rows={2}
-        className="w-full bg-ink-100 border border-ink-300 rounded-lg px-3 py-2.5 text-sm text-ink-700 placeholder-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 resize-none transition-colors"
-      />
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-2">
-          <Icon name="calendar_today" size={14} className="text-ink-400 flex-shrink-0" />
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="flex-1 min-w-0 bg-ink-100 border border-ink-300 rounded-lg px-2.5 py-1.5 text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 transition-colors"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Icon name="schedule" size={14} className="text-ink-400 flex-shrink-0" />
-          <input
-            type="time"
-            value={dueTime}
-            onChange={(e) => setDueTime(e.target.value)}
-            disabled={!dueDate}
-            className="flex-1 min-w-0 bg-ink-100 border border-ink-300 rounded-lg px-2.5 py-1.5 text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-400 disabled:opacity-40 transition-colors"
-          />
-        </div>
+      {/* Title */}
+      <div>
+        <label className="text-xs font-semibold text-ink-600 block mb-1.5">
+          Todo Title <span className="text-red-400">*</span>
+        </label>
+        <input
+          ref={titleRef}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. Review project proposal, Send invoice, Fix login bug…"
+          className={inputCls}
+          required
+        />
+        {!title.trim() && (
+          <p className="text-[11px] text-ink-400 mt-1">Give your task a clear, specific title so you know exactly what to do.</p>
+        )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-ink-400 font-medium">Priority:</span>
-        {(['high', 'medium', 'low'] as const).map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setPriority(p)}
-            className={cn(
-              'px-2.5 py-1 rounded-lg text-xs font-medium border transition-all',
-              priority === p ? PRIORITY_CONFIG[p].color : 'bg-white border-ink-300 text-ink-500 hover:border-ink-500',
-            )}
-          >
-            {PRIORITY_CONFIG[p].label}
-          </button>
-        ))}
+      {/* Notes */}
+      <div>
+        <label className="text-xs font-semibold text-ink-600 block mb-1.5">
+          Notes <span className="text-ink-400 font-normal">(optional)</span>
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Add any extra details, links, or context for this task…"
+          rows={2}
+          className={cn(inputCls, 'resize-none leading-relaxed')}
+        />
+      </div>
+
+      {/* Due date + time */}
+      <div>
+        <label className="text-xs font-semibold text-ink-600 block mb-1.5">
+          Due Date &amp; Time <span className="text-ink-400 font-normal">(optional)</span>
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
+            <Icon name="calendar_today" size={14} className="text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={cn(inputCls, 'pl-8')}
+            />
+          </div>
+          <div className="relative">
+            <Icon name="schedule" size={14} className={cn('absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none', dueDate ? 'text-ink-400' : 'text-ink-300')} />
+            <input
+              type="time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
+              disabled={!dueDate}
+              title={!dueDate ? 'Pick a due date first to set a time' : ''}
+              className={cn(inputCls, 'pl-8', !dueDate && 'opacity-50 cursor-not-allowed')}
+            />
+          </div>
+        </div>
+        {!dueDate && (
+          <p className="text-[11px] text-ink-400 mt-1">Select a date first to enable the time field.</p>
+        )}
+      </div>
+
+      {/* Priority */}
+      <div>
+        <label className="text-xs font-semibold text-ink-600 block mb-1.5">Priority</label>
+        <div className="flex items-center gap-2">
+          {(['high', 'medium', 'low'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPriority(p)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all',
+                priority === p ? PRIORITY_CONFIG[p].color : 'bg-white border-ink-300 text-ink-500 hover:border-ink-500',
+              )}
+            >
+              {PRIORITY_CONFIG[p].label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-2 pt-1">
