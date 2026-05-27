@@ -105,7 +105,7 @@ export function AuthModal({ open, onClose, defaultTab = 'login', onSuccess }: Pr
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2.5">
-                    <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain" />
+                    <img src="/aiwithrakshith-tech-logo.webp" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain" />
                     <span className="font-display font-black text-ink-900 text-sm tracking-tight">aiwithrakshith</span>
                   </div>
                   <button

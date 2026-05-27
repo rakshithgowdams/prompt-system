@@ -106,7 +106,7 @@ export function PublicCertificatePage() {
       <header className="bg-white border-b border-ink-300 sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain" />
+            <img src="/aiwithrakshith-tech-logo.webp" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain" />
             <span className="hidden sm:block font-display font-black text-ink-900 tracking-tight text-sm">
               aiwithrakshith
             </span>
@@ -157,7 +157,7 @@ export function PublicCertificatePage() {
           <div className="bg-ink-900 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
             <div className="flex-1 text-center sm:text-left">
               <div className="flex items-center gap-2 justify-center sm:justify-start mb-2">
-                <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain brightness-0 invert" />
+                <img src="/aiwithrakshith-tech-logo.webp" alt="aiwithrakshith.tech" className="h-8 w-8 object-contain brightness-0 invert" />
                 <span className="font-display font-black text-white text-sm tracking-tight">aiwithrakshith</span>
               </div>
               <h2 className="text-xl font-display font-extrabold text-white tracking-tight mb-1">

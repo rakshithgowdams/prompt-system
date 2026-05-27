@@ -87,7 +87,7 @@ export function WatermarkedVideo({ lessonId, title, markers = [], videoRef, onTi
       {/* Logo watermark — top right */}
       <div className="absolute top-3 right-3 pointer-events-none select-none z-[5]">
         <img
-          src="/aiwithrakshith-tech-logo.png"
+          src="/aiwithrakshith-tech-logo.webp"
           alt=""
           className="w-8 h-8 sm:w-10 sm:h-10 opacity-60 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]"
           draggable={false}

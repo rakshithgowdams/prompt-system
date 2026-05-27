@@ -54,7 +54,7 @@ function Nav() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
           <motion.img
-            src="/aiwithrakshith-tech-logo.png"
+            src="/aiwithrakshith-tech-logo.webp"
             alt="aiwithrakshith.tech"
             whileHover={{ scale: 1.06 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -226,7 +226,7 @@ function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-5 flex items-center gap-3">
-              <img src="/aiwithrakshith-tech-logo.png" alt="aiwithrakshith.tech" className="h-11 w-11 object-contain brightness-0 invert flex-shrink-0" />
+              <img src="/aiwithrakshith-tech-logo.webp" alt="aiwithrakshith.tech" className="h-11 w-11 object-contain brightness-0 invert flex-shrink-0" />
               <span className="font-display font-black text-white tracking-tight leading-none" style={{ fontSize: '16px', letterSpacing: '-0.02em' }}>
                 aiwithrakshith
               </span>
