@@ -13,14 +13,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Icon } from '../components/ui/Icon';
 import { VideoPlayer } from '../components/courses/VideoPlayer';
-import { LessonComments } from '../components/courses/LessonComments';
 import { CourseQnA } from '../components/courses/CourseQnA';
 import { CourseReviews } from '../components/courses/CourseReviews';
 import { cn } from '../lib/utils';
 import type { CourseLesson } from '../hooks/useCourses';
 
-const SIDEBAR_W = 360;
-const HEADER_H = 60;
+const SIDEBAR_W = 340;
+const HEADER_H = 56;
 
 const YOUTUBE_EMBED = (url: string) => {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
@@ -42,6 +41,7 @@ function generateParticles(count: number): Particle[] {
     rotation: Math.random() * 720 - 360, shape: (['rect','circle','star'] as const)[Math.floor(Math.random() * 3)],
   }));
 }
+
 function ConfettiBlast({ active }: { active: boolean }) {
   const particles = useRef(generateParticles(80));
   if (!active) return null;
@@ -52,9 +52,12 @@ function ConfettiBlast({ active }: { active: boolean }) {
           initial={{ x: `${p.x}vw`, y: -20, opacity: 1, rotate: 0 }}
           animate={{ y: '110vh', opacity: [1,1,0.8,0], rotate: p.rotation }}
           transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
-          style={{ position:'absolute', top:0, left:0, width:p.size, height:p.shape==='circle'?p.size:p.size*0.6,
-            backgroundColor:p.color, borderRadius:p.shape==='circle'?'50%':p.shape==='rect'?'2px':'0',
-            clipPath:p.shape==='star'?'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)':undefined }}
+          style={{ position:'absolute', top:0, left:0, width:p.size,
+            height: p.shape==='circle' ? p.size : p.size*0.6,
+            backgroundColor: p.color,
+            borderRadius: p.shape==='circle' ? '50%' : p.shape==='rect' ? '2px' : '0',
+            clipPath: p.shape==='star' ? 'polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)' : undefined,
+          }}
         />
       ))}
     </div>
@@ -71,36 +74,39 @@ function CourseCompletePopup({ courseName, onViewCertificate, onDismiss }: {
       className="fixed inset-0 z-[90] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}
     >
-      <motion.div initial={{ scale: 0.7, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0, y: 20 }}
         transition={{ type: 'spring', damping: 20, stiffness: 260, delay: 0.1 }}
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
         <div className="relative h-40 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 flex flex-col items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-56 h-56 rounded-full border-4 border-white/20 absolute" />
             <div className="w-36 h-36 rounded-full border-4 border-white/20 absolute" />
           </div>
-          <motion.div initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }}
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }}
             transition={{ type:'spring', damping:14, stiffness:200, delay:0.3 }}
             className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/40 shadow-lg"
           >
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
             </svg>
           </motion.div>
           <motion.p initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.45 }}
-            className="relative z-10 mt-2 text-white/90 text-xs font-bold tracking-widest uppercase"
-          >Course Complete!</motion.p>
+            className="relative z-10 mt-2 text-white/90 text-xs font-bold tracking-widest uppercase">
+            Course Complete!
+          </motion.p>
         </div>
         <div className="px-6 pt-5 pb-6">
           <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}>
-            <h2 className="text-xl font-bold text-gray-900 text-center leading-tight mb-1">Congratulations!</h2>
+            <h2 className="text-xl font-bold text-gray-900 text-center mb-1">Congratulations!</h2>
             <p className="text-sm text-gray-500 text-center mb-1">You've successfully completed</p>
             <p className="text-sm font-bold text-gray-800 text-center mb-5 line-clamp-2">{courseName}</p>
             <button onClick={onViewCertificate}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2"
-            >
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
               <Icon name="workspace_premium" size={16} fill />
               View My Certificate
             </button>
@@ -110,8 +116,7 @@ function CourseCompletePopup({ courseName, onViewCertificate, onDismiss }: {
           </motion.div>
         </div>
         <button onClick={onDismiss}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-        >
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors">
           <Icon name="close" size={14} />
         </button>
       </motion.div>
@@ -132,12 +137,20 @@ function NotesPanel({ courseId, lessonId }: { courseId: string; lessonId: string
 
   return (
     <div className="space-y-3">
-      <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey && draft.trim()) { createNote.mutateAsync({ courseId, lessonId, content: draft.trim() }).then(() => setDraft('')); } }}
-        rows={4} placeholder="Write a note for this lesson… (Ctrl+Enter to save)"
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.ctrlKey && draft.trim()) {
+            createNote.mutateAsync({ courseId, lessonId, content: draft.trim() }).then(() => setDraft(''));
+          }
+        }}
+        rows={4}
+        placeholder="Write a note… (Ctrl+Enter to save)"
         className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none transition-all"
       />
-      <button onClick={() => { if (!draft.trim() || createNote.isPending) return; createNote.mutateAsync({ courseId, lessonId, content: draft.trim() }).then(() => setDraft('')); }}
+      <button
+        onClick={() => { if (!draft.trim() || createNote.isPending) return; createNote.mutateAsync({ courseId, lessonId, content: draft.trim() }).then(() => setDraft('')); }}
         disabled={!draft.trim() || createNote.isPending}
         className="w-full h-10 rounded-xl bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white text-sm font-semibold transition-colors"
       >Save Note</button>
@@ -156,12 +169,13 @@ function NotesPanel({ courseId, lessonId }: { courseId: string; lessonId: string
               {editingId === note.id ? (
                 <div className="space-y-2.5">
                   <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3}
-                    className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none resize-none"
-                  />
+                    className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none resize-none" />
                   <div className="flex gap-2">
-                    <button onClick={async () => { await updateNote.mutateAsync({ id: note.id, content: editContent, courseId }); setEditingId(null); }}
+                    <button
+                      onClick={async () => { await updateNote.mutateAsync({ id: note.id, content: editContent, courseId }); setEditingId(null); }}
                       className="flex-1 h-8 rounded-lg bg-gray-900 text-white text-xs font-semibold">Save</button>
-                    <button onClick={() => setEditingId(null)} className="flex-1 h-8 rounded-lg border border-gray-200 text-gray-600 text-xs hover:bg-gray-50 transition-colors">Cancel</button>
+                    <button onClick={() => setEditingId(null)}
+                      className="flex-1 h-8 rounded-lg border border-gray-200 text-gray-600 text-xs hover:bg-gray-50 transition-colors">Cancel</button>
                   </div>
                 </div>
               ) : (
@@ -198,6 +212,7 @@ function getResourceType(res: { name: string; mime_type?: string }): 'image' | '
   if (mime.startsWith('text/') || ['txt','md','csv','json'].includes(ext)) return 'text';
   return 'other';
 }
+
 function resourceIcon(type: ReturnType<typeof getResourceType>) {
   switch (type) {
     case 'image': return 'image';
@@ -208,22 +223,28 @@ function resourceIcon(type: ReturnType<typeof getResourceType>) {
   }
 }
 
-function ResourcePreviewModal({ name, url, type, onClose, onDownload }: { name: string; url: string; type: ReturnType<typeof getResourceType>; onClose: () => void; onDownload: () => void; }) {
+function ResourcePreviewModal({ name, url, type, onClose, onDownload }: {
+  name: string; url: string; type: ReturnType<typeof getResourceType>; onClose: () => void; onDownload: () => void;
+}) {
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-        <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96 }} transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-          className="relative bg-[#0f1011] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-w-4xl w-full max-h-[90dvh]"
+          className="relative bg-gray-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-w-4xl w-full max-h-[90dvh]"
           onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 flex-shrink-0">
             <Icon name={resourceIcon(type)} size={16} className="text-amber-400" />
             <p className="flex-1 text-sm font-semibold text-white truncate">{name}</p>
-            <button onClick={onDownload} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-white/70 hover:bg-white/10 text-xs font-semibold transition-colors">
+            <button onClick={onDownload}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-white/70 hover:bg-white/10 text-xs font-semibold transition-colors">
               <Icon name="download" size={14} />Download
             </button>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors">
+            <button onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors">
               <Icon name="close" size={18} className="text-white/50" />
             </button>
           </div>
@@ -236,7 +257,8 @@ function ResourcePreviewModal({ name, url, type, onClose, onDownload }: { name: 
                 <Icon name={resourceIcon(type)} size={48} className="text-white/20" />
                 <p className="font-semibold text-white">{name}</p>
                 <p className="text-sm text-white/40">Preview not available.</p>
-                <button onClick={onDownload} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 text-sm font-bold">
+                <button onClick={onDownload}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-900 text-sm font-bold">
                   <Icon name="download" size={16} />Download to view
                 </button>
               </div>
@@ -250,15 +272,15 @@ function ResourcePreviewModal({ name, url, type, onClose, onDownload }: { name: 
 
 function ResourceList({ lesson }: { lesson: CourseLesson }) {
   const [preview, setPreview] = useState<{ name: string; url: string; type: ReturnType<typeof getResourceType> } | null>(null);
-  const getSignedUrl = async (path: string) => {
-    const { data } = await supabase.storage.from('prompt-media').createSignedUrl(path, 300);
-    if (!data?.signedUrl) throw new Error('Could not generate URL');
-    return data.signedUrl;
-  };
+
   const handlePreview = async (res: { name: string; path: string; mime_type?: string }) => {
-    try { const url = await getSignedUrl(res.path); setPreview({ name: res.name, url, type: getResourceType(res) }); }
-    catch { toast.error('Could not load preview'); }
+    try {
+      const { data } = await supabase.storage.from('prompt-media').createSignedUrl(res.path, 300);
+      if (!data?.signedUrl) throw new Error('No URL');
+      setPreview({ name: res.name, url: data.signedUrl, type: getResourceType(res) });
+    } catch { toast.error('Could not load preview'); }
   };
+
   if (!lesson.resources?.length) return (
     <div className="flex flex-col items-center justify-center py-14 text-center">
       <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-3">
@@ -268,6 +290,7 @@ function ResourceList({ lesson }: { lesson: CourseLesson }) {
       <p className="text-xs text-gray-400 mt-1">This lesson has no downloadable files.</p>
     </div>
   );
+
   return (
     <>
       <div className="space-y-2">
@@ -298,7 +321,7 @@ function ResourceList({ lesson }: { lesson: CourseLesson }) {
   );
 }
 
-// ── Lesson icon helper ────────────────────────────────────────────────────────
+// ── Lesson icon ───────────────────────────────────────────────────────────────
 
 function lessonIcon(type: string) {
   switch (type) {
@@ -309,9 +332,9 @@ function lessonIcon(type: string) {
   }
 }
 
-// ── Curriculum Sidebar Content ────────────────────────────────────────────────
+// ── Curriculum Sidebar ────────────────────────────────────────────────────────
 
-interface CurriculumContentProps {
+interface SidebarProps {
   sections: ReturnType<typeof useCourseSections>['data'];
   lessons: CourseLesson[];
   completedIds: Set<string>;
@@ -321,40 +344,35 @@ interface CurriculumContentProps {
   isOwner: boolean;
   enrollment: unknown;
   certificate: unknown;
-  courseId: string;
-  onClose: () => void;
   onToggleSection: (id: string) => void;
   onSelectLesson: (id: string) => void;
   onNavigateCertificate: () => void;
 }
 
-function CurriculumContent({
+function Sidebar({
   sections = [], lessons, completedIds, pct, activeLessonId, expandedSections,
-  isOwner, enrollment, certificate, onClose, onToggleSection, onSelectLesson, onNavigateCertificate,
-}: CurriculumContentProps) {
+  isOwner, enrollment, certificate,
+  onToggleSection, onSelectLesson, onNavigateCertificate,
+}: SidebarProps) {
   return (
-    <div className="flex flex-col h-full bg-gray-950">
+    <div className="flex flex-col h-full bg-gray-950 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-white/8 flex-shrink-0">
         <div>
-          <h2 className="text-sm font-bold text-white leading-tight">Course Content</h2>
+          <h2 className="text-sm font-bold text-white">Course Content</h2>
           <p className="text-[11px] text-white/40 mt-0.5">{lessons.length} lessons</p>
         </div>
-        <button onClick={onClose}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
-          <Icon name="close" size={16} />
-        </button>
       </div>
 
-      {/* Progress strip */}
-      <div className="px-4 py-3 border-b border-white/8 flex-shrink-0 bg-white/3">
+      {/* Progress bar */}
+      <div className="px-4 py-3 border-b border-white/8 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] text-white/50">{completedIds.size} of {lessons.length} completed</span>
+          <span className="text-[11px] text-white/40">{completedIds.size} of {lessons.length} completed</span>
           <span className="text-[11px] font-bold text-white">{pct}%</span>
         </div>
         <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
+            className="h-full bg-emerald-400 rounded-full"
             initial={false}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -362,59 +380,78 @@ function CurriculumContent({
         </div>
       </div>
 
-      {/* Sections */}
-      <div className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
+      {/* Sections list */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {(sections ?? []).map((section) => {
-          const sLessons = lessons.filter((l) => l.section_id === section.id).sort((a, b) => a.position - b.position);
+          const sLessons = lessons
+            .filter((l) => l.section_id === section.id)
+            .sort((a, b) => a.position - b.position);
           const isExpanded = expandedSections.has(section.id);
           const sCompleted = sLessons.filter((l) => completedIds.has(l.id)).length;
           const totalMins = sLessons.reduce((sum, l) => sum + (l.video_duration_minutes || 0), 0);
+
           return (
             <div key={section.id} className="border-b border-white/6">
-              <button onClick={() => onToggleSection(section.id)}
-                className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-white/5 transition-colors">
+              {/* Section header */}
+              <button
+                onClick={() => onToggleSection(section.id)}
+                className="w-full flex items-start gap-3 px-4 py-3.5 text-left hover:bg-white/5 transition-colors"
+              >
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white/90 leading-snug">{section.title}</p>
+                  <p className="text-xs font-bold text-white leading-snug">{section.title}</p>
                   <p className="text-[10px] text-white/35 mt-1">
-                    {sCompleted}/{sLessons.length} lessons
-                    {totalMins > 0 && ` · ${totalMins}m`}
+                    {sCompleted}/{sLessons.length} lessons{totalMins > 0 && ` · ${totalMins}m`}
                   </p>
                 </div>
-                <motion.span animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }}
-                  className="text-white/30 flex-shrink-0 mt-0.5 inline-flex">
+                <motion.span
+                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="text-white/30 flex-shrink-0 mt-0.5 inline-flex"
+                >
                   <Icon name="expand_more" size={16} />
                 </motion.span>
               </button>
+
+              {/* Lessons */}
               <AnimatePresence initial={false}>
                 {isExpanded && (
-                  <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                    transition={{ duration: 0.2 }} className="overflow-hidden">
+                  <motion.div
+                    initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
                     {sLessons.map((lesson) => {
                       const done = completedIds.has(lesson.id);
                       const active = activeLessonId === lesson.id;
                       const accessible = isOwner || !!enrollment || lesson.is_preview;
+
                       return (
-                        <button key={lesson.id}
+                        <button
+                          key={lesson.id}
                           onClick={() => accessible && onSelectLesson(lesson.id)}
                           disabled={!accessible}
                           className={cn(
                             'relative w-full flex items-start gap-3 px-4 py-3 text-left transition-all border-b border-white/4',
-                            active ? 'bg-white/12' : 'hover:bg-white/6',
-                            !accessible && 'opacity-35 cursor-not-allowed',
+                            active ? 'bg-white/10' : 'hover:bg-white/5',
+                            !accessible && 'opacity-40 cursor-not-allowed',
                           )}
                         >
-                          {active && (
-                            <div className="absolute left-0 inset-y-0 w-0.5 bg-emerald-400 rounded-r" />
-                          )}
-                          {/* Completion ring */}
+                          {/* Active indicator */}
+                          {active && <div className="absolute left-0 inset-y-0 w-0.5 bg-emerald-400 rounded-r" />}
+
+                          {/* Completion circle */}
                           <div className="flex-shrink-0 mt-0.5">
-                            <div className={cn(
-                              'w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center transition-all',
-                              done ? 'bg-emerald-500 border-emerald-500' : active ? 'border-white/50' : 'border-white/20'
-                            )} style={{ width: 18, height: 18 }}>
+                            <div
+                              className={cn(
+                                'rounded-full border-2 flex items-center justify-center transition-all',
+                                done ? 'bg-emerald-500 border-emerald-500' : active ? 'border-white/50' : 'border-white/20'
+                              )}
+                              style={{ width: 18, height: 18 }}
+                            >
                               {done && <Icon name="check" size={10} className="text-white" />}
                             </div>
                           </div>
+
                           <div className="flex-1 min-w-0">
                             <p className={cn(
                               'text-xs leading-snug line-clamp-2',
@@ -431,7 +468,9 @@ function CurriculumContent({
                                 <span className="text-[10px] text-white/30">{lesson.video_duration_minutes}m</span>
                               )}
                               {lesson.is_preview && !enrollment && (
-                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">Preview</span>
+                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">
+                                  Preview
+                                </span>
                               )}
                               {!accessible && <Icon name="lock" size={10} className="text-white/25" />}
                             </div>
@@ -450,14 +489,16 @@ function CurriculumContent({
       {/* Certificate footer */}
       {certificate && (
         <div className="p-3 border-t border-white/8 flex-shrink-0">
-          <button onClick={onNavigateCertificate}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 transition-all group">
+          <button
+            onClick={onNavigateCertificate}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 transition-all group"
+          >
             <Icon name="workspace_premium" size={18} className="text-white" fill />
             <div className="flex-1 text-left min-w-0">
               <p className="text-xs font-bold text-white leading-tight">Your Certificate</p>
               <p className="text-[10px] text-white/70 mt-0.5">View &amp; Download</p>
             </div>
-            <Icon name="chevron_right" size={14} className="text-white/60 group-hover:translate-x-0.5 transition-transform" />
+            <Icon name="chevron_right" size={14} className="text-white/60" />
           </button>
         </div>
       )}
@@ -488,11 +529,16 @@ export function CoursePlayerPage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Desktop: sidebar toggle (default open on lg+)
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  // Mobile/tablet: drawer
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const [showCelebration, setShowCelebration] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [completionBanner, setCompletionBanner] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -553,7 +599,11 @@ export function CoursePlayerPage() {
           if (certId) {
             const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-certificate-email`;
             const { data: session } = await supabase.auth.getSession();
-            await fetch(fnUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}` }, body: JSON.stringify({ cert_id: certId }) });
+            await fetch(fnUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ cert_id: certId }),
+            });
           }
         } catch { /* best-effort */ }
       })();
@@ -567,19 +617,17 @@ export function CoursePlayerPage() {
 
   const getEmbedUrl = (url: string) => YOUTUBE_EMBED(url) || VIMEO_EMBED(url) || null;
   const toggleSection = (id: string) => setExpandedSections((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const selectLesson = (id: string) => { setActiveLessonId(id); setMobileSidebarOpen(false); };
+  const selectLesson = (id: string) => { setActiveLessonId(id); setDrawerOpen(false); };
 
   const lessonIndex = activeLesson ? lessons.findIndex((l) => l.id === activeLesson.id) : -1;
   const prevLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
   const nextLesson = lessonIndex < lessons.length - 1 ? lessons[lessonIndex + 1] : null;
 
-  const handleCloseSidebar = () => { setSidebarOpen(false); setMobileSidebarOpen(false); };
-  const handleNavigateCertificate = () => { navigate(`/courses/${courseId}/certificate`); setMobileSidebarOpen(false); };
+  const handleNavigateCertificate = () => { navigate(`/courses/${courseId}/certificate`); setDrawerOpen(false); };
 
-  const curriculumProps: CurriculumContentProps = {
+  const sidebarProps: SidebarProps = {
     sections, lessons, completedIds, pct, activeLessonId, expandedSections,
-    isOwner, enrollment, certificate, courseId: courseId ?? '',
-    onClose: handleCloseSidebar,
+    isOwner, enrollment, certificate,
     onToggleSection: toggleSection,
     onSelectLesson: selectLesson,
     onNavigateCertificate: handleNavigateCertificate,
@@ -603,42 +651,42 @@ export function CoursePlayerPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" style={{ fontFamily: 'inherit' }}>
+    <div className="min-h-screen bg-gray-950" style={{ fontFamily: 'inherit' }}>
 
-      {/* ── Overlays ── */}
+      {/* Overlays */}
       <ConfettiBlast active={showConfetti} />
       <AnimatePresence>
         {showCelebration && (
-          <CourseCompletePopup courseName={course.title}
+          <CourseCompletePopup
+            courseName={course.title}
             onViewCertificate={() => { setShowCelebration(false); navigate(`/courses/${courseId}/certificate`); }}
             onDismiss={() => setShowCelebration(false)}
           />
         )}
       </AnimatePresence>
 
-      {/* ── Fixed header ── */}
+      {/* ── Fixed header ─────────────────────────────────────────────────────── */}
       <header
-        className="fixed top-0 left-0 right-0 z-30 flex items-center gap-3 px-3 sm:px-5 bg-gray-950/95 backdrop-blur-xl border-b border-white/8"
+        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-2 px-3 sm:px-4 bg-gray-950/95 backdrop-blur-xl border-b border-white/8"
         style={{ height: HEADER_H }}
       >
+        {/* Back */}
         <Link to="/courses"
           className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-all">
           <Icon name="arrow_back" size={18} />
         </Link>
 
-        <div className="w-px h-5 bg-white/10 flex-shrink-0" />
+        <div className="w-px h-4 bg-white/10 flex-shrink-0" />
 
-        {/* Course title + progress */}
-        <div className="flex-1 min-w-0 flex items-center gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-white truncate leading-tight">{course.title}</p>
-          </div>
+        {/* Title + progress */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-white truncate leading-tight">{course.title}</p>
           {enrollment && (
-            <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-              <div className="relative h-1.5 w-24 lg:w-36 bg-white/10 rounded-full overflow-hidden">
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="relative h-1 w-20 sm:w-28 bg-white/10 rounded-full overflow-hidden">
                 <div className="absolute inset-y-0 left-0 bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
               </div>
-              <span className="text-[11px] text-white/40 font-medium whitespace-nowrap">{pct}%</span>
+              <span className="text-[10px] text-white/40 hidden sm:block">{pct}%</span>
             </div>
           )}
         </div>
@@ -647,63 +695,88 @@ export function CoursePlayerPage() {
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {certificate && (
             <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20 text-xs font-bold hover:bg-amber-500/25 transition-all">
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20 text-xs font-bold hover:bg-amber-500/25 transition-all">
               <Icon name="workspace_premium" size={14} fill />
-              Certificate
+              <span className="hidden md:inline">Certificate</span>
             </button>
           )}
           {isOwner && (
             <button onClick={() => navigate(`/courses/${courseId}/edit`)}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/8 transition-all" title="Edit course">
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/8 transition-all">
               <Icon name="edit" size={16} />
             </button>
           )}
+
+          {/* Desktop toggle */}
           <button
-            onClick={() => { setSidebarOpen((v) => !v); setMobileSidebarOpen((v) => !v); }}
+            onClick={() => setDesktopSidebarOpen((v) => !v)}
             className={cn(
-              'flex items-center gap-1.5 px-3 h-9 rounded-xl border text-xs font-bold transition-all',
-              sidebarOpen
+              'hidden lg:flex items-center gap-1.5 px-3 h-9 rounded-xl border text-xs font-bold transition-all',
+              desktopSidebarOpen
                 ? 'bg-white/10 border-white/15 text-white'
-                : 'border-white/10 text-white/50 hover:text-white hover:border-white/20 hover:bg-white/5'
-            )}>
+                : 'border-white/10 text-white/50 hover:text-white hover:border-white/20'
+            )}
+          >
             <Icon name="menu_book" size={15} />
-            <span className="hidden sm:block">Content</span>
+            <span>Content</span>
+          </button>
+
+          {/* Mobile/tablet hamburger */}
+          <button
+            onClick={() => setDrawerOpen((v) => !v)}
+            className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-all"
+            aria-label="Toggle course content"
+          >
+            <Icon name="menu_book" size={18} />
           </button>
         </div>
       </header>
 
-      {/* ── Mobile sidebar drawer (slides from right) ── */}
+      {/* ── Mobile/Tablet Drawer (slides from LEFT) ──────────────────────────── */}
       <AnimatePresence>
-        {mobileSidebarOpen && (
+        {drawerOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/60 z-50 lg:hidden"
+              onClick={() => setDrawerOpen(false)}
+            />
+            {/* Drawer panel */}
             <motion.aside
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-              className="fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm shadow-2xl lg:hidden"
-              style={{ top: HEADER_H }}
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+              className="fixed left-0 top-0 bottom-0 z-50 w-[85vw] max-w-xs shadow-2xl lg:hidden"
+              style={{ paddingTop: HEADER_H }}
             >
-              <CurriculumContent {...curriculumProps} />
+              <Sidebar {...sidebarProps} />
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      {/* ── Main layout ── */}
-      <div className="flex" style={{ paddingTop: HEADER_H }}>
-
-        {/* ── Content area ── */}
+      {/* ── Page body ────────────────────────────────────────────────────────── */}
+      <div
+        className="flex transition-all duration-300"
+        style={{ paddingTop: HEADER_H }}
+      >
+        {/* Main content — fills all width on mobile, shrinks on desktop when sidebar open */}
         <div
-          className="flex-1 min-w-0 transition-[margin] duration-300"
-          style={{ marginRight: sidebarOpen ? SIDEBAR_W : 0 }}
+          className="flex-1 min-w-0 w-full"
+          style={{ marginRight: desktopSidebarOpen ? SIDEBAR_W : 0 }}
         >
           {/* Completion banner */}
           <AnimatePresence>
             {completionBanner && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
-                <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500">
                   <div className="flex items-center gap-2 min-w-0">
                     <Icon name="workspace_premium" size={16} className="text-white flex-shrink-0" fill />
                     <p className="text-white font-bold text-sm truncate">You completed this course!</p>
@@ -725,12 +798,10 @@ export function CoursePlayerPage() {
 
           {/* Enrollment banner */}
           {!enrollment && !isOwner && (
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 bg-gray-900 border-b border-white/8">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-white/8 flex items-center justify-center flex-shrink-0">
-                  <Icon name="lock" size={14} className="text-white/50" />
-                </div>
-                <p className="text-sm text-white/60 truncate">Enroll to unlock all lessons and track your progress.</p>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-900 border-b border-white/8">
+              <div className="flex items-center gap-2 min-w-0">
+                <Icon name="lock" size={15} className="text-white/40 flex-shrink-0" />
+                <p className="text-sm text-white/50 truncate">Enroll to unlock all lessons and track progress.</p>
               </div>
               <button onClick={handleEnroll} disabled={enroll.isPending}
                 className="flex-shrink-0 px-4 py-2 rounded-xl bg-white text-gray-900 text-sm font-bold hover:bg-white/90 disabled:opacity-50 transition-all">
@@ -741,17 +812,23 @@ export function CoursePlayerPage() {
 
           {activeLesson && canAccess ? (
             <>
-              {/* ── Video / media ── */}
-              <div className="bg-black w-full">
+              {/* ── Video / media — 100% width ── */}
+              <div className="w-full bg-black">
                 {activeLesson.lesson_type === 'video' && videoUrl && (
                   getEmbedUrl(videoUrl) ? (
-                    <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                      <iframe src={getEmbedUrl(videoUrl)!} className="absolute inset-0 w-full h-full"
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        src={getEmbedUrl(videoUrl)!}
+                        className="absolute inset-0 w-full h-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen title={activeLesson.title} />
+                        allowFullScreen
+                        title={activeLesson.title}
+                      />
                     </div>
                   ) : (
-                    <VideoPlayer src={videoUrl} title={activeLesson.title}
+                    <VideoPlayer
+                      src={videoUrl}
+                      title={activeLesson.title}
                       markers={activeLesson.timeline_markers ?? []}
                       videoRef={videoRef as React.RefObject<HTMLVideoElement>}
                       onTimeUpdate={(s) => {
@@ -765,7 +842,7 @@ export function CoursePlayerPage() {
                   )
                 )}
                 {activeLesson.lesson_type === 'video' && !videoUrl && (
-                  <div className="aspect-video flex items-center justify-center bg-gray-950">
+                  <div className="aspect-video w-full flex items-center justify-center bg-gray-950">
                     {mediaLoading
                       ? <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                       : <Icon name="play_circle" size={64} className="text-white/10" />
@@ -773,54 +850,50 @@ export function CoursePlayerPage() {
                   </div>
                 )}
                 {activeLesson.lesson_type === 'image' && (
-                  <div className="flex items-center justify-center bg-gray-950" style={{ minHeight: 240 }}>
-                    {mediaLoading ? (
-                      <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    ) : videoUrl ? (
-                      <img src={videoUrl} alt={activeLesson.title} className="max-w-full object-contain" style={{ maxHeight: '70vh' }} />
-                    ) : (
-                      <Icon name="image" size={64} className="text-white/10" />
-                    )}
+                  <div className="w-full flex items-center justify-center bg-gray-950" style={{ minHeight: 240 }}>
+                    {mediaLoading
+                      ? <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      : videoUrl
+                        ? <img src={videoUrl} alt={activeLesson.title} className="w-full object-contain" style={{ maxHeight: '70vh' }} />
+                        : <Icon name="image" size={64} className="text-white/10" />
+                    }
                   </div>
-                )}
-                {(activeLesson.lesson_type === 'text' || activeLesson.lesson_type === 'resource') && (
-                  <div className="h-0" />
                 )}
               </div>
 
-              {/* ── White content section ── */}
-              <div className="bg-white">
+              {/* ── White content area ── */}
+              <div className="bg-white w-full">
 
                 {/* Text lesson content */}
                 {activeLesson.lesson_type === 'text' && activeLesson.content && (
-                  <div className="px-5 sm:px-8 py-8 border-b border-gray-100">
-                    <div className="max-w-3xl">
-                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{activeLesson.content}</p>
-                    </div>
+                  <div className="px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-100">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-w-3xl">
+                      {activeLesson.content}
+                    </p>
                   </div>
                 )}
 
-                {/* Resource lesson hint */}
+                {/* Resource hint */}
                 {activeLesson.lesson_type === 'resource' && (
-                  <div className="px-5 sm:px-8 py-6 border-b border-gray-100">
+                  <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-gray-100">
                     <div className="inline-flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-200">
                       <div className="w-10 h-10 bg-gray-900/8 rounded-xl flex items-center justify-center flex-shrink-0">
                         <Icon name="folder_zip" size={20} className="text-gray-700" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">Downloadable Resources</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Check the Resources tab below to download files.</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Check the Resources tab below.</p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* ── Lesson header ── */}
-                <div className="px-5 sm:px-8 py-6 border-b border-gray-100">
+                {/* Lesson header */}
+                <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-gray-100">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
-                      {/* Meta pills */}
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {/* Meta badges */}
+                      <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full',
                           activeLesson.lesson_type === 'video' ? 'bg-blue-50 text-blue-600' :
@@ -838,16 +911,19 @@ export function CoursePlayerPage() {
                           </span>
                         )}
                         {activeLesson.is_preview && (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">Free Preview</span>
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                            Free Preview
+                          </span>
                         )}
-                        <span className="text-xs text-gray-400">Lesson {lessonIndex + 1} of {lessons.length}</span>
+                        <span className="text-xs text-gray-300">Lesson {lessonIndex + 1} / {lessons.length}</span>
                       </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{activeLesson.title}</h2>
+                      <h2 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">{activeLesson.title}</h2>
                       {activeLesson.description && (
-                        <p className="text-sm text-gray-500 leading-relaxed mt-2">{activeLesson.description}</p>
+                        <p className="text-sm text-gray-500 leading-relaxed mt-1.5">{activeLesson.description}</p>
                       )}
                     </div>
-                    {/* Mark complete button */}
+
+                    {/* Mark complete */}
                     <div className="flex-shrink-0">
                       {isCompleted ? (
                         <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-bold">
@@ -856,111 +932,103 @@ export function CoursePlayerPage() {
                         </div>
                       ) : (enrollment || isOwner) ? (
                         <button onClick={handleMarkComplete} disabled={markComplete.isPending}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white text-sm font-bold transition-all shadow-sm">
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white text-sm font-bold transition-all">
                           {markComplete.isPending
                             ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             : <Icon name="check_circle" size={15} />
                           }
-                          Mark Complete
+                          <span className="hidden sm:inline">Mark Complete</span>
+                          <span className="sm:hidden">Complete</span>
                         </button>
                       ) : null}
                     </div>
                   </div>
                 </div>
 
-                {/* ── Prev / Next navigation ── */}
-                <div className="px-5 sm:px-8 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                {/* Prev / Next */}
+                <div className="px-4 sm:px-6 lg:px-8 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3">
                   <button
                     onClick={() => prevLesson && setActiveLessonId(prevLesson.id)}
                     disabled={!prevLesson}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-semibold"
                   >
                     <Icon name="chevron_left" size={16} />
-                    <span className="hidden xs:inline">Previous</span>
+                    <span className="hidden sm:inline">Previous</span>
                   </button>
 
-                  <span className="text-xs text-gray-400 font-medium hidden sm:block">
-                    {lessonIndex + 1} / {lessons.length}
-                  </span>
+                  <span className="text-xs text-gray-400 font-medium">{lessonIndex + 1} / {lessons.length}</span>
 
                   {nextLesson ? (
                     <button onClick={() => setActiveLessonId(nextLesson.id)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold transition-all shadow-sm">
-                      <span className="hidden xs:inline">Next</span>
+                      className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold transition-all">
+                      <span className="hidden sm:inline">Next</span>
                       <Icon name="chevron_right" size={16} />
-                    </button>
-                  ) : certificate ? (
-                    <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition-all shadow-sm">
-                      <Icon name="workspace_premium" size={15} fill />
-                      <span className="hidden xs:inline">Get Certificate</span>
                     </button>
                   ) : (
                     <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold transition-all shadow-sm">
+                      className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold transition-all">
                       <Icon name="workspace_premium" size={15} fill />
-                      <span className="hidden xs:inline">Certificate</span>
+                      <span className="hidden sm:inline">Certificate</span>
                     </button>
                   )}
                 </div>
 
-                {/* ── Tab bar ── */}
-                <div className="border-b border-gray-100 px-4 sm:px-8">
-                  <div className="flex items-center gap-0.5 overflow-x-auto hide-scrollbar">
+                {/* Tab bar */}
+                <div className="border-b border-gray-100 px-2 sm:px-4">
+                  <div className="flex items-center overflow-x-auto hide-scrollbar">
                     {TABS.map(({ key, icon, label }) => (
                       <button key={key} onClick={() => setActiveTab(key)}
                         className={cn(
-                          'flex items-center gap-1.5 px-3 sm:px-4 py-3.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap',
+                          'flex items-center gap-1.5 px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap flex-shrink-0',
                           activeTab === key
                             ? 'text-gray-900 border-gray-900'
-                            : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-200'
+                            : 'text-gray-400 border-transparent hover:text-gray-600'
                         )}>
-                        <Icon name={icon} size={14} />
-                        <span className="hidden sm:inline">{label}</span>
-                        <span className="sm:hidden text-[11px]">{label}</span>
+                        <Icon name={icon} size={13} />
+                        {label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* ── Tab content ── */}
-                <div className="px-5 sm:px-8 py-6 sm:py-8">
+                {/* Tab content */}
+                <div className="px-4 sm:px-6 lg:px-8 py-6">
                   {activeTab === 'overview' && (
-                    <div className="max-w-3xl space-y-8">
+                    <div className="max-w-3xl space-y-7">
                       {course.description && (
                         <div>
-                          <h3 className="text-base font-bold text-gray-900 mb-3">About this course</h3>
+                          <h3 className="text-sm font-bold text-gray-900 mb-2">About this course</h3>
                           <p className="text-sm text-gray-600 leading-relaxed">{course.description}</p>
                         </div>
                       )}
                       <div>
-                        <h3 className="text-base font-bold text-gray-900 mb-4">Course contents</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <h3 className="text-sm font-bold text-gray-900 mb-3">Course contents</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5">
                           {[
                             { icon: 'play_circle', count: lessons.filter(l => l.lesson_type === 'video').length, label: 'Video lessons', color: 'text-blue-500' },
                             { icon: 'article', count: lessons.filter(l => l.lesson_type === 'text').length, label: 'Text lessons', color: 'text-emerald-500' },
                             { icon: 'image', count: lessons.filter(l => l.lesson_type === 'image').length, label: 'Image lessons', color: 'text-amber-500' },
-                            { icon: 'attach_file', count: lessons.filter(l => l.lesson_type === 'resource').length, label: 'Resource files', color: 'text-rose-500' },
+                            { icon: 'attach_file', count: lessons.filter(l => l.lesson_type === 'resource').length, label: 'Resources', color: 'text-rose-500' },
                           ].filter(item => item.count > 0).map((item) => (
                             <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                              <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                <Icon name={item.icon} size={16} className={item.color} />
+                              <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                <Icon name={item.icon} size={15} className={item.color} />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-sm font-bold text-gray-900">{item.count}</p>
-                                <p className="text-xs text-gray-500">{item.label}</p>
+                                <p className="text-xs text-gray-500 truncate">{item.label}</p>
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                       {(enrollment || isOwner) && (
-                        <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="p-4 sm:p-5 bg-gray-50 rounded-2xl border border-gray-100">
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-bold text-gray-900">Your Progress</h4>
                             <span className="text-sm font-bold text-gray-900">{pct}%</span>
                           </div>
-                          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden mb-3">
+                          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden mb-2">
                             <div className="h-full bg-gray-900 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
                           </div>
                           <p className="text-xs text-gray-500">{completedIds.size} of {lessons.length} lessons completed</p>
@@ -977,8 +1045,8 @@ export function CoursePlayerPage() {
 
                   {activeTab === 'notes' && (
                     <div className="max-w-2xl">
-                      <div className="mb-5">
-                        <h3 className="text-base font-bold text-gray-900">My Notes</h3>
+                      <div className="mb-4">
+                        <h3 className="text-sm font-bold text-gray-900">My Notes</h3>
                         <p className="text-xs text-gray-400 mt-0.5">Personal notes for this lesson</p>
                       </div>
                       <NotesPanel courseId={courseId!} lessonId={activeLesson.id} />
@@ -987,8 +1055,8 @@ export function CoursePlayerPage() {
 
                   {activeTab === 'resources' && (
                     <div className="max-w-2xl">
-                      <div className="mb-5">
-                        <h3 className="text-base font-bold text-gray-900">Lesson Resources</h3>
+                      <div className="mb-4">
+                        <h3 className="text-sm font-bold text-gray-900">Lesson Resources</h3>
                         <p className="text-xs text-gray-400 mt-0.5">Downloadable files for this lesson</p>
                       </div>
                       <ResourceList lesson={activeLesson} />
@@ -997,16 +1065,24 @@ export function CoursePlayerPage() {
 
                   {activeTab === 'reviews' && (
                     <div className="max-w-3xl">
-                      <CourseReviews courseId={courseId!} courseOwnerId={course.user_id}
-                        isEnrolled={!!enrollment} avgRating={course.avg_rating ?? 0} reviewsCount={course.reviews_count ?? 0} />
+                      <CourseReviews
+                        courseId={courseId!}
+                        courseOwnerId={course.user_id}
+                        isEnrolled={!!enrollment}
+                        avgRating={course.avg_rating ?? 0}
+                        reviewsCount={course.reviews_count ?? 0}
+                      />
                     </div>
                   )}
                 </div>
               </div>
             </>
           ) : (
-            /* ── Empty / locked state ── */
-            <div className="flex flex-col items-center justify-center gap-6 px-6 py-16 text-center" style={{ minHeight: `calc(100vh - ${HEADER_H}px)` }}>
+            /* Empty / locked state */
+            <div
+              className="flex flex-col items-center justify-center gap-6 px-6 py-16 text-center"
+              style={{ minHeight: `calc(100vh - ${HEADER_H}px)` }}
+            >
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', damping: 18, stiffness: 220 }}
@@ -1021,12 +1097,12 @@ export function CoursePlayerPage() {
                 <p className="text-sm text-white/40 max-w-xs mx-auto leading-relaxed">
                   {!enrollment && !isOwner
                     ? 'Enroll for free to unlock all content and track your progress.'
-                    : 'Choose a lesson from the course content panel on the right.'}
+                    : 'Tap the content icon in the header to pick a lesson.'}
                 </p>
               </div>
               {!enrollment && !isOwner && (
                 <button onClick={handleEnroll} disabled={enroll.isPending}
-                  className="px-8 py-3 rounded-xl bg-white text-gray-900 font-bold hover:bg-white/90 disabled:opacity-50 transition-all shadow-lg">
+                  className="px-8 py-3 rounded-xl bg-white text-gray-900 font-bold hover:bg-white/90 disabled:opacity-50 transition-all">
                   {enroll.isPending ? 'Enrolling…' : 'Enroll Now — Free'}
                 </button>
               )}
@@ -1034,18 +1110,18 @@ export function CoursePlayerPage() {
           )}
         </div>
 
-        {/* ── Desktop right sidebar (lg+) ── */}
+        {/* ── Desktop right sidebar (lg+) ───────────────────────────────────── */}
         <AnimatePresence>
-          {sidebarOpen && (
+          {desktopSidebarOpen && (
             <motion.aside
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: SIDEBAR_W, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed top-0 right-0 bottom-0 z-20 overflow-hidden hidden lg:block border-l border-white/8"
+              className="fixed top-0 right-0 bottom-0 z-20 overflow-hidden border-l border-white/8 hidden lg:block"
               style={{ top: HEADER_H }}
             >
-              <CurriculumContent {...curriculumProps} />
+              <Sidebar {...sidebarProps} />
             </motion.aside>
           )}
         </AnimatePresence>
@@ -1054,7 +1130,6 @@ export function CoursePlayerPage() {
       <style>{`
         .hide-scrollbar { scrollbar-width: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        @media (min-width: 480px) { .xs\\:inline { display: inline; } }
       `}</style>
     </div>
   );
