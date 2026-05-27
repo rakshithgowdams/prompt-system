@@ -116,6 +116,7 @@ export interface CourseCertificate {
   serial_number: string;
   share_slug: string | null;
   share_view_count: number;
+  cover_image_url: string;
 }
 
 // ── Course queries ────────────────────────────────────────────────────────────
@@ -669,9 +670,18 @@ export function useIssueCertificate() {
     mutationFn: async (p: IssueCertificateInput) => {
       const { data: course } = await supabase
         .from('courses')
-        .select('title, category')
+        .select('title, category, cover_image')
         .eq('id', p.course_id)
         .maybeSingle();
+
+      // Resolve a signed URL for the cover image so it can be stored with the cert
+      let coverImageUrl = '';
+      if (course?.cover_image) {
+        const { data: signed } = await supabase.storage
+          .from('prompt-media')
+          .createSignedUrl(course.cover_image, 60 * 60 * 24 * 365);
+        coverImageUrl = signed?.signedUrl ?? '';
+      }
 
       const { data: profile } = await supabase
         .from('user_profiles')
@@ -705,6 +715,7 @@ export function useIssueCertificate() {
             student_name: studentName,
             course_title: course?.title ?? '',
             course_category: course?.category ?? '',
+            cover_image_url: coverImageUrl,
           })
           .eq('course_id', p.course_id)
           .eq('user_id', user!.id)
@@ -725,6 +736,7 @@ export function useIssueCertificate() {
             student_name: studentName,
             course_title: course?.title ?? '',
             course_category: course?.category ?? '',
+            cover_image_url: coverImageUrl,
           })
           .select()
           .single());

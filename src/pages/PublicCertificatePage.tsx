@@ -27,21 +27,45 @@ export function PublicCertificatePage() {
 
   useEffect(() => {
     if (!cert) return;
-    document.title = `${cert.student_name} — Certificate of Course Completion | MyDesignNexus`;
 
-    const setMeta = (property: string, content: string) => {
-      let el = document.querySelector(`meta[property="${property}"]`);
+    const fmt = (d: string | null) =>
+      d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+    const fromDate = fmt(cert.internship_from);
+    const toDate = fmt(cert.internship_to);
+    const dateRange = fromDate && toDate ? ` from ${fromDate} to ${toDate}` : '';
+
+    document.title = `${cert.student_name} — ${cert.course_title} Certificate | MyDesignNexus`;
+
+    const setMeta = (property: string, content: string, isName = false) => {
+      const attr = isName ? 'name' : 'property';
+      let el = document.querySelector(`meta[${attr}="${property}"]`);
       if (!el) {
         el = document.createElement('meta');
-        el.setAttribute('property', property);
+        el.setAttribute(attr, property);
         document.head.appendChild(el);
       }
       el.setAttribute('content', content);
     };
-    setMeta('og:title', `${cert.student_name} — Certificate of Course Completion`);
-    setMeta('og:description', `Verified certificate issued by MyDesignNexus on ${new Date(cert.issued_at).toDateString()}. Department: ${cert.department}`);
+
+    const ogTitle = `${cert.student_name} completed "${cert.course_title}" — MyDesignNexus Certificate`;
+    const ogDesc = `${cert.student_name} has successfully completed the course "${cert.course_title}" at MyDesignNexus${dateRange}. ${cert.growth_area ? `Demonstrated professional growth in ${cert.growth_area}. ` : ''}Certificate ID: ${cert.serial_number}. Verify this certificate at MyDesignNexus.`;
+
+    setMeta('og:title', ogTitle);
+    setMeta('og:description', ogDesc);
     setMeta('og:type', 'article');
     setMeta('og:url', window.location.href);
+    setMeta('og:site_name', 'MyDesignNexus');
+
+    // Course cover image for LinkedIn/Twitter card preview
+    if (cert.cover_image_url) {
+      setMeta('og:image', cert.cover_image_url);
+      setMeta('og:image:width', '1280');
+      setMeta('og:image:height', '720');
+      setMeta('twitter:card', 'summary_large_image', true);
+      setMeta('twitter:image', cert.cover_image_url, true);
+    }
+    setMeta('twitter:title', ogTitle, true);
+    setMeta('twitter:description', ogDesc, true);
   }, [cert]);
 
   if (isLoading || isFetching) {

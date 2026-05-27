@@ -17,7 +17,27 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
 
   const hasValidSlug = !!certificate.share_slug && certificate.share_slug.length > 0;
   const shareUrl = hasValidSlug ? `${window.location.origin}/c/${certificate.share_slug}` : '';
-  const shareText = `I've earned my Certificate of Course Completion from MyDesignNexus!\n\nView my verified certificate:`;
+
+  const fmt = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+  const fromDate = fmt(certificate.internship_from);
+  const toDate = fmt(certificate.internship_to);
+  const dateRange = fromDate && toDate ? ` from ${fromDate} to ${toDate}` : '';
+
+  const linkedInText = [
+    `I'm thrilled to share that I have successfully completed the course "${certificate.course_title}" at MyDesignNexus${dateRange}!`,
+    ``,
+    `During this period, I demonstrated exceptional dedication and professional growth in ${certificate.growth_area || certificate.course_category || 'this field'}.`,
+    ``,
+    `This course deepened my understanding, sharpened my practical skills, and equipped me with real-world knowledge in ${certificate.course_title}. I'm grateful to the MyDesignNexus team for their guidance and mentorship throughout.`,
+    ``,
+    `Certificate ID: ${certificate.serial_number}`,
+    `Verify this certificate: ${shareUrl}`,
+    ``,
+    `#MyDesignNexus #CourseCompletion #${(certificate.course_title || '').replace(/\s+/g, '')} #ProfessionalGrowth #LearningAndDevelopment`,
+  ].join('\n');
+
+  const shareText = `I've successfully completed "${certificate.course_title}" at MyDesignNexus!\n\nCertificate ID: ${certificate.serial_number}\nVerify here:`;
 
   async function renderToCanvas(): Promise<HTMLCanvasElement> {
     const { default: html2canvas } = await import('html2canvas-pro');
@@ -97,7 +117,7 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
   }
 
   const shareLinks = {
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+    linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(`${certificate.student_name} — ${certificate.course_title} Certificate`)}&summary=${encodeURIComponent(linkedInText)}&source=MyDesignNexus`,
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
     whatsapp: `https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
@@ -172,8 +192,10 @@ export function CertificateActions({ certificate, isPublic: _isPublic }: Props) 
               >
                 <SocialIcon icon="linkedin" size={22} />
                 <div>
-                  <div>Add to LinkedIn Profile</div>
-                  <div className="text-xs font-normal opacity-80">Share as a certification on your LinkedIn profile</div>
+                  <div>Share on LinkedIn</div>
+                  <div className="text-xs font-normal opacity-80">
+                    Auto-fills a detailed post with your course, certificate ID, dates &amp; skills
+                  </div>
                 </div>
                 <Icon name="open_in_new" size={16} className="ml-auto opacity-70" />
               </a>

@@ -177,10 +177,29 @@ function CertificateCanvas({ cert }: { cert: CourseCertificate }) {
         <div style={{ marginTop: 8, height: 4, background: '#111', borderRadius: 2 }} />
       </div>
 
+      {/* Course cover image — top right corner inset */}
+      {cert.cover_image_url && (
+        <div style={{
+          position: 'absolute', top: 168, right: 154,
+          width: 130, height: 80,
+          borderRadius: 8,
+          overflow: 'hidden',
+          border: '2px solid #c8a84b',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
+        }}>
+          <img
+            src={cert.cover_image_url}
+            alt={cert.course_title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            crossOrigin="anonymous"
+          />
+        </div>
+      )}
+
       {/* Body paragraph */}
       <div style={{
         position: 'absolute', top: 452, left: 80, right: 80,
-        fontSize: 18, color: '#222', lineHeight: 1.8,
+        fontSize: 17.5, color: '#222', lineHeight: 1.85,
         fontWeight: 400, textAlign: 'justify',
       }}>
         Has successfully completed the course{' '}
@@ -190,9 +209,13 @@ function CertificateCanvas({ cert }: { cert: CourseCertificate }) {
           <>, from <strong style={{ fontWeight: 700 }}>{fromDate}</strong> to{' '}
             <strong style={{ fontWeight: 700 }}>{toDate}</strong></>
         ) : null}
-        . During this period, the student demonstrated exceptional dedication and professional growth in{' '}
+        . During this period, the student demonstrated exceptional dedication, consistent effort,
+        and remarkable professional growth in{' '}
         <strong style={{ fontWeight: 700 }}>{cert.growth_area || cert.course_category || '—'}</strong>
-        . We wish them continued success in their career.
+        . Their commitment to learning, applied problem-solving skills, and ability to translate
+        knowledge into practical outcomes have been truly commendable. MyDesignNexus proudly
+        recognises this achievement and wishes them continued excellence and success in their
+        professional journey.
       </div>
 
       {/* Certificate ID */}
