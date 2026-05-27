@@ -4,6 +4,7 @@ import {
   checkRateLimit, tooManyRequestsResponse,
   isValidEmail, logAudit, safeErrorResponse,
 } from "../_shared/security.ts";
+import { verifyCaptchaToken } from "../_shared/verify-captcha.ts";
 
 function buildResetEmailHtml(resetUrl: string, email: string): string {
   return `<!DOCTYPE html>
@@ -88,6 +89,20 @@ Deno.serve(async (req: Request) => {
 
     const ip = getClientIp(req);
     const supabase = adminClient();
+
+    // CAPTCHA verification
+    const captchaToken = typeof body.captcha_token === "string" ? body.captcha_token : "";
+    const captchaResult = await verifyCaptchaToken(captchaToken, ip);
+    if (!captchaResult.valid) {
+      await logAudit(supabase, {
+        action: "send-reset.captcha_failed",
+        metadata: { email, reason: captchaResult.reason },
+        ip,
+      });
+      return new Response(JSON.stringify({
+        error: "Security check failed. Please refresh the page and try again.",
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Rate limit: 3 per 30 min per email
     const byEmail = await checkRateLimit(supabase,

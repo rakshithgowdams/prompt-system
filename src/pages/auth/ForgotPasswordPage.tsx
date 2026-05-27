@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
-import { getRecaptchaToken, verifyRecaptchaServerSide } from '../../lib/recaptcha';
+import { TurnstileWidget, resetTurnstile } from '../../components/auth/TurnstileWidget';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -19,35 +19,35 @@ type FormData = z.infer<typeof schema>;
 
 export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
-    // reCAPTCHA v3 — invisible verification
-    const v3Token = await getRecaptchaToken('forgot_password');
-    if (v3Token) {
-      const ok = await verifyRecaptchaServerSide(v3Token, 'forgot_password');
-      if (!ok) {
-        toast.error('Security check failed. Please try again.');
-        return;
-      }
+    if (!captchaToken) {
+      toast.error('Please complete the security check.');
+      return;
     }
 
     try {
       const res = await fetch(`${supabaseUrl}/functions/v1/send-reset-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email }),
+        body: JSON.stringify({ email: data.email, captcha_token: captchaToken }),
       });
       const json = await res.json();
       if (!res.ok && json.error) {
         toast.error(json.error);
+        resetTurnstile();
+        setCaptchaToken(null);
         return;
       }
       setSent(true);
     } catch {
       toast.error('Something went wrong. Please try again.');
+      resetTurnstile();
+      setCaptchaToken(null);
     }
   };
 
@@ -90,7 +90,14 @@ export function ForgotPasswordPage() {
                   autoComplete="email"
                   {...register('email')}
                 />
-                <Button type="submit" variant="primary" className="w-full" size="lg" loading={isSubmitting}>
+                <TurnstileWidget
+                  action="forgot-password"
+                  onVerify={setCaptchaToken}
+                  onExpire={() => setCaptchaToken(null)}
+                  onError={() => setCaptchaToken(null)}
+                  className="flex justify-center"
+                />
+                <Button type="submit" variant="primary" className="w-full" size="lg" loading={isSubmitting} disabled={!captchaToken}>
                   Send Reset Link
                 </Button>
               </form>

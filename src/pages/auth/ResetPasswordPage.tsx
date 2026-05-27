@@ -8,7 +8,6 @@ import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
-import { getRecaptchaToken, verifyRecaptchaServerSide } from '../../lib/recaptcha';
 
 const schema = z.object({
   password: z.string({ error: 'Password is required' }).min(8, 'Password must be at least 8 characters'),
@@ -90,16 +89,6 @@ export function ResetPasswordPage() {
       toast.error('Invalid or expired reset link. Please request a new one.');
       setPageState('invalid');
       return;
-    }
-
-    // reCAPTCHA v3 — invisible verification
-    const v3Token = await getRecaptchaToken('reset_password');
-    if (v3Token) {
-      const ok = await verifyRecaptchaServerSide(v3Token, 'reset_password');
-      if (!ok) {
-        toast.error('Security check failed. Please try again.');
-        return;
-      }
     }
 
     const { error } = await supabase.auth.updateUser({ password: data.password });

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,13 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Icon } from '../../components/ui/Icon';
-import {
-  getRecaptchaToken,
-  renderRecaptchaV2,
-  resetRecaptchaV2,
-  verifyRecaptchaServerSide,
-  RECAPTCHA_V2_SITE_KEY,
-} from '../../lib/recaptcha';
+import { TurnstileWidget, resetTurnstile } from '../../components/auth/TurnstileWidget';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -44,61 +38,30 @@ export function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  // reCAPTCHA v2 state
-  const v2ContainerRef = useRef<HTMLDivElement>(null);
-  const v2WidgetIdRef = useRef<number | undefined>(undefined);
-  const [v2Token, setV2Token] = useState<string | null>(null);
-  const [v2Expired, setV2Expired] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
-  const handleV2Expired = useCallback(() => {
-    setV2Token(null);
-    setV2Expired(true);
-  }, []);
-
-  useEffect(() => {
-    if (!v2ContainerRef.current) return;
-    let mounted = true;
-    renderRecaptchaV2(
-      v2ContainerRef.current,
-      (token) => { if (mounted) { setV2Token(token); setV2Expired(false); } },
-      () => { if (mounted) handleV2Expired(); },
-    ).then((id) => { if (mounted) v2WidgetIdRef.current = id; });
-    return () => { mounted = false; };
-  }, [handleV2Expired]);
-
   const onSubmit = async (data: FormData) => {
-    // Require v2 checkbox if site key is configured
-    if (RECAPTCHA_V2_SITE_KEY && !v2Token) {
-      toast.error('Please complete the "I\'m not a robot" check.');
+    if (!captchaToken) {
+      toast.error('Please complete the security check.');
       return;
     }
 
-    // v3 invisible verification
-    const v3Token = await getRecaptchaToken('login');
-    if (v3Token) {
-      const ok = await verifyRecaptchaServerSide(v3Token, 'login');
-      if (!ok) {
-        toast.error('Security check failed. Please try again.');
-        resetRecaptchaV2(v2WidgetIdRef.current);
-        setV2Token(null);
-        return;
-      }
-    }
-
-    // v2 verification
-    if (v2Token && v2Token !== 'dev-v2-bypass') {
-      const v2Ok = await verifyRecaptchaServerSide(v2Token, 'login_v2');
-      if (!v2Ok) {
-        toast.error('CAPTCHA verification failed. Please try again.');
-        resetRecaptchaV2(v2WidgetIdRef.current);
-        setV2Token(null);
-        return;
-      }
+    // Verify captcha server-side before attempting login
+    const captchaRes = await fetch(`${supabaseUrl}/functions/v1/verify-login-captcha`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: data.email, captcha_token: captchaToken }),
+    });
+    const captchaData = await captchaRes.json().catch(() => ({}));
+    if (!captchaRes.ok || !captchaData.success) {
+      resetTurnstile();
+      setCaptchaToken(null);
+      toast.error('Security check failed. Please try again.');
+      return;
     }
 
     const { data: authData, error } = await supabase.auth.signInWithPassword({
@@ -108,8 +71,8 @@ export function LoginPage() {
 
     if (error) {
       const msg = error.message.toLowerCase();
-      resetRecaptchaV2(v2WidgetIdRef.current);
-      setV2Token(null);
+      resetTurnstile();
+      setCaptchaToken(null);
 
       if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
         setSendingOtp(true);
@@ -117,7 +80,7 @@ export function LoginPage() {
           const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: data.email }),
+            body: JSON.stringify({ email: data.email, captcha_token: captchaToken }),
           });
           if (res.ok) {
             toast.info('Account not verified — a new code has been sent to your inbox.');
@@ -217,16 +180,13 @@ export function LoginPage() {
               </Link>
             </div>
 
-            {/* reCAPTCHA v2 checkbox */}
-            <div className="flex justify-center">
-              <div ref={v2ContainerRef} />
-            </div>
-            {v2Expired && (
-              <p className="text-xs text-danger flex items-center gap-1 justify-center">
-                <Icon name="error" size={12} />
-                CAPTCHA expired — please check the box again.
-              </p>
-            )}
+            <TurnstileWidget
+              action="login"
+              onVerify={setCaptchaToken}
+              onExpire={() => setCaptchaToken(null)}
+              onError={() => setCaptchaToken(null)}
+              className="flex justify-center"
+            />
 
             <Button
               type="submit"
@@ -234,6 +194,7 @@ export function LoginPage() {
               className="w-full"
               size="lg"
               loading={isSubmitting || sendingOtp}
+              disabled={!captchaToken}
             >
               Sign in
             </Button>
