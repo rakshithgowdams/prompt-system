@@ -436,10 +436,8 @@ function Sidebar({
                             !accessible && 'opacity-40 cursor-not-allowed',
                           )}
                         >
-                          {/* Active indicator */}
                           {active && <div className="absolute left-0 inset-y-0 w-0.5 bg-emerald-400 rounded-r" />}
 
-                          {/* Completion circle */}
                           <div className="flex-shrink-0 mt-0.5">
                             <div
                               className={cn(
@@ -530,9 +528,9 @@ export function CoursePlayerPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [mediaLoading, setMediaLoading] = useState(false);
 
-  // Desktop: sidebar toggle (default open on lg+)
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  // Mobile/tablet: drawer
+  // Desktop sidebar — default CLOSED so mobile/tablet won't see it at all
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(false);
+  // Mobile/tablet drawer — always closed by default
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [showCelebration, setShowCelebration] = useState(false);
@@ -650,8 +648,12 @@ export function CoursePlayerPage() {
     { key: 'reviews',   icon: 'star_outline', label: 'Reviews' },
   ] as const;
 
+  // The desktop sidebar shifts content via marginRight only on lg+
+  // On mobile/tablet the marginRight must be 0
+  const desktopMargin = desktopSidebarOpen ? SIDEBAR_W : 0;
+
   return (
-    <div className="min-h-screen bg-gray-950" style={{ fontFamily: 'inherit' }}>
+    <div className="min-h-screen bg-gray-950">
 
       {/* Overlays */}
       <ConfettiBlast active={showConfetti} />
@@ -670,7 +672,6 @@ export function CoursePlayerPage() {
         className="fixed top-0 left-0 right-0 z-40 flex items-center gap-2 px-3 sm:px-4 bg-gray-950/95 backdrop-blur-xl border-b border-white/8"
         style={{ height: HEADER_H }}
       >
-        {/* Back */}
         <Link to="/courses"
           className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-all">
           <Icon name="arrow_back" size={18} />
@@ -678,7 +679,6 @@ export function CoursePlayerPage() {
 
         <div className="w-px h-4 bg-white/10 flex-shrink-0" />
 
-        {/* Title + progress */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-white truncate leading-tight">{course.title}</p>
           {enrollment && (
@@ -691,7 +691,6 @@ export function CoursePlayerPage() {
           )}
         </div>
 
-        {/* Right actions */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {certificate && (
             <button onClick={() => navigate(`/courses/${courseId}/certificate`)}
@@ -707,7 +706,7 @@ export function CoursePlayerPage() {
             </button>
           )}
 
-          {/* Desktop toggle */}
+          {/* Desktop toggle — only visible lg+ */}
           <button
             onClick={() => setDesktopSidebarOpen((v) => !v)}
             className={cn(
@@ -721,35 +720,37 @@ export function CoursePlayerPage() {
             <span>Content</span>
           </button>
 
-          {/* Mobile/tablet hamburger */}
+          {/* Mobile/tablet hamburger — only visible below lg */}
           <button
             onClick={() => setDrawerOpen((v) => !v)}
-            className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-all"
-            aria-label="Toggle course content"
+            className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-all relative"
+            aria-label="Open course content"
           >
             <Icon name="menu_book" size={18} />
+            {/* Dot indicator when lessons exist */}
+            {lessons.length > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-gray-950" />
+            )}
           </button>
         </div>
       </header>
 
-      {/* ── Mobile/Tablet Drawer (slides from LEFT) ──────────────────────────── */}
+      {/* ── Mobile / Tablet Drawer (slides from LEFT) — only below lg ──────── */}
       <AnimatePresence>
         {drawerOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/60 z-50 lg:hidden"
+              className="fixed inset-0 bg-black/70 z-50 lg:hidden"
               onClick={() => setDrawerOpen(false)}
             />
-            {/* Drawer panel */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-[85vw] max-w-xs shadow-2xl lg:hidden"
+              className="fixed left-0 top-0 bottom-0 z-50 w-[85vw] max-w-[320px] shadow-2xl lg:hidden"
               style={{ paddingTop: HEADER_H }}
             >
               <Sidebar {...sidebarProps} />
@@ -759,14 +760,12 @@ export function CoursePlayerPage() {
       </AnimatePresence>
 
       {/* ── Page body ────────────────────────────────────────────────────────── */}
-      <div
-        className="flex transition-all duration-300"
-        style={{ paddingTop: HEADER_H }}
-      >
-        {/* Main content — fills all width on mobile, shrinks on desktop when sidebar open */}
+      <div className="flex" style={{ paddingTop: HEADER_H }}>
+
+        {/* Main content */}
         <div
-          className="flex-1 min-w-0 w-full"
-          style={{ marginRight: desktopSidebarOpen ? SIDEBAR_W : 0 }}
+          className="flex-1 min-w-0 w-full transition-all duration-300"
+          style={{ marginRight: desktopSidebarOpen ? desktopMargin : 0 }}
         >
           {/* Completion banner */}
           <AnimatePresence>
@@ -812,7 +811,7 @@ export function CoursePlayerPage() {
 
           {activeLesson && canAccess ? (
             <>
-              {/* ── Video / media — 100% width ── */}
+              {/* ── Video / media — always 100% width ── */}
               <div className="w-full bg-black">
                 {activeLesson.lesson_type === 'video' && videoUrl && (
                   getEmbedUrl(videoUrl) ? (
@@ -892,7 +891,6 @@ export function CoursePlayerPage() {
                 <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-gray-100">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1 min-w-0">
-                      {/* Meta badges */}
                       <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                         <span className={cn(
                           'inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full',
@@ -923,7 +921,6 @@ export function CoursePlayerPage() {
                       )}
                     </div>
 
-                    {/* Mark complete */}
                     <div className="flex-shrink-0">
                       {isCompleted ? (
                         <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-bold">
@@ -945,7 +942,7 @@ export function CoursePlayerPage() {
                   </div>
                 </div>
 
-                {/* Prev / Next */}
+                {/* Prev / Next navigation */}
                 <div className="px-4 sm:px-6 lg:px-8 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3">
                   <button
                     onClick={() => prevLesson && setActiveLessonId(prevLesson.id)}
@@ -961,7 +958,8 @@ export function CoursePlayerPage() {
                   {nextLesson ? (
                     <button onClick={() => setActiveLessonId(nextLesson.id)}
                       className="flex items-center gap-1.5 px-3 sm:px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-bold transition-all">
-                      <span className="hidden sm:inline">Next</span>
+                      <span className="hidden sm:inline">Next Lesson</span>
+                      <span className="sm:hidden">Next</span>
                       <Icon name="chevron_right" size={16} />
                     </button>
                   ) : (
@@ -1003,7 +1001,7 @@ export function CoursePlayerPage() {
                       )}
                       <div>
                         <h3 className="text-sm font-bold text-gray-900 mb-3">Course contents</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-2 gap-2.5">
                           {[
                             { icon: 'play_circle', count: lessons.filter(l => l.lesson_type === 'video').length, label: 'Video lessons', color: 'text-blue-500' },
                             { icon: 'article', count: lessons.filter(l => l.lesson_type === 'text').length, label: 'Text lessons', color: 'text-emerald-500' },
@@ -1075,6 +1073,74 @@ export function CoursePlayerPage() {
                     </div>
                   )}
                 </div>
+
+                {/* ── Mobile quick-access bottom bar ───────────────────────── */}
+                <div className="lg:hidden sticky bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 backdrop-blur-sm z-20">
+                  <div className="flex items-center justify-between px-4 py-2.5 gap-2">
+                    {/* Curriculum button */}
+                    <button
+                      onClick={() => setDrawerOpen(true)}
+                      className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all flex-1"
+                    >
+                      <Icon name="menu_book" size={18} />
+                      <span className="text-[10px] font-semibold">Lessons</span>
+                    </button>
+
+                    {/* Progress pill */}
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-gray-900 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-500">{pct}%</span>
+                      </div>
+                      <span className="text-[9px] text-gray-400">{completedIds.size}/{lessons.length} done</span>
+                    </div>
+
+                    {/* Mark complete / next */}
+                    {isCompleted ? (
+                      nextLesson ? (
+                        <button
+                          onClick={() => setActiveLessonId(nextLesson.id)}
+                          className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-gray-900 bg-gray-100 hover:bg-gray-200 transition-all flex-1"
+                        >
+                          <Icon name="skip_next" size={18} />
+                          <span className="text-[10px] font-semibold">Next</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/courses/${courseId}/certificate`)}
+                          className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 transition-all flex-1"
+                        >
+                          <Icon name="workspace_premium" size={18} fill />
+                          <span className="text-[10px] font-semibold">Certificate</span>
+                        </button>
+                      )
+                    ) : (enrollment || isOwner) ? (
+                      <button
+                        onClick={handleMarkComplete}
+                        disabled={markComplete.isPending}
+                        className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 transition-all flex-1"
+                      >
+                        {markComplete.isPending
+                          ? <div className="w-4.5 h-4.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" style={{ width: 18, height: 18 }} />
+                          : <Icon name="check_circle" size={18} />
+                        }
+                        <span className="text-[10px] font-semibold">Complete</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleEnroll}
+                        disabled={enroll.isPending}
+                        className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-gray-900 bg-gray-100 hover:bg-gray-200 transition-all flex-1"
+                      >
+                        <Icon name="school" size={18} />
+                        <span className="text-[10px] font-semibold">Enroll</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
               </div>
             </>
           ) : (
@@ -1097,7 +1163,7 @@ export function CoursePlayerPage() {
                 <p className="text-sm text-white/40 max-w-xs mx-auto leading-relaxed">
                   {!enrollment && !isOwner
                     ? 'Enroll for free to unlock all content and track your progress.'
-                    : 'Tap the content icon in the header to pick a lesson.'}
+                    : 'Tap the book icon in the header to pick a lesson.'}
                 </p>
               </div>
               {!enrollment && !isOwner && (
@@ -1106,11 +1172,21 @@ export function CoursePlayerPage() {
                   {enroll.isPending ? 'Enrolling…' : 'Enroll Now — Free'}
                 </button>
               )}
+              {/* Mobile: open lessons from empty state */}
+              {(enrollment || isOwner) && (
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className="lg:hidden flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 transition-all text-sm font-semibold"
+                >
+                  <Icon name="menu_book" size={16} />
+                  Browse Lessons
+                </button>
+              )}
             </div>
           )}
         </div>
 
-        {/* ── Desktop right sidebar (lg+) ───────────────────────────────────── */}
+        {/* ── Desktop right sidebar — only renders and shows on lg+ ─────────── */}
         <AnimatePresence>
           {desktopSidebarOpen && (
             <motion.aside
