@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, Component, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -44,6 +44,17 @@ const PricingPage            = lazy(() => import('./pages/landing/PricingPage'))
 const ExplorePromptsPage     = lazy(() => import('./pages/ExplorePromptsPage').then((m) => ({ default: m.ExplorePromptsPage })));
 const PublicCertificatePage  = lazy(() => import('./pages/PublicCertificatePage').then((m) => ({ default: m.PublicCertificatePage })));
 const PublicPortfolioPage    = lazy(() => import('./pages/PublicPortfolioPage').then((m) => ({ default: m.PublicPortfolioPage })));
+
+// Re-throws chunk-load errors so the root ErrorBoundary in main.tsx catches them
+// and shows the "App updated — please reload" screen instead of a blank skeleton.
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (this.state.failed) throw new Error('Failed to fetch dynamically imported module');
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +104,7 @@ export default function App() {
         <VaultProvider>
         <BrowserRouter>
           <LenisScrollManager />
+          <ChunkErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/" element={<RootGate />} />
@@ -138,6 +150,7 @@ export default function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
+          </ChunkErrorBoundary>
         </BrowserRouter>
 
         <InstallPrompt />
